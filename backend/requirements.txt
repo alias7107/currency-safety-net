@@ -1,7 +1,18 @@
 # Pinned to the verified research runtime (Python 3.9.6).
+# Numerical stack must remain unchanged.
 numpy==2.0.2
 pandas==2.3.3
 scipy==1.13.1
 statsmodels==0.14.6
-pytest==8.4.2
+
+# Web / async API
 Django==4.2.25
+djangorestframework==3.15.2
+celery==5.4.0
+redis==5.3.1
+django-cors-headers==4.4.0
+django-environ==0.11.2
+
+# Tests
+pytest==8.4.2
+pytest-django==4.11.1
