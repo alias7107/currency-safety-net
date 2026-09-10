@@ -67,9 +67,25 @@ brew install redis
 brew services start redis
 ```
 
-Real multi-process Redis verification has **not** been run in environments
-where neither Docker nor Redis is installed. Do not treat the architecture
-demo (mocked broker publish) as a substitute for that check.
+Local multi-process verification
+--------------------------------
+
+The local async path has been verified end-to-end with:
+
+- Django HTTP process
+- Redis broker (`PONG`)
+- Separate Celery worker (one node online)
+- `CELERY_TASK_ALWAYS_EAGER=False`
+
+Observed behavior: initial POST returned `202` with `queued` and
+`cached=false`; the worker completed the job; a repeated identical POST
+returned `succeeded` with `cached=true`. The completed P2 / 3-year result
+matched the canonical regression values (`weights = [1.0, 0.0, 0.0]`,
+`CVaR95 = 1.1871802686857733`, `P(shortfall) = 0.0491`, surface
+`1326 / 199 / 1473`).
+
+Unit tests still mock the broker; they are not a substitute for this check.
+If Redis is unavailable locally, install it before repeating the flow.
 
 Apply migrations:
 
