@@ -1,0 +1,7 @@
+# Pinned to the verified research runtime (Python 3.9.6).
+numpy==2.0.2
+pandas==2.3.3
+scipy==1.13.1
+statsmodels==0.14.6
+pytest==8.4.2
+Django==4.2.25

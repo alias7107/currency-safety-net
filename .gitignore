@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Never include the complete research project
+currency-allocation-research/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.coverage
+htmlcov/
+
+# Django
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Generated engine artifacts
+*.npy
+backend/research_engine/cache/
+backend/tests/_optimize_benchmark.json
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Editors
+.idea/
+.vscode/

@@ -1,0 +1,194 @@
+{
+  "model_version": "1.0.0",
+  "source_project": "currency-allocation-research",
+  "source_git_commit": null,
+  "source_unchanged": true,
+  "source_protection": "The source research project was copied from and remained unchanged. source_sha256 values were computed before copying and recomputed after migration; all source hashes matched. Adapted Python files intentionally have different target_sha256 values because only package import paths (and engine data roots / package exports) were changed in the copy.",
+  "migration_date": "2026-09-10",
+  "canonical_optimization_specification": "Phase 2C grid-integrity corrected",
+  "legacy_phase2b2_surface_counts": {
+    "P2_3Y": 1486,
+    "P4_3Y": 1409
+  },
+  "corrected_surface_counts": {
+    "P2_3Y": 1473,
+    "P4_3Y": 1403
+  },
+  "grid_integrity_note": "Legacy Phase 2B2 and corrected Phase 2C grid-integrity surfaces differ in near-optimal neighborhood cardinality, but both produce the same reported optimal weights (100% KZT) and the same canonical CVaR95 / P(shortfall) gates for P2 and P4 at the 3-year horizon.",
+  "dataset": {
+    "filename": "fx_daily_2010_2025.csv",
+    "relative_path": "data/processed/fx_daily_2010_2025.csv",
+    "date_range": {
+      "file_start": "2010-01-01",
+      "file_end": "2025-12-31",
+      "baseline_estimation_start": "2015-08-20",
+      "baseline_estimation_end": "2025-12-31"
+    },
+    "data_as_of": "2025-12-31",
+    "source_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+    "target_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494"
+  },
+  "random_seed": 42,
+  "n_simulation_paths": 10000,
+  "simulation_horizon_days_generated": 1260,
+  "primary_dgp": "joint stationary bootstrap SB20",
+  "block_length": 20,
+  "baseline_parameters": {
+    "I0": 1.0,
+    "expense_income_ratio": 0.95,
+    "buffer_months": 1,
+    "W0": 0.95,
+    "rebalance_frequency": "monthly",
+    "conversion_cost": 0.0,
+    "cvar_alpha": 0.95,
+    "coarse_step_bp": 200,
+    "refined_step_bp": 100,
+    "weekdays_per_month": 21,
+    "starting_fx_levels": {
+      "USD_KZT": 502.57,
+      "EUR_KZT": 591.68
+    }
+  },
+  "verified_research_environment": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scipy": "1.13.1",
+    "statsmodels": "0.14.6"
+  },
+  "copied_source_files": [
+    {
+      "source": "src/config.py",
+      "target": "backend/research_engine/config.py",
+      "source_sha256": "a37462f0cc5875b9ec3c071595bc3c5a9b1930b822f62ec3ddea9f83b1596a0b",
+      "target_sha256": "f4f66037a2fcef548cb58911d999dee4440b4966509848bc52dfd0821870969d",
+      "adaptation": "package import paths and ENGINE_ROOT data path only"
+    },
+    {
+      "source": "src/household/__init__.py",
+      "target": "backend/research_engine/household/__init__.py",
+      "source_sha256": "898b7b879cdcef3262a1b8c2f914e4f1773bc50e1da42a0eac6ee41619508251",
+      "target_sha256": "898b7b879cdcef3262a1b8c2f914e4f1773bc50e1da42a0eac6ee41619508251",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/household/profiles.py",
+      "target": "backend/research_engine/household/profiles.py",
+      "source_sha256": "500b7ffd12a4acb0e5015f7f2d0d359651ad5018381cdc0e6a2761cdb951738b",
+      "target_sha256": "500b7ffd12a4acb0e5015f7f2d0d359651ad5018381cdc0e6a2761cdb951738b",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/household/cashflows.py",
+      "target": "backend/research_engine/household/cashflows.py",
+      "source_sha256": "7bcccead84955e84df60eb343b75249f7466f2e3f6be5b24886bdf32ab3c640f",
+      "target_sha256": "b40706eb6a57f073f4486a9dea51dba6e3c0549e958c9fbfa14067a9c00a3025",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/household/portfolio.py",
+      "target": "backend/research_engine/household/portfolio.py",
+      "source_sha256": "b4e11638db8cc99e7f65dd092a9ad3285205f0cd98114f26e0b5d6476630f188",
+      "target_sha256": "b4e11638db8cc99e7f65dd092a9ad3285205f0cd98114f26e0b5d6476630f188",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/household/settlement.py",
+      "target": "backend/research_engine/household/settlement.py",
+      "source_sha256": "f213e423ecc27038636d1207dba7a8108a1bc0cdecf061f9f6fac9e055246300",
+      "target_sha256": "ecb12abf5df443b3b33986d3abbfc758089b2c14ae4213452c0d276782b2c441",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/household/risk_metrics.py",
+      "target": "backend/research_engine/household/risk_metrics.py",
+      "source_sha256": "4a502b0ffca28d3386ed49801642512091728eb25bb852302a7c0af72b4a5239",
+      "target_sha256": "901280338517093c67bffa481aa57f75b905acf4124a090f11cb36bb7a22a771",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/simulation/__init__.py",
+      "target": "backend/research_engine/simulation/__init__.py",
+      "source_sha256": "edbeba6820305977c7b2cc7bb9f9d7985d5eafedf57976d2000b61aa5436da8b",
+      "target_sha256": "3162cf7984cc02e6fb6142f739a439fd5f672675526c916391b008e4248a7562",
+      "adaptation": "trimmed exports for uncopied comparison DGPs"
+    },
+    {
+      "source": "src/simulation/base.py",
+      "target": "backend/research_engine/simulation/base.py",
+      "source_sha256": "99d377d10f187035c5704e606019bdbd56403e42c0e0e955a7bec7cc84c884ee",
+      "target_sha256": "9fdafe647889e2a5e29995ad18c6b067910bf8fc5de678efef2e7f27edc38758",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/simulation/stationary_bootstrap.py",
+      "target": "backend/research_engine/simulation/stationary_bootstrap.py",
+      "source_sha256": "2abc983208223ade465556f22104b835d5e732029746fb178b2f24d1c2bccc6e",
+      "target_sha256": "2abc983208223ade465556f22104b835d5e732029746fb178b2f24d1c2bccc6e",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/simulation/path_builder.py",
+      "target": "backend/research_engine/simulation/path_builder.py",
+      "source_sha256": "5ebf17601adcc5688051ddcdfd6b4b2a6d2e564b0cce99527b3ab00baea96fc3",
+      "target_sha256": "5ebf17601adcc5688051ddcdfd6b4b2a6d2e564b0cce99527b3ab00baea96fc3",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/simulation/validation.py",
+      "target": "backend/research_engine/simulation/validation.py",
+      "source_sha256": "3cca8a4692becf84ffa0e551feef02b8cd0067936bb530fe060632dd658732c7",
+      "target_sha256": "e4410918527149063d48aa16159375b2f6ddd6e0c6fd7941ea92e1b70476dd17",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/optimization/__init__.py",
+      "target": "backend/research_engine/optimization/__init__.py",
+      "source_sha256": "5ed2ad05e4fe9cdf8fc9d0c6398f09f0742143f77a93d74170eab89946ffaf8e",
+      "target_sha256": "138f28c518deca16b234366b43eb3469e6e151cb510912ff7e7d251ff7a49d47",
+      "adaptation": "trimmed exports for uncopied research pipeline"
+    },
+    {
+      "source": "src/optimization/evaluator.py",
+      "target": "backend/research_engine/optimization/evaluator.py",
+      "source_sha256": "cccb5a829195be811ff412e2b1aff40069b31c92e815912aa2c226412595b85f",
+      "target_sha256": "a32fef7ffd068e2646a3c02ad0b4b92f0cba6f2217430ed9da3b57d4730d1070",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/optimization/grid.py",
+      "target": "backend/research_engine/optimization/grid.py",
+      "source_sha256": "7e3596815e471762e1c42fd9ff510d78a7c672b93ebca0358164e3a9618ea4ab",
+      "target_sha256": "7e3596815e471762e1c42fd9ff510d78a7c672b93ebca0358164e3a9618ea4ab",
+      "adaptation": "none; byte-identical after copy"
+    },
+    {
+      "source": "src/optimization/near_optimal.py",
+      "target": "backend/research_engine/optimization/near_optimal.py",
+      "source_sha256": "36751d33982c365a43886b6a3be58a1a20a897aba4042ccbb78c8e8b13113829",
+      "target_sha256": "734e4740ad44a8c1bb9e3208d79be109bd8b65f3555fa4b6f856aef757ff6399",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/robustness/optimize.py",
+      "target": "backend/research_engine/robustness/optimize.py",
+      "source_sha256": "e49a21504044eab68f345099f3fe536a175fb05067326d954db0fc7ca1a39d33",
+      "target_sha256": "39dbaac6f127bb9a3c735475ce92ad2bb840d40029430d883a0a9c7d9e4daae0",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "src/robustness/classify.py",
+      "target": "backend/research_engine/robustness/classify.py",
+      "source_sha256": "d76bc87a605418557f765278c388e876da961364cf4e8418643d3ee9c20ccd95",
+      "target_sha256": "2d73b3bd03df698f47ec2dca08fffbdbcd8bd5568199716d81f94dedc6d147de",
+      "adaptation": "package import paths only"
+    },
+    {
+      "source": "data/processed/fx_daily_2010_2025.csv",
+      "target": "backend/research_engine/data/processed/fx_daily_2010_2025.csv",
+      "source_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+      "target_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+      "adaptation": "none; byte-identical dataset"
+    }
+  ]
+}
