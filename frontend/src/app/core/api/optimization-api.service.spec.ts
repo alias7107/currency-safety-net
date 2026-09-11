@@ -210,6 +210,35 @@ describe('OptimizationApiService', () => {
     expect(error?.code).toBe('network_error');
   });
 
+  it('does not expose raw HttpClient transport text for a non-JSON 502', () => {
+    let error: ApiError | undefined;
+    service.getMetadata().subscribe({ error: (e: ApiError) => (error = e) });
+
+    http.expectOne('/api/v1/model/metadata/').flush('Bad Gateway', {
+      status: 502,
+      statusText: 'Bad Gateway',
+    });
+
+    expect(error?.status).toBe(502);
+    expect(error?.message).toBe('The request could not be completed.');
+    expect(error?.message).not.toContain('Http failure response');
+    expect(error?.message).not.toContain('/api/v1/');
+    expect(error?.message).not.toContain('502 Bad Gateway');
+    expect(error?.message).not.toMatch(/localhost|127\.0\.0\.1/i);
+  });
+
+  it('preserves a structured backend error message when present', () => {
+    let error: ApiError | undefined;
+    service.getMetadata().subscribe({ error: (e: ApiError) => (error = e) });
+
+    http.expectOne('/api/v1/model/metadata/').flush(
+      errorBody('metadata_unavailable', 'Model metadata is temporarily offline.'),
+      { status: 503, statusText: 'Service Unavailable' },
+    );
+
+    expect(error?.message).toBe('Model metadata is temporarily offline.');
+  });
+
   it('uses only relative /api/v1 URLs', () => {
     service.getMetadata().subscribe({ error: () => undefined });
     service.getOptions().subscribe({ error: () => undefined });

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import type { ApiError } from '../../../core/api/models';
+import { sanitizeUserFacingMessage } from '../../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../../core/i18n/en';
 
 interface ErrorCopy {
@@ -11,6 +12,7 @@ interface ErrorCopy {
 /**
  * Single error surface for every failure mode. Copy is chosen from the HTTP
  * status so that a rate limit never reads like a validation failure.
+ * Callers may supply contextual title/body (for example metadata load failures).
  */
 @Component({
   selector: 'app-error-panel',
@@ -34,7 +36,7 @@ interface ErrorCopy {
         <p>{{ copy().body }}</p>
 
         @if (serverMessage(); as message) {
-          <p class="error-panel__server-message">{{ message }}</p>
+          <p class="error-panel__server-message" data-testid="error-server-message">{{ message }}</p>
         }
 
         @if (fieldMessages().length) {
@@ -78,6 +80,10 @@ export class ErrorPanel {
   readonly error = input<ApiError | null>(null);
   readonly showRetry = input<boolean>(true);
   readonly retryLabel = input<string | null>(null);
+  /** Optional contextual title (overrides status-based default). */
+  readonly title = input<string | null>(null);
+  /** Optional contextual body (overrides status-based default). */
+  readonly body = input<string | null>(null);
 
   readonly retry = output<void>();
 
@@ -87,6 +93,12 @@ export class ErrorPanel {
   protected readonly detailsOpen = signal(false);
 
   protected readonly copy = computed<ErrorCopy>(() => {
+    const overrideTitle = this.title();
+    const overrideBody = this.body();
+    if (overrideTitle && overrideBody) {
+      return { title: overrideTitle, body: overrideBody };
+    }
+
     const status = this.error()?.status ?? 0;
     const e = EN_STRINGS.errors;
     switch (status) {
@@ -111,12 +123,16 @@ export class ErrorPanel {
   });
 
   protected readonly serverMessage = computed(() => {
-    const error = this.error();
-    if (!error?.message) {
+    // Contextual title/body already explain the failure for the current page.
+    if (this.title() && this.body()) {
       return null;
     }
-    // Raw transport messages are noise; only show server-authored text.
-    return error.status === 0 ? null : error.message;
+    const error = this.error();
+    if (!error?.message || error.status === 0) {
+      return null;
+    }
+    // Only show deliberately returned, sanitized backend copy.
+    return sanitizeUserFacingMessage(error.message);
   });
 
   /** Flatten DRF's `{field: [messages]}` details into a readable list. */

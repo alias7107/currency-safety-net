@@ -9,9 +9,9 @@
 export const EN_STRINGS = {
   app: {
     name: 'Currency Safety Net',
-    tagline: 'Research-based currency allocation scenarios',
+    tagline: 'Research-based household currency resilience',
     skipToContent: 'Skip to main content',
-    documentTitle: 'Currency Safety Net — research-based currency allocation scenarios',
+    documentTitle: 'Currency Safety Net — research-based household currency resilience',
   },
 
   nav: {
@@ -19,20 +19,22 @@ export const EN_STRINGS = {
     menuButton: 'Menu',
     openMenu: 'Open navigation menu',
     closeMenu: 'Close navigation menu',
-    home: 'Overview',
-    calculator: 'Calculator',
-    methodology: 'Methodology',
-    primaryAction: 'Run a scenario',
+    home: 'Home',
+    howItWorks: 'How it works',
+    whoItHelps: 'Who it helps',
+    research: 'Research',
+    assessment: 'Assessment',
+    primaryAction: 'Check my resilience',
   },
 
   footer: {
     about:
-      'Currency Safety Net runs a published household FX allocation model over simulated exchange-rate paths and reports the modelled outcome for the inputs you choose.',
+      'Currency Safety Net helps households explore modelled currency resilience using a research-based FX allocation model over simulated exchange-rate paths.',
     disclaimerHeading: 'Scope',
     disclaimer:
-      'Results are model outputs for the scenario you entered. They are not exchange-rate forecasts, not investment advice, and not a statement about what any currency will do in future.',
+      'Results are modelled outcomes for the scenario you entered. They are not exchange-rate forecasts, not investment advice, and not a statement about what any currency will do in future.',
     linksHeading: 'Sections',
-    rights: 'Research demonstrator. No account, no transactions, no personal data stored.',
+    rights: 'Research demonstrator. No account, bank connection, or transactions.',
   },
 
   common: {
@@ -102,81 +104,118 @@ export const EN_STRINGS = {
   },
 
   landing: {
-    eyebrow: 'Household FX scenario model',
-    heroTitle: 'See how a currency mix changes modelled shortfall risk',
+    heroTitle:
+      'Would your emergency fund still protect your household when exchange rates move?',
     heroBody:
-      'Currency Safety Net applies a published research model to your household situation. Choose how you earn and spend, set the assumptions, and the model reports the allocation with the lowest modelled shortfall risk over simulated exchange-rate paths.',
-    heroCta: 'Build a scenario',
-    heroSecondaryCta: 'Read the methodology',
-    heroNote:
-      'No sign-up, no account, no transactions. The model reports a scenario result, not a recommendation.',
+      'Choose the household situation closest to yours and explore how different currency mixes and buffer sizes perform across thousands of simulated exchange-rate scenarios.',
+    heroCta: 'Check my resilience',
+    heroSecondaryCta: 'View the published research',
+    trustLine: 'No account · No bank connection · Research-based model · Not financial advice',
     illustrationAlt:
       'Diagram of a household savings buffer held in tenge, dollars and euros, sheltered under a protective arc representing modelled shortfall coverage.',
 
+    whoHeading: 'Who it helps',
+    whoBody:
+      'The assessment is designed for households navigating more than one currency in everyday life. It may help explore modelled resilience — it does not claim measured impact on real outcomes.',
+    whoAudiences: [
+      {
+        title: 'Currency-mismatch households',
+        body: 'Designed for households that earn in one currency and spend in another.',
+      },
+      {
+        title: 'Foreign-currency income',
+        body: 'May help explore situations where wages or contracts arrive in USD or EUR while costs stay local.',
+      },
+      {
+        title: 'Remittance-receiving families',
+        body: 'Designed for families who receive support from abroad and cover local expenses.',
+      },
+      {
+        title: 'Multi-currency emergency savings',
+        body: 'May help explore buffers held across KZT, USD, or EUR.',
+      },
+    ],
+
     workflowHeading: 'How it works',
-    workflowBody: 'Three steps, each using only inputs documented in the research.',
+    workflowBody: 'Three short steps using documented research profiles and assumptions.',
     workflowSteps: [
       {
-        title: 'Describe your currency situation',
-        body: 'Pick the household profile that matches how you receive income and where your expenses fall.',
+        title: 'Choose a household profile',
+        body: 'Select the researched profile closest to how you earn and spend across currencies.',
       },
       {
-        title: 'Set the modelling assumptions',
-        body: 'Choose the horizon, spending-to-income ratio and buffer size from the values evaluated in the research.',
+        title: 'Set modelling assumptions',
+        body: 'Choose the modelled horizon, buffer, rebalancing frequency, and conversion-cost assumption from documented values.',
       },
       {
-        title: 'Read the scenario result',
-        body: 'The model returns an allocation across the three currencies together with the modelled shortfall risk it implies.',
+        title: 'Review modelled risk',
+        body: 'See the modelled currency allocation and shortfall-risk metrics for that scenario.',
       },
     ],
 
-    currenciesHeading: 'Currencies in the model',
-    currenciesBody:
-      'The model works with three currencies. Every allocation is a split across exactly these.',
-
-    methodologyHeading: 'What the model actually does',
-    methodologyBody:
-      'Exchange-rate paths are resampled from historical data using a stationary bootstrap, household cash flows are settled month by month, and each candidate currency split is scored on the shortfall it produces across all simulated paths.',
-    methodologyPoints: [
+    outputsHeading: 'What you receive',
+    outputsBody:
+      'The assessment reports modelled results for the scenario you select — guidance for understanding the model, not a personal recommendation.',
+    outputs: [
       {
-        title: 'Simulated paths, not predictions',
-        body: 'Paths are generated by resampling historical FX behaviour. They describe a range of possible outcomes; they do not say which one will occur.',
+        title: 'Modelled currency allocation',
+        body: 'A KZT / USD / EUR mix selected by the research model for your inputs.',
       },
       {
-        title: 'Shortfall as the objective',
-        body: 'Allocations are ranked by modelled shortfall — how far the household falls short of covering expenses — rather than by expected return.',
+        title: 'Probability of any shortfall',
+        body: 'How often the modelled household failed to cover expenses across simulated paths.',
       },
       {
-        title: 'Fixed, reproducible run',
-        body: 'Path count and random seed are fixed by the research specification, so the same inputs always produce the same scenario result.',
+        title: 'CVaR95 shortfall severity',
+        body: 'Average shortfall in the worst 5% of simulated paths (conditional value at risk at 95%).',
       },
       {
-        title: 'Documented inputs only',
-        body: 'The scenario builder exposes only the parameter values that were evaluated in the research, so results stay inside the studied range.',
+        title: 'Buffer depletion probability',
+        body: 'How often the starting emergency buffer was fully used before the horizon ended.',
+      },
+      {
+        title: 'Identification / stability information',
+        body: 'How clearly the reported allocation separates from nearby alternatives within the searched model grid.',
+      },
+      {
+        title: 'Assumptions and reproducibility metadata',
+        body: 'The full set of selected assumptions plus model version, data as-of, path count, and seed.',
       },
     ],
 
-    dataHeading: 'Data and model version',
-    dataAsOfLabel: 'Historical FX data as of',
+    privacyHeading: 'Privacy in this version',
+    privacyPoints: [
+      'No account is required.',
+      'The product does not connect to a bank.',
+      'Names and contact details are not requested.',
+      'An unfinished form is kept in your browser session only.',
+      'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
+    ],
+
+    researchHeading: 'Based on published research',
+    researchBody:
+      'The model behind Currency Safety Net is based on the project’s published scientific research on household FX shortfall risk.',
+    researchCta: 'Explore the research page',
+    researchMethodLabel: 'Simulation method',
+    researchPathsLabel: 'Simulated paths',
+    researchVersionLabel: 'Model version',
+    researchDataLabel: 'Historical FX data as of',
     metadataUnavailableNote:
-      'Live model metadata could not be loaded. Data as-of and version details will appear when the API is available.',
-    dataBody:
-      'The model has not seen any exchange-rate movement after this date. Scenario results describe the model, not current market conditions.',
+      'Live model metadata could not be loaded. Research details will appear when the API is available.',
 
-    limitationsHeading: 'Limitations you should read first',
+    limitationsHeading: 'Limitations',
     limitations: [
-      'This is not financial, tax or legal advice, and not a personal recommendation.',
-      'The model does not forecast future exchange rates and cannot tell you what any currency will do.',
-      'Results depend entirely on the assumptions you select and on historical data up to the as-of date.',
-      'Household cash flows are stylised: income and expenses are normalised, steady and inflation-free.',
-      'Interest, deposit yields, taxes, fees beyond the modelled conversion cost, and transfer limits are not included.',
-      'A scenario result is one model output. It is not a statement about your actual finances.',
+      'The model does not forecast exchange rates.',
+      'Results are not individualized financial advice.',
+      'Interest, inflation, tax, and deposit yield are not modelled.',
+      'Outcomes depend on the assumptions you select and on historical data up to the as-of date.',
+      'This version uses four predefined profiles evaluated in the research — not fully custom income, expense, or savings distributions.',
     ],
 
-    ctaHeading: 'Ready to run a scenario?',
+    ctaHeading: 'Ready to check a scenario?',
     ctaBody:
-      'Building a scenario takes about a minute. You can change assumptions and run it again as many times as you like.',
-    ctaButton: 'Open the scenario builder',
+      'Open the assessment, choose a researched household profile, and review the modelled result.',
+    ctaButton: 'Check my resilience',
   },
 
   calculator: {
@@ -361,7 +400,7 @@ export const EN_STRINGS = {
     plainSections: [
       {
         title: 'The problem being modelled',
-        body: 'A household that earns in one currency and spends in another carries exchange-rate risk on its everyday budget. If the currency you are paid in weakens against the currency you spend, your income covers less. The model asks a narrow question: given a savings buffer, which split across tenge, dollars and euros leaves the household short least often and least severely?',
+        body: 'A household that earns in one currency and spends in another carries exchange-rate risk on its everyday budget. If the currency you are paid in weakens against the currency you spend, your income covers less. The model asks a narrow question: given a savings buffer, which KZT, USD and EUR split produces the lowest average cumulative shortfall among the worst 5% of simulated paths?',
       },
       {
         title: 'How possible futures are generated',
@@ -373,7 +412,7 @@ export const EN_STRINGS = {
       },
       {
         title: 'How an allocation is chosen',
-        body: 'Many candidate splits across the three currencies are tested on every simulated path. Each is scored on the shortfall it produces, with particular weight on the worst outcomes. The split with the best score for your inputs is reported as the model allocation.',
+        body: 'Each candidate split is evaluated using CVaR95 of cumulative shortfall — the average cumulative shortfall among the worst 5% of simulated paths. The split with the lowest CVaR95 is reported as the model allocation. Shortfall probability and the other risk measures are shown as additional diagnostics.',
       },
       {
         title: 'What the numbers mean',
@@ -405,11 +444,11 @@ export const EN_STRINGS = {
       },
       {
         title: 'Objective and risk metrics',
-        body: 'Allocations are scored on cumulative shortfall. Reported metrics are the probability of any shortfall, the 95% value at risk of cumulative shortfall, the 95% conditional value at risk (the mean of the worst 5% of paths), the mean cumulative shortfall, and the probability of fully depleting the buffer.',
+        body: 'The optimisation objective is a single measure: CVaR95 of cumulative shortfall (the average cumulative shortfall among the worst 5% of simulated paths). Candidate allocations are ranked by this CVaR95 value alone; the lowest-CVaR95 split is reported as the model allocation. Shortfall probability, VaR95 of cumulative shortfall, mean cumulative shortfall, and buffer-depletion probability are reported as diagnostics and are not jointly optimised.',
       },
       {
         title: 'Search procedure',
-        body: 'The three-currency simplex is searched on a coarse grid, then refined around the best region. The number of coarse, refined and total evaluated points is reported with each result, together with an identification class describing how clearly the optimum separates from its neighbourhood.',
+        body: 'The three-currency simplex is searched on a coarse grid, then refined around the best region under the CVaR95 objective. The number of coarse, refined and total evaluated points is reported with each result, together with an identification class describing how clearly the optimum separates from its neighbourhood on that objective.',
       },
       {
         title: 'Reproducibility',
@@ -446,6 +485,27 @@ export const EN_STRINGS = {
     metadataErrorTitle: 'Model parameters could not be loaded',
     metadataErrorBody:
       'The technical sections above still describe the model. Only the live parameter table is unavailable.',
+  },
+
+  research: {
+    title: 'Published research',
+    intro:
+      'Currency Safety Net is based on published scientific research on household FX shortfall risk. This page summarises the model in plain language and technical detail, and shows live reproducibility metadata.',
+    openAssessment: 'Open the research calculator',
+    publication: {
+      heading: 'Publication',
+      paperTitle: 'Paper title will be listed here.',
+      authors: 'Author details will be listed here.',
+      placeholder: 'Publication link will be added here.',
+      linkLabel: 'Read the published paper',
+    },
+    reproducibility: {
+      heading: 'Reproducibility',
+      body: 'Path count and random seed are fixed by the research specification and cannot be changed by the client. Identical scenario inputs return the same cached modelled result. Live parameter values above come from the model metadata endpoint.',
+    },
+    metadataUnavailableTitle: 'Model details temporarily unavailable',
+    metadataUnavailableBody:
+      'Live model metadata could not be loaded. The methodology above remains available, and you can try again.',
   },
 
   errors: {

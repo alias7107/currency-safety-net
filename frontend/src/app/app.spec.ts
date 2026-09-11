@@ -34,19 +34,34 @@ describe('App', () => {
     expect(skipLink?.textContent).toContain(EN_STRINGS.app.skipToContent);
   });
 
-  it('exposes an accessible, collapsible navigation menu', async () => {
+  it('exposes product navigation and an accessible mobile menu', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="nav-how-it-works"]')).toBeTruthy();
+    expect(element.querySelector('[data-testid="nav-who-it-helps"]')).toBeTruthy();
+    expect(element.querySelector('[data-testid="nav-research"]')).toBeTruthy();
+    expect(element.querySelector('[data-testid="nav-primary-cta"]')?.textContent).toContain(
+      EN_STRINGS.nav.primaryAction,
+    );
+    expect(element.querySelector('[data-testid="header-logo"]')?.getAttribute('href') || '').toContain(
+      '/',
+    );
+
     const toggle = element.querySelector<HTMLButtonElement>('.app-header__toggle');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(toggle?.getAttribute('aria-controls')).toBe('primary-navigation');
+    expect(getComputedStyle(toggle!).minHeight || toggle!.style.minHeight).toBeDefined();
 
     toggle!.click();
     fixture.detectChanges();
     expect(toggle!.getAttribute('aria-expanded')).toBe('true');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(toggle!.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('states the scope of the results in the footer', async () => {
@@ -58,5 +73,9 @@ describe('App', () => {
     const copy = (footer?.textContent ?? '').replace(/\s+/g, ' ');
     expect(copy).toContain('not exchange-rate forecasts');
     expect(copy).toContain('not investment advice');
+    expect(copy).toContain(EN_STRINGS.nav.assessment);
+    expect(copy).toContain(EN_STRINGS.nav.research);
+    expect(copy).toContain('No account, bank connection, or transactions');
+    expect(copy.toLowerCase()).not.toContain('no personal data stored');
   });
 });

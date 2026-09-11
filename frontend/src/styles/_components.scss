@@ -758,3 +758,17 @@
   font-weight: 600;
   text-align: right;
 }
+
+.publication-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.publication-link--pending {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
