@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, exhaustMap, takeUntil, timer } from 'rxjs';
@@ -12,6 +19,7 @@ import type {
 } from '../../core/api/models';
 import { OptimizationApiService } from '../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../core/i18n/en';
+import { ScenarioComparisonStore } from '../../core/state/scenario-comparison.store';
 import { ScenarioFormStore } from '../../core/state/scenario-form.store';
 import {
   formatBufferMonths,
@@ -81,6 +89,7 @@ export class ResultsPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly store = inject(ScenarioFormStore);
+  private readonly comparison = inject(ScenarioComparisonStore);
 
   private readonly stopPolling$ = new Subject<void>();
 
@@ -91,6 +100,7 @@ export class ResultsPage {
   protected readonly result = signal<OptimizationResult | null>(null);
   protected readonly error = signal<ApiError | null>(null);
   protected readonly failure = signal<{ code: string | null; message: string | null } | null>(null);
+  protected readonly comparisonNotice = signal('');
 
   constructor() {
     // A cached 200 from the submit call hands the finished result over directly,
@@ -123,8 +133,7 @@ export class ResultsPage {
 
   private seededResult(): OptimizationResult | null {
     const state = this.router.getCurrentNavigation()?.extras?.state as
-      | { result?: OptimizationResult }
-      | undefined;
+      { result?: OptimizationResult } | undefined;
     return state?.result ?? null;
   }
 
@@ -210,11 +219,41 @@ export class ResultsPage {
   });
 
   /** Announced politely while the job is still in flight; never a fake percentage. */
-  protected readonly liveMessage = computed(() =>
-    this.isProcessing()
-      ? interpolate(EN_STRINGS.results.processingLive, { status: this.statusLabel() })
-      : '',
-  );
+  protected readonly liveMessage = computed(() => {
+    if (this.isProcessing()) {
+      return interpolate(EN_STRINGS.results.processingLive, { status: this.statusLabel() });
+    }
+    return this.comparisonNotice();
+  });
+
+  protected readonly isInComparison = computed(() => {
+    const id = this.jobId();
+    return id ? this.comparison.contains(id) : false;
+  });
+
+  protected readonly comparisonIsFull = computed(() => this.comparison.isFull());
+
+  protected addToComparison(): void {
+    const jobId = this.jobId();
+    const result = this.result();
+    if (!jobId || !result) {
+      return;
+    }
+    const outcome = this.comparison.add(jobId, result);
+    switch (outcome.status) {
+      case 'added':
+        this.comparisonNotice.set(EN_STRINGS.results.comparisonAddedLive);
+        break;
+      case 'duplicate':
+        this.comparisonNotice.set(EN_STRINGS.results.comparisonDuplicateLive);
+        break;
+      case 'full':
+        this.comparisonNotice.set(EN_STRINGS.results.comparisonFullLive);
+        break;
+      default:
+        this.comparisonNotice.set('');
+    }
+  }
 
   protected readonly profileTitle = computed(() => {
     const id = profileIdFromName(this.result()?.profile);
