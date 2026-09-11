@@ -34,13 +34,16 @@ import {
   interpolate,
   profileIdFromName,
 } from '../../core/util/format.util';
+import { profileDisplayTitle } from '../../core/util/result-interpretation.util';
 import { AllocationChart } from '../../shared/components/allocation-chart/allocation-chart';
 import { AssumptionSummary } from '../../shared/components/assumption-summary/assumption-summary';
 import { ErrorPanel } from '../../shared/components/error-panel/error-panel';
 import { InfoCallout } from '../../shared/components/info-callout/info-callout';
 import { LoadingIndicator } from '../../shared/components/loading-indicator/loading-indicator';
-import { MetricCard } from '../../shared/components/metric-card/metric-card';
+import { MetricExplanation } from '../../shared/components/metric-explanation/metric-explanation';
 import { PageContainer } from '../../shared/components/page-container/page-container';
+import { ResultNarrative } from '../../shared/components/result-narrative/result-narrative';
+import { ScenarioOverview } from '../../shared/components/scenario-overview/scenario-overview';
 import { SectionHeading } from '../../shared/components/section-heading/section-heading';
 import { SkeletonCard } from '../../shared/components/skeleton-card/skeleton-card';
 import { StatusBadge, type StatusTone } from '../../shared/components/status-badge/status-badge';
@@ -50,13 +53,14 @@ export const POLL_INTERVAL_MS = 2000;
 
 const WELL_IDENTIFIED = 'A_WELL_IDENTIFIED';
 
-interface MetricView {
+interface DiagnosticView {
   key: string;
   label: string;
   value: string;
-  explanation: string;
   unit: string | null;
-  emphasis: boolean;
+  definition: string;
+  howToRead: string;
+  note: string | null;
 }
 
 interface DetailRow {
@@ -73,13 +77,15 @@ interface DetailRow {
     PageContainer,
     SectionHeading,
     AllocationChart,
-    MetricCard,
     StatusBadge,
     InfoCallout,
     ErrorPanel,
     LoadingIndicator,
     SkeletonCard,
     AssumptionSummary,
+    ScenarioOverview,
+    ResultNarrative,
+    MetricExplanation,
   ],
   templateUrl: './results.page.html',
 })
@@ -103,16 +109,12 @@ export class ResultsPage {
   protected readonly comparisonNotice = signal('');
 
   constructor() {
-    // A cached 200 from the submit call hands the finished result over directly,
-    // so there is nothing to poll for.
     const seeded = this.seededResult();
     if (seeded) {
       this.result.set(seeded);
       this.status.set('succeeded');
     }
 
-    // Reading the id from the route (not from component state) is what makes a
-    // browser refresh on /results/:jobId resume the same scenario.
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const jobId = params.get('jobId');
       this.jobId.set(jobId);
@@ -218,7 +220,6 @@ export class ResultsPage {
     }
   });
 
-  /** Announced politely while the job is still in flight; never a fake percentage. */
   protected readonly liveMessage = computed(() => {
     if (this.isProcessing()) {
       return interpolate(EN_STRINGS.results.processingLive, { status: this.statusLabel() });
@@ -255,14 +256,7 @@ export class ResultsPage {
     }
   }
 
-  protected readonly profileTitle = computed(() => {
-    const id = profileIdFromName(this.result()?.profile);
-    if (!id) {
-      return this.result()?.profile ?? '—';
-    }
-    const table = EN_STRINGS.profiles as Record<string, { title: string } | undefined>;
-    return table[id]?.title ?? id;
-  });
+  protected readonly profileTitle = computed(() => profileDisplayTitle(this.result()?.profile));
 
   protected readonly scenarioInputs = computed<OptimizationRequest | null>(() => {
     const result = this.result();
@@ -279,55 +273,56 @@ export class ResultsPage {
     };
   });
 
-  /** Every displayed metric is read straight from the API payload. */
-  protected readonly metrics = computed<MetricView[]>(() => {
+  protected readonly cvar95Value = computed(() => {
+    const result = this.result();
+    return result ? formatMonthsOfIncome(result.cvar95_cumulative_shortfall) : '—';
+  });
+
+  protected readonly diagnostics = computed<DiagnosticView[]>(() => {
     const result = this.result();
     if (!result) {
       return [];
     }
-    const copy = EN_STRINGS.results.metrics;
-    const months = 'months of income';
+    const labels = EN_STRINGS.results.metrics;
+    const copy = EN_STRINGS.results.phase2b.diagnostics;
+    const months = EN_STRINGS.results.phase2b.objectiveUnit;
 
     return [
       {
         key: 'shortfall_probability',
-        label: copy.shortfallProbability.label,
+        label: labels.shortfallProbability.label,
         value: formatPercent(result.shortfall_probability, 2),
-        explanation: copy.shortfallProbability.explanation,
         unit: null,
-        emphasis: true,
-      },
-      {
-        key: 'cvar95_cumulative_shortfall',
-        label: copy.cvar95.label,
-        value: formatMonthsOfIncome(result.cvar95_cumulative_shortfall),
-        explanation: copy.cvar95.explanation,
-        unit: months,
-        emphasis: true,
+        definition: copy.shortfallProbability.definition,
+        howToRead: copy.shortfallProbability.howToRead,
+        note: null,
       },
       {
         key: 'var95_cumulative_shortfall',
-        label: copy.var95.label,
+        label: labels.var95.label,
         value: formatMonthsOfIncome(result.var95_cumulative_shortfall),
-        explanation: copy.var95.explanation,
         unit: months,
-        emphasis: false,
+        definition: copy.var95.definition,
+        howToRead: copy.var95.howToRead,
+        note: result.var95_cumulative_shortfall === 0 ? copy.var95.zeroNote : null,
       },
       {
         key: 'mean_cumulative_shortfall',
-        label: copy.meanShortfall.label,
+        label: labels.meanShortfall.label,
         value: formatMonthsOfIncome(result.mean_cumulative_shortfall),
-        explanation: copy.meanShortfall.explanation,
         unit: months,
-        emphasis: false,
+        definition: copy.meanShortfall.definition,
+        howToRead: copy.meanShortfall.howToRead,
+        note: null,
       },
       {
         key: 'wealth_depletion_probability',
-        label: copy.depletion.label,
+        label: labels.depletion.label,
         value: formatPercent(result.wealth_depletion_probability, 2),
-        explanation: copy.depletion.explanation,
         unit: null,
-        emphasis: false,
+        definition: copy.depletion.definition,
+        howToRead: copy.depletion.howToRead,
+        note: null,
       },
     ];
   });
@@ -412,11 +407,11 @@ export class ResultsPage {
 
   protected runAnother(): void {
     this.store.setStep(0);
-    void this.router.navigate(['/calculator']);
+    void this.router.navigate(['/assessment']);
   }
 
   protected changeAssumptions(): void {
     this.store.setStep(1);
-    void this.router.navigate(['/calculator']);
+    void this.router.navigate(['/assessment']);
   }
 }

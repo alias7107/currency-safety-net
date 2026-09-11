@@ -205,15 +205,18 @@ describe('ResultsPage', () => {
 
     // Scenario 18 (rendered side): metrics come from the payload
     it('renders every metric from the API payload', () => {
+      expect(host().querySelector('[data-testid="objective-value"]')?.textContent).toContain(
+        '0.86',
+      );
+
       const values = Array.from(
-        host().querySelectorAll<HTMLElement>('[data-testid="metric-value"]'),
+        host().querySelectorAll<HTMLElement>('[data-testid="metric-explanation-value"]'),
       ).map((node) => node.textContent!.replace(/\s+/g, ' ').trim());
 
       expect(values[0]).toContain('7.34%');
-      expect(values[1]).toContain('0.86');
-      expect(values[2]).toContain('0.42');
-      expect(values[3]).toContain('0.05');
-      expect(values[4]).toContain('1.25%');
+      expect(values[1]).toContain('0.42');
+      expect(values[2]).toContain('0.05');
+      expect(values[3]).toContain('1.25%');
     });
 
     // Scenario 19 (rendered side): the allocation legend matches the payload
@@ -251,7 +254,7 @@ describe('ResultsPage', () => {
 
       expect(buttons.join(' ')).not.toContain('buy');
       expect(buttons.join(' ')).not.toContain('invest');
-      expect(buttons.some((label) => label.includes('run another scenario'))).toBe(true);
+      expect(buttons.some((label) => label.includes('assessment'))).toBe(true);
     });
 
     it('shows Add to comparison only for succeeded jobs', () => {
@@ -289,6 +292,37 @@ describe('ResultsPage', () => {
       const open = host().querySelector<HTMLAnchorElement>('[data-testid="comparison-open"]');
       expect(open?.getAttribute('href')).toContain('/compare');
     });
+
+    it('presents Phase 2B interpretation without invented advice', () => {
+      expect(host().querySelector('[data-testid="scenario-overview"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="result-narrative"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="primary-objective"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="diagnostics"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="what-next"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="result-limitations"]')).toBeTruthy();
+
+      expect(text()).toContain(EN_STRINGS.results.phase2b.objectiveHeading);
+      expect(text()).toContain(EN_STRINGS.results.phase2b.objectiveBody);
+      expect(text()).toContain(EN_STRINGS.results.phase2b.diagnosticsBody);
+      expect(text()).toContain(EN_STRINGS.profiles.P2.title);
+      expect(text()).not.toContain('P2_foreign_income_mismatch');
+
+      const lowered = text().toLowerCase();
+      expect(lowered).not.toContain('resilience score');
+      expect(lowered).not.toContain('low risk');
+      expect(lowered).not.toContain('high risk');
+      expect(lowered).not.toContain('buy currency');
+      expect(text()).toContain(EN_STRINGS.results.phase2b.limitationsPoints[3]);
+    });
+
+    it('describes wealth depletion as an end-of-horizon terminal measure', () => {
+      const depletion = host().querySelector('[data-metric="wealth_depletion_probability"]');
+      const copy = (depletion?.textContent ?? '').replace(/\s+/g, ' ');
+      expect(copy).toContain(EN_STRINGS.results.phase2b.diagnostics.depletion.definition);
+      expect(copy.toLowerCase()).toContain('end of the horizon');
+      expect(copy.toLowerCase()).not.toContain('before the horizon ended');
+      expect(copy.toLowerCase()).not.toContain('at some point');
+    });
   });
 
   it('does not show comparison actions while the job is still processing', async () => {
@@ -298,6 +332,41 @@ describe('ResultsPage', () => {
     fixture.detectChanges();
     expect(host().querySelector('[data-testid="results-comparison"]')).toBeNull();
     expect(host().querySelector('[data-testid="comparison-add"]')).toBeNull();
+    expect(host().querySelector('[data-testid="scenario-overview"]')).toBeNull();
     http.match(JOB_URL).forEach((request) => request.flush(jobStatus('running')));
+  });
+
+  it('derives narrative and ratio observation from arbitrary mocked payloads', async () => {
+    create();
+    await tick(0);
+    http.expectOne(JOB_URL).flush(
+      jobStatus('succeeded', {
+        result: {
+          ...OPTIMIZATION_RESULT,
+          profile: 'P1_local_control',
+          expense_income_ratio: 1.05,
+          weights: [0.05, 0.15, 0.8],
+          var95_cumulative_shortfall: 0,
+          cvar95_cumulative_shortfall: 1.23,
+          horizon_years: 7,
+          buffer_months: 9,
+          model_version: 'fixture-alpha',
+          data_as_of: '2018-03-01',
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    expect(text()).toContain(EN_STRINGS.profiles.P1.title);
+    expect(text()).toContain(EN_STRINGS.results.phase2b.ratioObservationAbove);
+    expect(text()).toContain('Euro');
+    expect(text()).toContain('80%');
+    expect(text()).toContain('1.23');
+    expect(host().querySelector('[data-testid="metric-explanation-note"]')?.textContent).toContain(
+      EN_STRINGS.results.phase2b.diagnostics.var95.zeroNote,
+    );
+    expect(text().toLowerCase()).not.toMatch(/\bwithout risk\b|\bno risk at all\b/);
+    expect(text()).not.toContain('P1_local_control');
+    http.verify();
   });
 });

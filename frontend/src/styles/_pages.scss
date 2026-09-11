@@ -756,6 +756,115 @@
   border-top: 1px solid var(--color-border);
 }
 
+.panel--objective {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.objective__value {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.objective__label {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.objective__number {
+  font-size: var(--text-2xl);
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.objective__unit {
+  margin-left: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.scenario-overview__ratio {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  max-width: 64ch;
+}
+
+.metric-explanation-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 767px) {
+  .metric-explanation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-explanation {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.metric-explanation__label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.metric-explanation__value {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: 720;
+}
+
+.metric-explanation__unit {
+  margin-left: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.metric-explanation__definition,
+.metric-explanation__note {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.metric-explanation__details {
+  margin-top: var(--space-2);
+}
+
+.metric-explanation__details summary {
+  min-height: var(--tap-target);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--color-accent);
+}
+
+.metric-explanation__details summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.metric-explanation__details p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
 .list {
   margin: 0;
   padding-inline-start: 1.2rem;

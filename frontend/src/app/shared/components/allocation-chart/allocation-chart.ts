@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
+import { ALLOCATION_CURRENCY_ORDER } from '../../../core/api/allocation-currencies';
 import type { CurrencyCode } from '../../../core/api/models';
 import { EN_STRINGS } from '../../../core/i18n/en';
 import { formatWeight } from '../../../core/util/format.util';
 
-/** Weights always arrive from the API in this order. */
-export const ALLOCATION_CURRENCIES: readonly CurrencyCode[] = ['KZT', 'USD', 'EUR'] as const;
+/** Re-export canonical weight order for existing imports. */
+export const ALLOCATION_CURRENCIES = ALLOCATION_CURRENCY_ORDER;
 
 const DONUT_RADIUS = 56;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
@@ -120,7 +121,11 @@ export interface AllocationSegment {
                   [style.background-color]="'var(--color-' + segment.code.toLowerCase() + ')'"
                 >
                   <svg class="allocation__bar-pattern" aria-hidden="true" focusable="false">
-                    <rect width="100%" height="100%" [attr.fill]="'url(#' + segment.patternId + ')'" />
+                    <rect
+                      width="100%"
+                      height="100%"
+                      [attr.fill]="'url(#' + segment.patternId + ')'"
+                    />
                   </svg>
                 </span>
               }
@@ -194,9 +199,7 @@ export class AllocationChart {
 
   /** Full spoken description so the graphic is not the only source of truth. */
   readonly ariaLabel = computed(() => {
-    const parts = this.segments().map(
-      (segment) => `${segment.name} ${segment.percentText}`,
-    );
+    const parts = this.segments().map((segment) => `${segment.name} ${segment.percentText}`);
     const prefix = this.label() ?? EN_STRINGS.results.allocationChartLabel;
     return `${prefix}: ${parts.join(', ')}`;
   });
