@@ -24,6 +24,8 @@ export const EN_STRINGS = {
     whoItHelps: 'Who it helps',
     research: 'Research',
     assessment: 'Assessment',
+    compare: 'Compare',
+    compareWithCount: 'Compare ({count})',
     primaryAction: 'Check my resilience',
   },
 
@@ -104,8 +106,7 @@ export const EN_STRINGS = {
   },
 
   landing: {
-    heroTitle:
-      'Would your emergency fund still protect your household when exchange rates move?',
+    heroTitle: 'Would your emergency fund still protect your household when exchange rates move?',
     heroBody:
       'Choose the household situation closest to yours and explore how different currency mixes and buffer sizes perform across thousands of simulated exchange-rate scenarios.',
     heroCta: 'Check my resilience',
@@ -189,6 +190,7 @@ export const EN_STRINGS = {
       'The product does not connect to a bank.',
       'Names and contact details are not requested.',
       'An unfinished form is kept in your browser session only.',
+      'Saved comparison scenarios stay in the current browser session only.',
       'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
     ],
 
@@ -382,6 +384,15 @@ export const EN_STRINGS = {
     actionChangeAssumptions: 'Change assumptions',
     actionMethodology: 'Read the methodology',
 
+    comparisonAdd: 'Add to comparison',
+    comparisonSaved: 'Saved for comparison',
+    comparisonFull:
+      'Three scenarios are already saved for comparison. Open Compare to review or remove one before adding another.',
+    comparisonOpen: 'Compare scenarios',
+    comparisonAddedLive: 'Scenario saved for comparison.',
+    comparisonDuplicateLive: 'This scenario is already saved for comparison.',
+    comparisonFullLive: 'Comparison is full. Remove a scenario on the Compare page first.',
+
     failedTitle: 'Scenario could not be completed',
     failedBody: 'The model run did not finish. You can adjust your inputs and try again.',
     notFoundTitle: 'Scenario not found',
@@ -506,6 +517,65 @@ export const EN_STRINGS = {
     metadataUnavailableTitle: 'Model details temporarily unavailable',
     metadataUnavailableBody:
       'Live model metadata could not be loaded. The methodology above remains available, and you can try again.',
+  },
+
+  compare: {
+    title: 'Compare modelled scenarios',
+    documentTitle: 'Compare scenarios',
+    intro:
+      'Side-by-side view of saved model outputs. No new optimisation runs on this page — only results you already completed.',
+    scopeCallout:
+      'This comparison shows differences between modelled scenarios. It does not determine which option is personally suitable and is not financial advice.',
+    readingHeading: 'How to read this comparison',
+    readingPoints: [
+      'Each allocation minimises CVaR95 cumulative shortfall for that scenario’s inputs.',
+      'Other risk figures are diagnostics reported alongside the objective, not alternative optimisation targets.',
+      'Lower numerical values mean lower modelled values for that metric. A lower value is not a personal recommendation.',
+      'Scenarios with different assumptions are not controlled experimental comparisons.',
+    ],
+    emptyBody:
+      'Run a scenario and save its result to compare how different assumptions change the modelled allocation and shortfall-risk measures.',
+    emptyCta: 'Open the assessment',
+    oneHeading: 'One scenario saved',
+    oneBody:
+      'Save at least one more completed result to see a side-by-side comparison of modelled allocations and shortfall-risk measures.',
+    oneCta: 'Add another scenario',
+    clear: 'Clear comparison',
+    clearConfirmTitle: 'Clear all saved scenarios?',
+    clearConfirmBody:
+      'This removes every scenario from the comparison list in this browser session. Individual results remain available if you still have their links.',
+    clearConfirmAction: 'Clear all',
+    clearCancel: 'Keep scenarios',
+    remove: 'Remove from comparison',
+    removeAria: 'Remove {label} from comparison',
+    scenarioLabel: 'Scenario {number} — {profile}',
+    profileUnavailable: 'Profile unavailable',
+    metricColumn: 'Metric',
+    provenanceWarningHeading: 'Different model provenance',
+    provenanceWarningBody:
+      'These saved scenarios were produced under different model versions or FX data-as-of dates. Differences are still shown, but they are not directly comparable without that qualification.',
+    labels: {
+      horizon: 'Horizon',
+      ratio: 'Expense-to-income ratio',
+      buffer: 'Starting buffer',
+      rebalance: 'Rebalancing frequency',
+      conversion: 'Conversion cost',
+      allocation: 'Modelled allocation',
+      shortfallProbability: 'Shortfall probability',
+      cvar95: 'CVaR95 cumulative shortfall',
+      var95: 'VaR95 cumulative shortfall',
+      meanShortfall: 'Mean cumulative shortfall',
+      depletion: 'Buffer-depletion probability',
+      identification: 'Identification / stability',
+      modelVersion: 'Model version',
+      dataAsOf: 'FX data as of',
+      paths: 'Simulation paths',
+      seed: 'Simulation seed',
+      monthsOfIncome: 'months of income',
+    },
+    allocationText: 'KZT {kzt}, USD {usd}, EUR {eur}',
+    clearedLive: 'Comparison cleared.',
+    removedLive: 'Scenario removed from comparison.',
   },
 
   errors: {

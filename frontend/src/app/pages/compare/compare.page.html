@@ -1,0 +1,238 @@
+<section class="section section--tight">
+  <app-page-container>
+    <p class="visually-hidden" aria-live="polite" data-testid="compare-live">{{ liveMessage() }}</p>
+
+    <div
+      class="stack stack--6"
+      data-testid="compare-page"
+      [attr.inert]="confirmClear() ? '' : null"
+      [attr.aria-hidden]="confirmClear() ? true : null"
+    >
+      <app-section-heading
+        headingId="compare-title"
+        [level]="1"
+        [eyebrow]="strings.app.name"
+        [heading]="strings.compare.title"
+        [body]="strings.compare.intro"
+      />
+
+      <app-info-callout tone="accent" data-testid="compare-scope">
+        <p>{{ strings.compare.scopeCallout }}</p>
+      </app-info-callout>
+
+      <section class="stack stack--3" aria-labelledby="compare-reading-title">
+        <h2 id="compare-reading-title" class="section-heading__title">
+          {{ strings.compare.readingHeading }}
+        </h2>
+        <ul class="list">
+          @for (point of strings.compare.readingPoints; track point) {
+            <li>{{ point }}</li>
+          }
+        </ul>
+      </section>
+
+      @if (provenanceMismatch()) {
+        <app-info-callout tone="warning" data-testid="provenance-warning">
+          <p>
+            <strong>{{ strings.compare.provenanceWarningHeading }}</strong>
+            {{ strings.compare.provenanceWarningBody }}
+          </p>
+        </app-info-callout>
+      }
+
+      @if (isEmpty()) {
+        <div class="panel stack stack--4" data-testid="compare-empty">
+          <p>{{ strings.compare.emptyBody }}</p>
+          <div>
+            <a
+              class="button button--primary"
+              routerLink="/assessment"
+              data-testid="compare-empty-cta"
+            >
+              {{ strings.compare.emptyCta }}
+            </a>
+          </div>
+        </div>
+      } @else if (count() === 1) {
+        <div class="stack stack--4" data-testid="compare-one">
+          <div class="panel stack stack--4">
+            <p>{{ strings.compare.oneBody }}</p>
+            <div>
+              <a
+                class="button button--primary"
+                routerLink="/assessment"
+                data-testid="compare-one-cta"
+              >
+                {{ strings.compare.oneCta }}
+              </a>
+            </div>
+          </div>
+          @for (scenario of scenarios(); track scenario.jobId; let i = $index) {
+            <article
+              class="panel compare-card"
+              [attr.data-testid]="'compare-card-' + scenario.jobId"
+              [attr.aria-label]="scenarioLabels()[i]"
+            >
+              <div class="compare-card__header">
+                <h2 class="compare-card__title">{{ scenarioLabels()[i] }}</h2>
+                <button
+                  type="button"
+                  class="button button--ghost"
+                  [attr.aria-label]="removeAria(scenarioLabels()[i])"
+                  data-testid="compare-remove"
+                  (click)="remove(scenario.jobId)"
+                >
+                  {{ strings.compare.remove }}
+                </button>
+              </div>
+              <app-allocation-chart [weights]="scenario.weights" />
+              <p class="compare-card__allocation" data-testid="compare-allocation-text">
+                {{ allocationText(scenario.weights) }}
+              </p>
+              <dl class="detail-grid">
+                @for (row of metricRows(); track row.key) {
+                  <div class="detail-grid__row" [attr.data-metric]="row.key">
+                    <dt class="detail-grid__term">{{ row.label }}</dt>
+                    <dd class="detail-grid__value">{{ row.values[0] }}</dd>
+                  </div>
+                }
+              </dl>
+            </article>
+          }
+          <div>
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="compare-clear"
+              (click)="openClearConfirm($event)"
+            >
+              {{ strings.compare.clear }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="stack stack--4" data-testid="compare-multi">
+          <div class="compare-toolbar">
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="compare-clear"
+              (click)="openClearConfirm($event)"
+            >
+              {{ strings.compare.clear }}
+            </button>
+            <a class="button button--ghost" routerLink="/assessment">{{
+              strings.compare.oneCta
+            }}</a>
+          </div>
+
+          <div
+            class="compare-grid"
+            [style.--compare-cols]="count()"
+            role="region"
+            [attr.aria-label]="strings.compare.title"
+          >
+            @for (scenario of scenarios(); track scenario.jobId; let i = $index) {
+              <article
+                class="panel compare-card"
+                [attr.data-testid]="'compare-card-' + scenario.jobId"
+                [attr.aria-label]="scenarioLabels()[i]"
+              >
+                <div class="compare-card__header">
+                  <h2 class="compare-card__title">{{ scenarioLabels()[i] }}</h2>
+                  <button
+                    type="button"
+                    class="button button--ghost"
+                    [attr.aria-label]="removeAria(scenarioLabels()[i])"
+                    data-testid="compare-remove"
+                    (click)="remove(scenario.jobId)"
+                  >
+                    {{ strings.compare.remove }}
+                  </button>
+                </div>
+                <app-allocation-chart [weights]="scenario.weights" />
+                <p class="compare-card__allocation" data-testid="compare-allocation-text">
+                  {{ allocationText(scenario.weights) }}
+                </p>
+                <dl class="detail-grid compare-card__metrics-mobile">
+                  @for (row of metricRows(); track row.key) {
+                    <div class="detail-grid__row" [attr.data-metric]="row.key">
+                      <dt class="detail-grid__term">{{ row.label }}</dt>
+                      <dd class="detail-grid__value">{{ row.values[i] }}</dd>
+                    </div>
+                  }
+                </dl>
+              </article>
+            }
+          </div>
+
+          <div
+            class="compare-metrics"
+            [style.--compare-cols]="count()"
+            role="table"
+            [attr.aria-label]="strings.compare.title"
+            data-testid="compare-metrics-table"
+          >
+            <div class="compare-metrics__row compare-metrics__row--header" role="row">
+              <div class="compare-metrics__label" role="columnheader">
+                {{ strings.compare.metricColumn }}
+              </div>
+              @for (label of scenarioLabels(); track $index) {
+                <div
+                  class="compare-metrics__cell compare-metrics__cell--header"
+                  role="columnheader"
+                  data-testid="compare-column-header"
+                >
+                  {{ label }}
+                </div>
+              }
+            </div>
+            @for (row of metricRows(); track row.key) {
+              <div class="compare-metrics__row" role="row" [attr.data-metric]="row.key">
+                <div class="compare-metrics__label" role="rowheader">{{ row.label }}</div>
+                @for (value of row.values; track $index) {
+                  <div class="compare-metrics__cell" role="cell">{{ value }}</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (confirmClear()) {
+      <div
+        #clearDialog
+        class="compare-confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="compare-clear-title"
+        data-testid="compare-clear-dialog"
+      >
+        <div class="panel stack stack--4">
+          <h2 id="compare-clear-title" tabindex="-1">{{ strings.compare.clearConfirmTitle }}</h2>
+          <p>{{ strings.compare.clearConfirmBody }}</p>
+          <div class="compare-toolbar">
+            <button
+              #clearConfirmButton
+              type="button"
+              class="button button--primary"
+              data-testid="compare-clear-confirm"
+              (click)="confirmClearAll()"
+            >
+              {{ strings.compare.clearConfirmAction }}
+            </button>
+            <button
+              type="button"
+              class="button button--ghost"
+              data-testid="compare-clear-cancel"
+              (click)="cancelClear()"
+            >
+              {{ strings.compare.clearCancel }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </app-page-container>
+</section>

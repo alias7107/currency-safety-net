@@ -20,9 +20,18 @@ import { PageContainer } from '../page-container/page-container';
           <div class="stack stack--3">
             <h2 class="app-footer__heading">{{ strings.footer.linksHeading }}</h2>
             <ul class="app-footer__links">
-              <li><a routerLink="/">{{ strings.nav.home }}</a></li>
-              <li><a routerLink="/assessment">{{ strings.nav.assessment }}</a></li>
-              <li><a routerLink="/research">{{ strings.nav.research }}</a></li>
+              <li>
+                <a routerLink="/">{{ strings.nav.home }}</a>
+              </li>
+              <li>
+                <a routerLink="/assessment">{{ strings.nav.assessment }}</a>
+              </li>
+              <li>
+                <a routerLink="/compare">{{ strings.nav.compare }}</a>
+              </li>
+              <li>
+                <a routerLink="/research">{{ strings.nav.research }}</a>
+              </li>
             </ul>
           </div>
         </div>

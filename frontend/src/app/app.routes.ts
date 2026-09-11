@@ -12,8 +12,7 @@ export const routes: Routes = [
   {
     path: 'assessment',
     title: `${EN_STRINGS.calculator.title} — ${EN_STRINGS.app.name}`,
-    loadComponent: () =>
-      import('./pages/calculator/calculator.page').then((m) => m.CalculatorPage),
+    loadComponent: () => import('./pages/calculator/calculator.page').then((m) => m.CalculatorPage),
   },
   {
     path: 'calculator',
@@ -24,6 +23,11 @@ export const routes: Routes = [
     path: 'results/:jobId',
     title: `${EN_STRINGS.results.title} — ${EN_STRINGS.app.name}`,
     loadComponent: () => import('./pages/results/results.page').then((m) => m.ResultsPage),
+  },
+  {
+    path: 'compare',
+    title: `${EN_STRINGS.compare.documentTitle} — ${EN_STRINGS.app.name}`,
+    loadComponent: () => import('./pages/compare/compare.page').then((m) => m.ComparePage),
   },
   {
     path: 'research',

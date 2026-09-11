@@ -5,12 +5,8 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { BehaviorSubject } from 'rxjs';
 
 import { EN_STRINGS } from '../../core/i18n/en';
-import {
-  OPTIMIZATION_RESULT,
-  TEST_JOB_ID,
-  errorBody,
-  jobStatus,
-} from '../../testing/fixtures';
+import { ScenarioComparisonStore } from '../../core/state/scenario-comparison.store';
+import { OPTIMIZATION_RESULT, TEST_JOB_ID, errorBody, jobStatus } from '../../testing/fixtures';
 import { POLL_INTERVAL_MS, ResultsPage } from './results.page';
 
 const JOB_URL = `/api/v1/optimization-jobs/${TEST_JOB_ID}/`;
@@ -116,14 +112,12 @@ describe('ResultsPage', () => {
     create();
 
     await tick(0);
-    http
-      .expectOne(JOB_URL)
-      .flush(
-        jobStatus('failed', {
-          error_code: 'optimization_failed',
-          error_message: 'The optimization could not be completed.',
-        }),
-      );
+    http.expectOne(JOB_URL).flush(
+      jobStatus('failed', {
+        error_code: 'optimization_failed',
+        error_message: 'The optimization could not be completed.',
+      }),
+    );
     fixture.detectChanges();
 
     expect(text()).toContain(EN_STRINGS.results.failedTitle);
@@ -184,12 +178,10 @@ describe('ResultsPage', () => {
     create();
 
     await tick(0);
-    http
-      .expectOne(JOB_URL)
-      .flush(errorBody('not_found', 'Optimization job not found.'), {
-        status: 404,
-        statusText: 'Not Found',
-      });
+    http.expectOne(JOB_URL).flush(errorBody('not_found', 'Optimization job not found.'), {
+      status: 404,
+      statusText: 'Not Found',
+    });
     fixture.detectChanges();
 
     expect(text()).toContain(EN_STRINGS.errors.notFoundTitle);
@@ -227,9 +219,7 @@ describe('ResultsPage', () => {
     // Scenario 19 (rendered side): the allocation legend matches the payload
     it('renders the allocation exactly as returned by the model', () => {
       const values = Array.from(
-        host().querySelectorAll<HTMLElement>(
-          '[data-testid="allocation-legend-value"]',
-        ),
+        host().querySelectorAll<HTMLElement>('[data-testid="allocation-legend-value"]'),
       ).map((node) => node.textContent!.trim());
 
       expect(values).toEqual(['62%', '27%', '11%']);
@@ -255,13 +245,59 @@ describe('ResultsPage', () => {
     });
 
     it('offers only scenario actions, never a transaction', () => {
-      const buttons = Array.from(
-        host().querySelectorAll<HTMLElement>('button, a.button'),
-      ).map((node) => node.textContent!.toLowerCase());
+      const buttons = Array.from(host().querySelectorAll<HTMLElement>('button, a.button')).map(
+        (node) => node.textContent!.toLowerCase(),
+      );
 
       expect(buttons.join(' ')).not.toContain('buy');
       expect(buttons.join(' ')).not.toContain('invest');
       expect(buttons.some((label) => label.includes('run another scenario'))).toBe(true);
     });
+
+    it('shows Add to comparison only for succeeded jobs', () => {
+      expect(host().querySelector('[data-testid="comparison-add"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="results-comparison"]')).toBeTruthy();
+    });
+
+    it('saves the API result into the comparison store', () => {
+      host().querySelector<HTMLButtonElement>('[data-testid="comparison-add"]')!.click();
+      fixture.detectChanges();
+      const comparison = TestBed.inject(ScenarioComparisonStore);
+      expect(comparison.contains(TEST_JOB_ID)).toBe(true);
+      expect(comparison.scenarios()[0]?.weights).toEqual(OPTIMIZATION_RESULT.weights);
+      expect(host().querySelector('[data-testid="comparison-saved"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="comparison-open"]')).toBeTruthy();
+    });
+
+    it('shows the duplicate saved state without adding another copy', () => {
+      const comparison = TestBed.inject(ScenarioComparisonStore);
+      comparison.add(TEST_JOB_ID, OPTIMIZATION_RESULT);
+      fixture.detectChanges();
+      expect(host().querySelector('[data-testid="comparison-saved"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="comparison-add"]')).toBeNull();
+      expect(comparison.count()).toBe(1);
+    });
+
+    it('explains when comparison is full and links to compare', () => {
+      const comparison = TestBed.inject(ScenarioComparisonStore);
+      comparison.add('other-1', OPTIMIZATION_RESULT);
+      comparison.add('other-2', OPTIMIZATION_RESULT);
+      comparison.add('other-3', OPTIMIZATION_RESULT);
+      fixture.detectChanges();
+      expect(host().querySelector('[data-testid="comparison-full"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="comparison-add"]')).toBeNull();
+      const open = host().querySelector<HTMLAnchorElement>('[data-testid="comparison-open"]');
+      expect(open?.getAttribute('href')).toContain('/compare');
+    });
+  });
+
+  it('does not show comparison actions while the job is still processing', async () => {
+    create();
+    await tick(0);
+    http.expectOne(JOB_URL).flush(jobStatus('running'));
+    fixture.detectChanges();
+    expect(host().querySelector('[data-testid="results-comparison"]')).toBeNull();
+    expect(host().querySelector('[data-testid="comparison-add"]')).toBeNull();
+    http.match(JOB_URL).forEach((request) => request.flush(jobStatus('running')));
   });
 });

@@ -3,12 +3,16 @@ import {
   Component,
   ElementRef,
   HostListener,
+  computed,
+  inject,
   viewChild,
   signal,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { EN_STRINGS } from '../../../core/i18n/en';
+import { ScenarioComparisonStore } from '../../../core/state/scenario-comparison.store';
+import { interpolate } from '../../../core/util/format.util';
 import { PageContainer } from '../page-container/page-container';
 
 @Component({
@@ -96,6 +100,14 @@ import { PageContainer } from '../page-container/page-container';
               >{{ strings.nav.research }}</a
             >
             <a
+              class="app-header__link"
+              routerLink="/compare"
+              routerLinkActive="is-active"
+              data-testid="nav-compare"
+              (click)="closeMenu()"
+              >{{ compareNavLabel() }}</a
+            >
+            <a
               class="button button--primary app-header__cta"
               routerLink="/assessment"
               data-testid="nav-primary-cta"
@@ -110,9 +122,17 @@ import { PageContainer } from '../page-container/page-container';
 })
 export class AppHeader {
   private readonly menuToggle = viewChild<ElementRef<HTMLButtonElement>>('menuToggle');
+  private readonly comparison = inject(ScenarioComparisonStore);
 
   protected readonly strings = EN_STRINGS;
   protected readonly menuOpen = signal(false);
+
+  protected readonly compareNavLabel = computed(() => {
+    const count = this.comparison.count();
+    return count > 0
+      ? interpolate(EN_STRINGS.nav.compareWithCount, { count })
+      : EN_STRINGS.nav.compare;
+  });
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);

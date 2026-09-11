@@ -173,7 +173,10 @@
         }
 
         <section aria-labelledby="actions-title" class="panel">
-          <app-section-heading headingId="actions-title" [heading]="strings.results.actionsHeading" />
+          <app-section-heading
+            headingId="actions-title"
+            [heading]="strings.results.actionsHeading"
+          />
           <div class="results__actions">
             <button type="button" class="button button--primary" (click)="runAnother()">
               {{ strings.results.actionRunAnother }}
@@ -181,9 +184,40 @@
             <button type="button" class="button button--secondary" (click)="changeAssumptions()">
               {{ strings.results.actionChangeAssumptions }}
             </button>
-            <a class="button button--ghost" routerLink="/methodology">{{
+            <a class="button button--ghost" routerLink="/research">{{
               strings.results.actionMethodology
             }}</a>
+          </div>
+
+          <div class="results__comparison stack stack--3" data-testid="results-comparison">
+            @if (isInComparison()) {
+              <p data-testid="comparison-saved">{{ strings.results.comparisonSaved }}</p>
+              <a
+                class="button button--secondary"
+                routerLink="/compare"
+                data-testid="comparison-open"
+              >
+                {{ strings.results.comparisonOpen }}
+              </a>
+            } @else if (comparisonIsFull()) {
+              <p data-testid="comparison-full">{{ strings.results.comparisonFull }}</p>
+              <a
+                class="button button--secondary"
+                routerLink="/compare"
+                data-testid="comparison-open"
+              >
+                {{ strings.results.comparisonOpen }}
+              </a>
+            } @else {
+              <button
+                type="button"
+                class="button button--secondary"
+                data-testid="comparison-add"
+                (click)="addToComparison()"
+              >
+                {{ strings.results.comparisonAdd }}
+              </button>
+            }
           </div>
         </section>
       </div>
