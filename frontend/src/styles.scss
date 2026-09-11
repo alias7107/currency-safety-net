@@ -1,0 +1,12 @@
+/**
+ * Global stylesheet for Currency Safety Net.
+ *
+ * Component styling lives here rather than in per-component files so that the
+ * design tokens are shared and component style budgets stay small.
+ */
+
+@use './styles/tokens';
+@use './styles/base';
+@use './styles/layout';
+@use './styles/components';
+@use './styles/pages';

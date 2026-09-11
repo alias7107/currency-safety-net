@@ -135,6 +135,13 @@ def test_options_endpoint(api_client):
     ids = {p["id"] for p in body["profiles"]}
     assert ids == {"P1", "P2", "P3", "P4"}
     assert body["horizons_years"] == [1, 3, 5]
+    assert body["expense_income_ratio"]["documented_values"] == [0.80, 0.95, 1.05]
+    assert body["expense_income_ratio"]["default"] == 0.95
+    assert body["buffer_months"]["documented_values"] == [1, 3, 6, 12]
+    assert body["buffer_months"]["default"] == 1
+    assert body["conversion_cost"]["documented_values"] == [0.0, 0.0025, 0.005, 0.01]
+    assert body["conversion_cost"]["default"] == 0.0
+    assert body["rebalance_frequencies"] == ["monthly", "quarterly", "none"]
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=False)

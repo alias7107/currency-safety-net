@@ -11,7 +11,8 @@ This repository currently ships:
 
 - `backend/research_engine` — verified calculation package
 - `backend/calculations` — Django REST API + Celery job orchestration
-- `frontend/` — placeholder for a future Angular client
+- `frontend/` — Angular 22 client (scenario calculator MVP)
+- `.node-version` — Node.js 24 pin for the frontend toolchain
 
 Outputs are **research-based scenario results**. They are **not** real-time
 exchange-rate forecasts and **not** individualized financial advice.
@@ -129,8 +130,67 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/optimization-jobs/ \
 Clients must not send `n_paths`, `seed`, `_fx_bundle`, `model_version`, or
 dataset paths. Those values are fixed by the verified model.
 
+Frontend (Angular MVP)
+----------------------
+
+Requirements:
+
+- Node.js **24** (see root `.node-version`; Angular 22 supports
+  `^22.22.3 || ^24.15.0 || ^26.0.0`)
+- npm (bundled with Node)
+- Angular 22 standalone application in `frontend/`
+
+Install and start the development server (API calls are proxied):
+
+```bash
+cd frontend
+npm install
+npm start
+# equivalent: npx ng serve --proxy-config proxy.conf.json
+```
+
+`frontend/proxy.conf.json` forwards `/api` to `http://127.0.0.1:8000`.
+The UI always calls relative URLs under `/api/v1` — never hard-code a
+production hostname in components.
+
+| Command | Purpose |
+|---|---|
+| `npm start` | Dev server on `http://localhost:4200` with API proxy |
+| `npm test -- --watch=false` | Unit tests (Vitest; HTTP mocked) |
+| `npm run build` | Production build to `frontend/dist/` |
+
+Routes:
+
+| Path | Page |
+|---|---|
+| `/` | Landing |
+| `/calculator` | Guided scenario calculator |
+| `/results/:jobId` | Processing / completed scenario result |
+| `/methodology` | Methodology and limitations |
+
+Local full-stack startup order:
+
+1. Start Redis (`docker compose up -d redis` or `brew services start redis`)
+2. Apply migrations and run Django (`python manage.py runserver`)
+3. Start the Celery worker (`celery -A project worker ...`)
+4. Start Angular (`cd frontend && npm start`)
+5. Open `http://localhost:4200`
+
+Design and accessibility notes:
+
+- Calm consumer-finance visual system using CSS custom properties in
+  `frontend/src/styles/_tokens.scss` (no remote fonts or stock images)
+- English copy is centralised in `frontend/src/app/core/i18n/en.ts` for
+  later RU/KK localization
+- Results language describes **model allocations** and **modeled shortfall
+  risk** — never forecasts, advice, or guaranteed outcomes
+- Keyboard navigation, visible focus, 44 px targets, `aria-live` for
+  processing/errors, and `prefers-reduced-motion` are required behaviours
+
 Tests
 -----
+
+Backend:
 
 ```bash
 cd backend
@@ -141,6 +201,13 @@ CELERY_TASK_ALWAYS_EAGER=True pytest -m "not slow"
 
 # Including verified P2/P4 engine regression gates (~30+ seconds)
 CELERY_TASK_ALWAYS_EAGER=True pytest
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm test -- --watch=false
 ```
 
 Environment
@@ -183,6 +250,5 @@ Scope notes
 - Authentication is not implemented yet.
 - DRF throttling is in-memory and **development-only**; production should use
   Redis-backed throttling after deployment architecture is finalized.
-- The Angular frontend is not built in this phase.
 - Scientific formulas, seeds, path counts, and optimization constraints in
   `research_engine` must not be altered to make products “easier”.
