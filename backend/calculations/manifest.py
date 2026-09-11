@@ -23,6 +23,11 @@ from research_engine.api import (
     SUPPORTED_REBALANCE_FREQUENCIES,
     _model_version,
 )
+from research_engine.config import (
+    HH_BUFFER_MONTHS,
+    HH_EXPENSE_INCOME_RATIOS,
+    ROB_CONVERSION_COSTS,
+)
 from research_engine.household.profiles import PRIMARY_PROFILES
 
 PROFILE_DESCRIPTIONS = {
@@ -123,6 +128,10 @@ def public_metadata() -> dict[str, Any]:
 
 
 def public_options() -> dict[str, Any]:
+    baseline = load_manifest().get("baseline_parameters", {})
+    expense_defaults = list(HH_EXPENSE_INCOME_RATIOS)
+    buffer_defaults = list(HH_BUFFER_MONTHS)
+    conversion_defaults = list(ROB_CONVERSION_COSTS)
     return {
         "profiles": [
             {
@@ -136,20 +145,23 @@ def public_options() -> dict[str, Any]:
         "expense_income_ratio": {
             "min": EXPENSE_INCOME_RATIO_MIN,
             "max": EXPENSE_INCOME_RATIO_MAX,
-            "default": 0.95,
+            "default": float(
+                baseline.get("expense_income_ratio", expense_defaults[1])
+            ),
+            "documented_values": expense_defaults,
         },
         "buffer_months": {
             "min": BUFFER_MONTHS_MIN,
             "max": BUFFER_MONTHS_MAX,
-            "default": 1,
-            "documented_values": [1, 3, 6, 12],
+            "default": float(baseline.get("buffer_months", buffer_defaults[0])),
+            "documented_values": buffer_defaults,
         },
         "rebalance_frequencies": list(SUPPORTED_REBALANCE_FREQUENCIES),
         "conversion_cost": {
             "min": CONVERSION_COST_MIN,
             "max": CONVERSION_COST_MAX,
-            "default": 0.0,
-            "documented_values": [0.0, 0.0025, 0.005, 0.01],
+            "default": float(baseline.get("conversion_cost", conversion_defaults[0])),
+            "documented_values": conversion_defaults,
         },
         "currencies": ["KZT", "USD", "EUR"],
     }

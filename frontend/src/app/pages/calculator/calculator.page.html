@@ -1,0 +1,289 @@
+<section class="section section--tight">
+  <app-page-container>
+    <app-section-heading
+      [level]="1"
+      headingId="calculator-title"
+      [heading]="strings.calculator.title"
+      [body]="strings.calculator.intro"
+    />
+
+    <app-step-indicator
+      [steps]="steps"
+      [currentIndex]="step()"
+      [label]="strings.calculator.title"
+    />
+
+    <div class="calculator__grid">
+      <div class="calculator__main">
+        @if (optionsError(); as error) {
+          <app-error-panel [error]="error" (retry)="loadOptions()" />
+        } @else if (optionsLoading()) {
+          <div class="stack stack--4">
+            <app-loading-indicator [label]="strings.common.loadingOptions" />
+            <app-skeleton-card [lines]="4" />
+            <app-skeleton-card [lines]="3" />
+          </div>
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="runScenario()" novalidate>
+            @switch (step()) {
+              @case (0) {
+                <fieldset class="fieldset">
+                  <legend class="fieldset__legend">
+                    <span class="fieldset__legend-title">{{
+                      strings.calculator.stepProfile.heading
+                    }}</span>
+                    <span class="fieldset__legend-body">{{
+                      strings.calculator.stepProfile.body
+                    }}</span>
+                  </legend>
+
+                  <div class="profile-grid">
+                    @for (choice of profileChoices(); track choice.id) {
+                      <app-profile-card
+                        [profileId]="choice.id"
+                        [title]="choice.title"
+                        [summary]="choice.summary"
+                        [incomeChips]="choice.incomeChips"
+                        [expenseChips]="choice.expenseChips"
+                        [selected]="form.controls.profile.value === choice.id"
+                        groupName="profile"
+                        (selectedChange)="selectProfile($event)"
+                      />
+                    }
+                  </div>
+
+                  @if (controlInvalid('profile')) {
+                    <p class="field__error" role="alert">
+                      {{ strings.calculator.validation.profileRequired }}
+                    </p>
+                  }
+                </fieldset>
+              }
+
+              @case (1) {
+                <div class="stack stack--5">
+                  <app-section-heading
+                    [level]="2"
+                    [heading]="strings.calculator.stepAssumptions.heading"
+                    [body]="strings.calculator.stepAssumptions.body"
+                  />
+
+                  <div class="field">
+                    <p class="field__label" id="horizon-label">
+                      {{ strings.calculator.stepAssumptions.horizonLabel }}
+                    </p>
+                    <p class="field__help" id="horizon-help">
+                      {{ strings.calculator.stepAssumptions.horizonHelp }}
+                    </p>
+                    <app-segmented-control
+                      groupName="horizon_years"
+                      [options]="horizonOptions()"
+                      [value]="form.controls.horizon_years.value"
+                      (valueChange)="setControlValue('horizon_years', $event)"
+                    />
+                    @if (controlInvalid('horizon_years')) {
+                      <p class="field__error" role="alert">
+                        {{ strings.calculator.validation.horizonInvalid }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="field">
+                    <p class="field__label">
+                      {{ strings.calculator.stepAssumptions.ratioLabel }}
+                    </p>
+                    <p class="field__help">
+                      {{ strings.calculator.stepAssumptions.ratioHelp }}
+                    </p>
+                    <app-segmented-control
+                      groupName="expense_income_ratio"
+                      [options]="ratioOptions()"
+                      [value]="form.controls.expense_income_ratio.value"
+                      (valueChange)="setControlValue('expense_income_ratio', $event)"
+                    />
+                    @if (controlInvalid('expense_income_ratio')) {
+                      <p class="field__error" role="alert">
+                        {{ strings.calculator.validation.ratioInvalid }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="field">
+                    <p class="field__label">
+                      {{ strings.calculator.stepAssumptions.bufferLabel }}
+                    </p>
+                    <p class="field__help">
+                      {{ strings.calculator.stepAssumptions.bufferHelp }}
+                    </p>
+                    <app-segmented-control
+                      groupName="buffer_months"
+                      [options]="bufferOptions()"
+                      [value]="form.controls.buffer_months.value"
+                      (valueChange)="setControlValue('buffer_months', $event)"
+                    />
+                    @if (controlInvalid('buffer_months')) {
+                      <p class="field__error" role="alert">
+                        {{ strings.calculator.validation.bufferInvalid }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="disclosure">
+                    <button
+                      type="button"
+                      class="disclosure__trigger"
+                      [attr.aria-expanded]="advancedOpen()"
+                      aria-controls="advanced-assumptions"
+                      (click)="toggleAdvanced()"
+                    >
+                      <span class="disclosure__chevron" [class.is-open]="advancedOpen()" aria-hidden="true">
+                        <svg viewBox="0 0 12 12" width="12" height="12" focusable="false">
+                          <path
+                            d="M3.5 2l4 4-4 4"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>{{ strings.calculator.stepAssumptions.advancedToggle }}</span>
+                    </button>
+
+                    <div id="advanced-assumptions" class="disclosure__panel" [hidden]="!advancedOpen()">
+                      <p class="field__help">{{ strings.calculator.stepAssumptions.advancedHint }}</p>
+
+                      <div class="field">
+                        <p class="field__label">
+                          {{ strings.calculator.stepAssumptions.rebalanceLabel }}
+                        </p>
+                        <p class="field__help">
+                          {{ strings.calculator.stepAssumptions.rebalanceHelp }}
+                        </p>
+                        <app-segmented-control
+                          groupName="rebalance_frequency"
+                          [options]="rebalanceOptions()"
+                          [value]="form.controls.rebalance_frequency.value"
+                          (valueChange)="setRebalanceFrequency($event)"
+                        />
+                        @if (controlInvalid('rebalance_frequency')) {
+                          <p class="field__error" role="alert">
+                            {{ strings.calculator.validation.rebalanceInvalid }}
+                          </p>
+                        }
+                      </div>
+
+                      <div class="field">
+                        <p class="field__label">
+                          {{ strings.calculator.stepAssumptions.conversionCostLabel }}
+                        </p>
+                        <p class="field__help">
+                          {{ strings.calculator.stepAssumptions.conversionCostHelp }}
+                        </p>
+                        <app-segmented-control
+                          groupName="conversion_cost"
+                          [options]="conversionCostOptions()"
+                          [value]="form.controls.conversion_cost.value"
+                          (valueChange)="setControlValue('conversion_cost', $event)"
+                        />
+                        @if (controlInvalid('conversion_cost')) {
+                          <p class="field__error" role="alert">
+                            {{ strings.calculator.validation.conversionCostInvalid }}
+                          </p>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <app-info-callout [body]="strings.calculator.stepAssumptions.normalizationNote" />
+                </div>
+              }
+
+              @default {
+                <div class="stack stack--5">
+                  <app-section-heading
+                    [level]="2"
+                    [heading]="strings.calculator.stepReview.heading"
+                    [body]="strings.calculator.stepReview.body"
+                  />
+
+                  <app-assumption-summary
+                    [scenario]="store.scenario()"
+                    [profileTitle]="selectedProfileTitle()"
+                    [showEditLinks]="true"
+                    (edit)="goToStep($event)"
+                  />
+
+                  @if (form.invalid) {
+                    <p class="field__error" role="alert">
+                      {{ strings.calculator.validation.formInvalid }}
+                    </p>
+                  }
+
+                  @if (submitError(); as error) {
+                    <app-error-panel
+                      [error]="error"
+                      [retryLabel]="strings.calculator.stepReview.runButton"
+                      (retry)="runScenario()"
+                    />
+                  }
+
+                  <div class="calculator__run">
+                    <button
+                      type="submit"
+                      class="button button--primary button--large"
+                      data-testid="run-scenario"
+                      [disabled]="submitting() || form.invalid"
+                    >
+                      @if (submitting()) {
+                        {{ strings.calculator.stepReview.runningButton }}
+                      } @else {
+                        {{ strings.calculator.stepReview.runButton }}
+                      }
+                    </button>
+                    @if (submitting()) {
+                      <app-loading-indicator
+                        [inline]="true"
+                        [label]="strings.calculator.stepReview.runningButton"
+                      />
+                    }
+                  </div>
+
+                  <p class="field__help">{{ strings.calculator.stepReview.runNote }}</p>
+                </div>
+              }
+            }
+
+            <div class="calculator__nav">
+              @if (step() > 0) {
+                <button type="button" class="button button--ghost" (click)="previous()">
+                  {{ strings.common.back }}
+                </button>
+              } @else {
+                <a class="button button--ghost" routerLink="/">{{ strings.nav.home }}</a>
+              }
+
+              @if (step() < steps.length - 1) {
+                <button type="button" class="button button--secondary" (click)="next()">
+                  {{ strings.common.next }}
+                </button>
+              }
+            </div>
+          </form>
+        }
+      </div>
+
+      <aside class="calculator__aside" [attr.aria-label]="strings.calculator.summaryHeading">
+        <div class="summary-card">
+          <h2 class="summary-card__title">{{ strings.calculator.summaryHeading }}</h2>
+          <app-assumption-summary
+            [scenario]="store.scenario()"
+            [profileTitle]="selectedProfileTitle()"
+          />
+          <p class="summary-card__hint">{{ strings.calculator.summaryHint }}</p>
+        </div>
+      </aside>
+    </div>
+  </app-page-container>
+</section>

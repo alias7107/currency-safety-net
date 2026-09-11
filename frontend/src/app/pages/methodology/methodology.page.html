@@ -1,0 +1,83 @@
+<section class="section section--tight">
+  <app-page-container size="narrow">
+    <app-section-heading
+      [level]="1"
+      headingId="methodology-title"
+      [heading]="strings.methodology.title"
+      [body]="strings.methodology.intro"
+    />
+  </app-page-container>
+</section>
+
+<section class="section section--surface" aria-labelledby="plain-title">
+  <app-page-container size="narrow">
+    <app-section-heading headingId="plain-title" [heading]="strings.methodology.plainHeading" />
+    <div class="prose">
+      @for (item of strings.methodology.plainSections; track item.title) {
+        <article class="prose__block">
+          <h3 class="prose__title">{{ item.title }}</h3>
+          <p class="prose__body">{{ item.body }}</p>
+        </article>
+      }
+    </div>
+  </app-page-container>
+</section>
+
+<section class="section" aria-labelledby="technical-title">
+  <app-page-container size="narrow">
+    <app-section-heading
+      headingId="technical-title"
+      [heading]="strings.methodology.technicalHeading"
+    />
+    <div class="prose">
+      @for (item of strings.methodology.technicalSections; track item.title) {
+        <article class="prose__block">
+          <h3 class="prose__title">{{ item.title }}</h3>
+          <p class="prose__body">{{ item.body }}</p>
+        </article>
+      }
+    </div>
+  </app-page-container>
+</section>
+
+<section class="section section--surface" aria-labelledby="parameters-title">
+  <app-page-container size="narrow">
+    <app-section-heading
+      headingId="parameters-title"
+      [heading]="strings.methodology.parametersHeading"
+      [body]="strings.methodology.parametersBody"
+    />
+
+    @if (loading()) {
+      <app-loading-indicator [label]="strings.common.loading" />
+    } @else if (error(); as apiError) {
+      <app-error-panel [error]="apiError" (retry)="load()" />
+      <p class="field__help">{{ strings.methodology.metadataErrorBody }}</p>
+    } @else {
+      <dl class="detail-grid" data-testid="parameter-table">
+        @for (row of parameters(); track row.key) {
+          <div class="detail-grid__row" [attr.data-parameter]="row.key">
+            <dt class="detail-grid__term">{{ row.label }}</dt>
+            <dd class="detail-grid__value">{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </app-page-container>
+</section>
+
+<section class="section" aria-labelledby="scope-title">
+  <app-page-container size="narrow">
+    <app-section-heading headingId="scope-title" [heading]="strings.methodology.scopeHeading" />
+    <app-info-callout tone="warning">
+      <ul class="limitations">
+        @for (point of strings.methodology.scopePoints; track point) {
+          <li>{{ point }}</li>
+        }
+      </ul>
+    </app-info-callout>
+    <p class="section__footnote">
+      <a routerLink="/calculator">{{ strings.landing.heroCta }}</a>
+    </p>
+  </app-page-container>
+</section>

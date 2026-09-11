@@ -1,0 +1,192 @@
+<section class="section section--tight">
+  <app-page-container>
+    <p class="visually-hidden" aria-live="polite" data-testid="results-live">{{ liveMessage() }}</p>
+
+    @if (!jobId()) {
+      <div class="stack stack--4">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.results.missingJobTitle"
+          [body]="strings.results.missingJobBody"
+        />
+        <div>
+          <a class="button button--primary" routerLink="/calculator">{{
+            strings.landing.heroCta
+          }}</a>
+        </div>
+      </div>
+    } @else if (error(); as apiError) {
+      <div class="stack stack--4">
+        <app-section-heading [level]="1" [heading]="strings.results.title" />
+        <app-error-panel [error]="apiError" (retry)="retry()">
+          <a class="button button--primary" routerLink="/calculator">{{
+            strings.results.actionRunAnother
+          }}</a>
+        </app-error-panel>
+      </div>
+    } @else if (failure(); as jobFailure) {
+      <div class="stack stack--4">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.results.failedTitle"
+          [body]="strings.results.failedBody"
+        />
+        <app-info-callout tone="warning">
+          <p data-testid="failure-message">
+            {{ jobFailure.message ?? strings.errors.serverBody }}
+          </p>
+        </app-info-callout>
+        <div class="results__actions">
+          <button type="button" class="button button--primary" (click)="changeAssumptions()">
+            {{ strings.results.actionChangeAssumptions }}
+          </button>
+          <button type="button" class="button button--ghost" (click)="runAnother()">
+            {{ strings.results.actionRunAnother }}
+          </button>
+        </div>
+      </div>
+    } @else if (isProcessing()) {
+      <div class="stack stack--5" data-testid="processing">
+        <div class="results__status-row">
+          <app-section-heading
+            [level]="1"
+            [heading]="strings.results.processingTitle"
+            [body]="strings.results.processingBody"
+          />
+          <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+        </div>
+
+        <app-loading-indicator [label]="strings.results.processingTitle" [hideLabel]="true" />
+
+        <div class="results__skeletons">
+          <app-skeleton-card [lines]="4" />
+          <app-skeleton-card [lines]="3" />
+          <app-skeleton-card [lines]="3" />
+        </div>
+
+        <p class="field__help">{{ strings.results.processingHint }}</p>
+      </div>
+    } @else if (result(); as modelResult) {
+      <div class="stack stack--6" data-testid="result">
+        <div class="results__status-row">
+          <app-section-heading
+            [level]="1"
+            [eyebrow]="strings.app.name"
+            [heading]="strings.results.title"
+          />
+          <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+        </div>
+
+        <section aria-labelledby="allocation-title" class="panel">
+          <app-section-heading
+            headingId="allocation-title"
+            [heading]="strings.results.allocationHeading"
+            [body]="strings.results.allocationBody"
+          />
+          <app-allocation-chart
+            [weights]="modelResult.weights"
+            [label]="strings.results.allocationChartLabel"
+          />
+        </section>
+
+        <section aria-labelledby="metrics-title" class="panel">
+          <app-section-heading
+            headingId="metrics-title"
+            [heading]="strings.results.metricsHeading"
+            [body]="strings.results.metricsBody"
+          />
+          <p class="normalization-note" data-testid="normalization-note">
+            <strong>{{ strings.results.normalizationLabel }}.</strong>
+            {{ strings.results.normalizationNote }}
+          </p>
+          <div class="metric-grid">
+            @for (metric of metrics(); track metric.key) {
+              <app-metric-card
+                [attr.data-metric]="metric.key"
+                [label]="metric.label"
+                [value]="metric.value"
+                [unit]="metric.unit"
+                [explanation]="metric.explanation"
+                [emphasis]="metric.emphasis"
+              />
+            }
+          </div>
+        </section>
+
+        @if (identificationLabel(); as identification) {
+          <section aria-labelledby="identification-title" class="panel">
+            <app-section-heading
+              headingId="identification-title"
+              [heading]="strings.results.identificationHeading"
+            />
+            <p class="identification__value" data-testid="identification">{{ identification }}</p>
+            <p class="identification__body">
+              @if (isWellIdentified()) {
+                {{ strings.results.identificationWellIdentifiedBody }}
+              } @else {
+                {{ strings.results.identificationOtherBody }}
+              }
+            </p>
+            <p class="identification__raw">
+              {{ strings.results.identificationClassLabel }}:
+              <code>{{ modelResult.identification_class }}</code>
+            </p>
+          </section>
+        }
+
+        <section aria-labelledby="interpretation-title" class="panel">
+          <app-section-heading
+            headingId="interpretation-title"
+            [heading]="strings.results.interpretationHeading"
+          />
+          <ul class="bullet-list">
+            @for (point of strings.results.interpretationPoints; track point) {
+              <li>{{ point }}</li>
+            }
+          </ul>
+        </section>
+
+        <section aria-labelledby="details-title" class="panel">
+          <app-section-heading
+            headingId="details-title"
+            [heading]="strings.results.detailsHeading"
+            [body]="strings.results.detailsBody"
+          />
+          <dl class="detail-grid">
+            @for (row of modelDetails(); track row.key) {
+              <div class="detail-grid__row" [attr.data-detail]="row.key">
+                <dt class="detail-grid__term">{{ row.label }}</dt>
+                <dd class="detail-grid__value">{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        @if (scenarioInputs(); as inputs) {
+          <section aria-labelledby="inputs-title" class="panel">
+            <app-section-heading
+              headingId="inputs-title"
+              [heading]="strings.calculator.summaryHeading"
+            />
+            <app-assumption-summary [scenario]="inputs" [profileTitle]="profileTitle()" />
+          </section>
+        }
+
+        <section aria-labelledby="actions-title" class="panel">
+          <app-section-heading headingId="actions-title" [heading]="strings.results.actionsHeading" />
+          <div class="results__actions">
+            <button type="button" class="button button--primary" (click)="runAnother()">
+              {{ strings.results.actionRunAnother }}
+            </button>
+            <button type="button" class="button button--secondary" (click)="changeAssumptions()">
+              {{ strings.results.actionChangeAssumptions }}
+            </button>
+            <a class="button button--ghost" routerLink="/methodology">{{
+              strings.results.actionMethodology
+            }}</a>
+          </div>
+        </section>
+      </div>
+    }
+  </app-page-container>
+</section>
