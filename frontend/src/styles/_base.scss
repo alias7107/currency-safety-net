@@ -8,6 +8,13 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Match sticky-header clearance for fragment navigation. */
+  scroll-padding-top: 5.5rem;
+}
+
+#how-it-works,
+#who-it-helps {
+  scroll-margin-top: 5.5rem;
 }
 
 body {

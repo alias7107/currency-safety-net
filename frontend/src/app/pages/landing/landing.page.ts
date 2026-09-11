@@ -19,12 +19,12 @@ export class LandingPage {
   private readonly api = inject(OptimizationApiService);
 
   protected readonly strings = EN_STRINGS;
-  protected readonly currencyCodes = ['KZT', 'USD', 'EUR'] as const;
 
   protected readonly metadataFailed = signal(false);
   protected readonly dataAsOf = signal<string>(EN_STRINGS.common.unavailable);
   protected readonly simulationPaths = signal<string | null>(null);
   protected readonly modelVersion = signal<string | null>(null);
+  protected readonly simulationMethod = signal<string | null>(null);
 
   constructor() {
     this.api
@@ -36,17 +36,15 @@ export class LandingPage {
           this.dataAsOf.set(metadata.data_as_of);
           this.modelVersion.set(metadata.model_version);
           this.simulationPaths.set(formatInteger(metadata.simulation_paths));
+          this.simulationMethod.set(metadata.simulation_method ?? null);
         },
         error: () => {
           this.metadataFailed.set(true);
           this.dataAsOf.set(EN_STRINGS.common.unavailable);
           this.modelVersion.set(null);
           this.simulationPaths.set(null);
+          this.simulationMethod.set(null);
         },
       });
-  }
-
-  protected currency(code: 'KZT' | 'USD' | 'EUR') {
-    return EN_STRINGS.currencies[code];
   }
 }

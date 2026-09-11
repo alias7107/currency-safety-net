@@ -10,10 +10,15 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/landing/landing.page').then((m) => m.LandingPage),
   },
   {
-    path: 'calculator',
+    path: 'assessment',
     title: `${EN_STRINGS.calculator.title} — ${EN_STRINGS.app.name}`,
     loadComponent: () =>
       import('./pages/calculator/calculator.page').then((m) => m.CalculatorPage),
+  },
+  {
+    path: 'calculator',
+    redirectTo: 'assessment',
+    pathMatch: 'full',
   },
   {
     path: 'results/:jobId',
@@ -21,10 +26,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/results/results.page').then((m) => m.ResultsPage),
   },
   {
+    path: 'research',
+    title: `${EN_STRINGS.research.title} — ${EN_STRINGS.app.name}`,
+    loadComponent: () => import('./pages/research/research.page').then((m) => m.ResearchPage),
+  },
+  {
     path: 'methodology',
-    title: `${EN_STRINGS.methodology.title} — ${EN_STRINGS.app.name}`,
-    loadComponent: () =>
-      import('./pages/methodology/methodology.page').then((m) => m.MethodologyPage),
+    redirectTo: 'research',
+    pathMatch: 'full',
   },
   {
     path: '**',
