@@ -33,3 +33,7 @@ frontend/.angular/
 # Editors
 .idea/
 .vscode/
+
+# Local runtime / Cloud Agent artifacts
+.cloud-logs/
+*.rdb
