@@ -130,6 +130,32 @@ describe('ResultsPage', () => {
     http.verify();
   });
 
+  it('sanitizes unsafe failed-job messages before rendering', async () => {
+    create();
+    await tick(0);
+    http.expectOne(JOB_URL).flush(
+      jobStatus('failed', {
+        error_code: 'optimization_failed',
+        error_message:
+          'Traceback (most recent call last):\nFailed at /api/v1/optimization-jobs/\nSee https://example.com/docs\n<html>boom</html>\n502 Bad Gateway',
+      }),
+    );
+    fixture.detectChanges();
+
+    expect(text()).toContain(EN_STRINGS.results.failedTitle);
+    expect(text()).toContain(EN_STRINGS.results.failedBody);
+    expect(host().querySelector('[data-testid="failure-message"]')?.textContent).toContain(
+      EN_STRINGS.errors.serverBody,
+    );
+    expect(text()).not.toContain('Traceback');
+    expect(text()).not.toContain('/api/v1');
+    expect(text()).not.toContain('https://example.com');
+    expect(text()).not.toContain('<html>');
+    expect(text()).not.toContain('Bad Gateway');
+    expect(text()).not.toContain('optimization_failed');
+    http.verify();
+  });
+
   // Scenario 11: polling stops when the component is destroyed
   it('stops polling when the component is destroyed', async () => {
     create();
@@ -262,6 +288,19 @@ describe('ResultsPage', () => {
       expect(host().querySelector('[data-testid="results-comparison"]')).toBeTruthy();
     });
 
+    it('offers Open printable report only for succeeded results', () => {
+      const button = host().querySelector<HTMLButtonElement>(
+        '[data-testid="open-printable-report"]',
+      );
+      expect(button).toBeTruthy();
+      expect(button?.textContent).toContain(EN_STRINGS.report.openAction);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      button!.click();
+      expect(navigateSpy).toHaveBeenCalledWith(['/report', TEST_JOB_ID], {
+        state: { result: OPTIMIZATION_RESULT },
+      });
+    });
+
     it('saves the API result into the comparison store', () => {
       host().querySelector<HTMLButtonElement>('[data-testid="comparison-add"]')!.click();
       fixture.detectChanges();
@@ -332,6 +371,7 @@ describe('ResultsPage', () => {
     fixture.detectChanges();
     expect(host().querySelector('[data-testid="results-comparison"]')).toBeNull();
     expect(host().querySelector('[data-testid="comparison-add"]')).toBeNull();
+    expect(host().querySelector('[data-testid="open-printable-report"]')).toBeNull();
     expect(host().querySelector('[data-testid="scenario-overview"]')).toBeNull();
     http.match(JOB_URL).forEach((request) => request.flush(jobStatus('running')));
   });

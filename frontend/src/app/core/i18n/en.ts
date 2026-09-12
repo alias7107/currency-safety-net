@@ -671,6 +671,44 @@ export const EN_STRINGS = {
     removedLive: 'Scenario removed from comparison.',
   },
 
+  report: {
+    documentTitle: 'Scenario report',
+    title: 'Scenario report',
+    brand: 'Currency Safety Net',
+    openAction: 'Open printable report',
+    printAction: 'Print or save as PDF',
+    printHelp: 'In the print dialog, choose “Save as PDF” to download a PDF copy.',
+    printAria: 'Open the browser print dialog to print or save this report as a PDF',
+    loadingTitle: 'Loading scenario report',
+    loadingBody: 'Retrieving the scenario result for this report.',
+    loadingLive: 'Loading scenario report.',
+    notReadyTitle: 'Report not ready yet',
+    notReadyBody:
+      'This scenario is still queued or running. Open the results page to wait for the completed model output.',
+    notReadyCta: 'Open results page',
+    failedTitle: 'Scenario could not be completed',
+    failedBody: 'The model run did not finish, so a printable report is not available.',
+    missingJobTitle: 'No scenario selected',
+    missingJobBody: 'Open the assessment to run a scenario before generating a report.',
+    scopeHeading: 'Report scope',
+    scopeBody:
+      'This document contains simulation-based results for the selected scenario. It is not individualized financial advice and not a guarantee.',
+    allocationHeading: 'Returned allocation',
+    reproducibilityHeading: 'Reproducibility details',
+    reproducibilityBody:
+      'Values needed to identify this model run. They come from the API payload.',
+    methodologyHeading: 'Methodology and limitations',
+    methodologyPoints: [
+      'Outputs are simulation-based model results for the selected scenario.',
+      'Results depend on the selected model assumptions and the historical FX dataset used by the service.',
+      'The model does not forecast exchange rates; it resamples historical behaviour up to the data as-of date.',
+      'Actual household cash flows and exchange rates can differ from the simulated paths.',
+      'This report is informational. It is not a guarantee and not individualized financial advice.',
+    ],
+    researchLink: 'Read the full research methodology',
+    backToResults: 'Back to results',
+  },
+
   errors: {
     genericTitle: 'Something went wrong',
     genericBody: 'The request could not be completed. Please try again.',

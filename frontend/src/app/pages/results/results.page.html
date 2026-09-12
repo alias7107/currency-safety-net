@@ -147,20 +147,14 @@
           </div>
         </section>
 
-        @if (identificationLabel(); as identification) {
+        @if (identification(); as identity) {
           <section aria-labelledby="identification-title" class="panel">
             <app-section-heading
               headingId="identification-title"
               [heading]="strings.results.identificationHeading"
             />
-            <p class="identification__value" data-testid="identification">{{ identification }}</p>
-            <p class="identification__body">
-              @if (isWellIdentified()) {
-                {{ strings.results.identificationWellIdentifiedBody }}
-              } @else {
-                {{ strings.results.identificationOtherBody }}
-              }
-            </p>
+            <p class="identification__value" data-testid="identification">{{ identity.label }}</p>
+            <p class="identification__body">{{ identity.body }}</p>
           </section>
         }
 
@@ -228,6 +222,14 @@
             <a class="button button--ghost" routerLink="/research" data-testid="next-research">
               {{ strings.results.phase2b.nextOpenResearch }}
             </a>
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="open-printable-report"
+              (click)="openPrintableReport()"
+            >
+              {{ strings.report.openAction }}
+            </button>
           </div>
         </section>
 

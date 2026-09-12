@@ -1,11 +1,11 @@
-<a class="skip-link" href="#main-content">{{ strings.app.skipToContent }}</a>
+<a class="skip-link no-print" href="#main-content">{{ strings.app.skipToContent }}</a>
 
 <div class="app-shell">
-  <app-header />
+  <app-header class="no-print" />
 
   <main id="main-content" class="app-shell__main" tabindex="-1">
     <router-outlet />
   </main>
 
-  <app-footer />
+  <app-footer class="no-print" />
 </div>

@@ -17,24 +17,21 @@ import type {
   OptimizationRequest,
   OptimizationResult,
 } from '../../core/api/models';
-import { OptimizationApiService } from '../../core/api/optimization-api.service';
+import {
+  OptimizationApiService,
+  sanitizeUserFacingMessage,
+} from '../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../core/i18n/en';
 import { ScenarioComparisonStore } from '../../core/state/scenario-comparison.store';
 import { ScenarioFormStore } from '../../core/state/scenario-form.store';
-import {
-  formatBufferMonths,
-  formatConversionCost,
-  formatHorizon,
-  formatInteger,
-  formatMonthsOfIncome,
-  formatPercent,
-  formatRatio,
-  formatRebalanceFrequency,
-  humanizeIdentificationClass,
-  interpolate,
-  profileIdFromName,
-} from '../../core/util/format.util';
+import { interpolate, profileIdFromName } from '../../core/util/format.util';
 import { profileDisplayTitle } from '../../core/util/result-interpretation.util';
+import {
+  buildDiagnosticMetricViews,
+  buildIdentificationPresentation,
+  buildProvenanceDetailRows,
+  formatCvar95Value,
+} from '../../core/util/result-presentation.util';
 import { AllocationChart } from '../../shared/components/allocation-chart/allocation-chart';
 import { AssumptionSummary } from '../../shared/components/assumption-summary/assumption-summary';
 import { ErrorPanel } from '../../shared/components/error-panel/error-panel';
@@ -50,24 +47,6 @@ import { StatusBadge, type StatusTone } from '../../shared/components/status-bad
 
 /** Job polling cadence, in milliseconds. */
 export const POLL_INTERVAL_MS = 2000;
-
-const WELL_IDENTIFIED = 'A_WELL_IDENTIFIED';
-
-interface DiagnosticView {
-  key: string;
-  label: string;
-  value: string;
-  unit: string | null;
-  definition: string;
-  howToRead: string;
-  note: string | null;
-}
-
-interface DetailRow {
-  key: string;
-  label: string;
-  value: string;
-}
 
 @Component({
   selector: 'app-results-page',
@@ -173,7 +152,7 @@ export class ResultsPage {
     if (job.status === 'failed') {
       this.failure.set({
         code: job.error_code ?? null,
-        message: job.error_message ?? null,
+        message: sanitizeUserFacingMessage(job.error_message),
       });
       this.stopPolling$.next();
     }
@@ -275,135 +254,34 @@ export class ResultsPage {
 
   protected readonly cvar95Value = computed(() => {
     const result = this.result();
-    return result ? formatMonthsOfIncome(result.cvar95_cumulative_shortfall) : '—';
+    return result ? formatCvar95Value(result) : '—';
   });
 
-  protected readonly diagnostics = computed<DiagnosticView[]>(() => {
+  protected readonly diagnostics = computed(() => {
     const result = this.result();
-    if (!result) {
-      return [];
-    }
-    const labels = EN_STRINGS.results.metrics;
-    const copy = EN_STRINGS.results.phase2b.diagnostics;
-    const months = EN_STRINGS.results.phase2b.objectiveUnit;
-
-    return [
-      {
-        key: 'shortfall_probability',
-        label: labels.shortfallProbability.label,
-        value: formatPercent(result.shortfall_probability, 2),
-        unit: null,
-        definition: copy.shortfallProbability.definition,
-        howToRead: copy.shortfallProbability.howToRead,
-        note: null,
-      },
-      {
-        key: 'var95_cumulative_shortfall',
-        label: labels.var95.label,
-        value: formatMonthsOfIncome(result.var95_cumulative_shortfall),
-        unit: months,
-        definition: copy.var95.definition,
-        howToRead: copy.var95.howToRead,
-        note: result.var95_cumulative_shortfall === 0 ? copy.var95.zeroNote : null,
-      },
-      {
-        key: 'mean_cumulative_shortfall',
-        label: labels.meanShortfall.label,
-        value: formatMonthsOfIncome(result.mean_cumulative_shortfall),
-        unit: months,
-        definition: copy.meanShortfall.definition,
-        howToRead: copy.meanShortfall.howToRead,
-        note: null,
-      },
-      {
-        key: 'wealth_depletion_probability',
-        label: labels.depletion.label,
-        value: formatPercent(result.wealth_depletion_probability, 2),
-        unit: null,
-        definition: copy.depletion.definition,
-        howToRead: copy.depletion.howToRead,
-        note: null,
-      },
-    ];
+    return result ? buildDiagnosticMetricViews(result) : [];
   });
 
-  protected readonly isWellIdentified = computed(
-    () => this.result()?.identification_class === WELL_IDENTIFIED,
+  protected readonly identification = computed(() =>
+    buildIdentificationPresentation(this.result()?.identification_class),
   );
 
-  protected readonly identificationLabel = computed(() => {
-    const result = this.result();
-    if (!result?.identification_class) {
-      return null;
-    }
-    return this.isWellIdentified()
-      ? EN_STRINGS.results.identificationWellIdentified
-      : humanizeIdentificationClass(result.identification_class);
-  });
-
-  protected readonly modelDetails = computed<DetailRow[]>(() => {
+  protected readonly modelDetails = computed(() => {
     const result = this.result();
     if (!result) {
       return [];
     }
-    const labels = EN_STRINGS.results.detailLabels;
-    const rows: DetailRow[] = [
-      { key: 'profile', label: labels.profile, value: this.profileTitle() },
-      { key: 'horizon', label: labels.horizon, value: formatHorizon(result.horizon_years) },
-      { key: 'ratio', label: labels.ratio, value: formatRatio(result.expense_income_ratio) },
-      { key: 'buffer', label: labels.buffer, value: formatBufferMonths(result.buffer_months) },
-      {
-        key: 'rebalance',
-        label: labels.rebalance,
-        value: formatRebalanceFrequency(result.rebalance_frequency),
-      },
-      {
-        key: 'conversion',
-        label: labels.conversionCost,
-        value: formatConversionCost(result.conversion_cost),
-      },
-      { key: 'model_version', label: labels.modelVersion, value: result.model_version },
-      { key: 'data_as_of', label: labels.dataAsOf, value: result.data_as_of },
-      {
-        key: 'simulation_paths',
-        label: labels.simulationPaths,
-        value: formatInteger(result.simulation_paths),
-      },
-      {
-        key: 'simulation_seed',
-        label: labels.simulationSeed,
-        value: formatInteger(result.simulation_seed),
-      },
-    ];
-
-    if (result.n_coarse !== undefined) {
-      rows.push({
-        key: 'n_coarse',
-        label: labels.gridCoarse,
-        value: formatInteger(result.n_coarse),
-      });
-    }
-    if (result.n_refined !== undefined) {
-      rows.push({
-        key: 'n_refined',
-        label: labels.gridRefined,
-        value: formatInteger(result.n_refined),
-      });
-    }
-    if (result.n_surface !== undefined) {
-      rows.push({
-        key: 'n_surface',
-        label: labels.gridSurface,
-        value: formatInteger(result.n_surface),
-      });
-    }
-
-    const jobId = this.jobId();
-    if (jobId) {
-      rows.push({ key: 'job_id', label: labels.jobId, value: jobId });
-    }
-    return rows;
+    return buildProvenanceDetailRows(result, this.jobId());
   });
+
+  protected openPrintableReport(): void {
+    const jobId = this.jobId();
+    const result = this.result();
+    if (!jobId || !result) {
+      return;
+    }
+    void this.router.navigate(['/report', jobId], { state: { result } });
+  }
 
   protected runAnother(): void {
     this.store.setStep(0);

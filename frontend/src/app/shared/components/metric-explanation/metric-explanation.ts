@@ -23,10 +23,17 @@ import { EN_STRINGS } from '../../../core/i18n/en';
         <p class="metric-explanation__note" data-testid="metric-explanation-note">{{ note() }}</p>
       }
       @if (howToRead()) {
-        <details class="metric-explanation__details">
-          <summary>{{ strings.results.phase2b.howToRead }}</summary>
-          <p>{{ howToRead() }}</p>
-        </details>
+        @if (alwaysExpanded()) {
+          <div class="metric-explanation__expanded" data-testid="metric-explanation-expanded">
+            <p class="metric-explanation__how-label">{{ strings.results.phase2b.howToRead }}</p>
+            <p>{{ howToRead() }}</p>
+          </div>
+        } @else {
+          <details class="metric-explanation__details">
+            <summary>{{ strings.results.phase2b.howToRead }}</summary>
+            <p>{{ howToRead() }}</p>
+          </details>
+        }
       }
     </article>
   `,
@@ -39,6 +46,8 @@ export class MetricExplanation {
   readonly unit = input<string | null>(null);
   readonly howToRead = input<string | null>(null);
   readonly note = input<string | null>(null);
+  /** When true, show “How to read this” inline (print / report). */
+  readonly alwaysExpanded = input(false);
 
   protected readonly strings = EN_STRINGS;
 }
