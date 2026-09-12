@@ -21,6 +21,7 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:4200"]),
     CELERY_TASK_ALWAYS_EAGER=(bool, False),
+    BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=(bool, True),
 )
 
 environ.Env.read_env(BASE_DIR.parent / ".env")
@@ -122,6 +123,9 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("DRF_ANON_THROTTLE", default="60/min"),
         "optimization_submit": env("DRF_OPTIMIZATION_SUBMIT_THROTTLE", default="3/hour"),
+        "buffer_sensitivity_submit": env(
+            "DRF_BUFFER_SENSITIVITY_SUBMIT_THROTTLE", default="2/hour"
+        ),
         "job_poll": env("DRF_JOB_POLL_THROTTLE", default="120/min"),
         "model_metadata": env("DRF_MODEL_METADATA_THROTTLE", default="60/min"),
     },
@@ -139,6 +143,8 @@ CELERY_TASK_PUBLISH_RETRY = False
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_CONCURRENCY = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
+# Global defaults for unrelated Celery tasks. Optimization/batch tasks use
+# explicit task-specific soft/hard limits via annotations and decorators.
 CELERY_TASK_SOFT_TIME_LIMIT = 120
 CELERY_TASK_TIME_LIMIT = 180
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -154,35 +160,105 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "retry_on_timeout": False,
 }
 
+# Single optimization task limits (Phase 3C defaults from Phase 3B measurements).
+OPTIMIZATION_TASK_SOFT_TIME_LIMIT = int(
+    env("OPTIMIZATION_TASK_SOFT_TIME_LIMIT", default=180)
+)
+OPTIMIZATION_TASK_TIME_LIMIT = int(env("OPTIMIZATION_TASK_TIME_LIMIT", default=240))
 OPTIMIZATION_MAX_ATTEMPTS = int(env("OPTIMIZATION_MAX_ATTEMPTS", default=2))
-OPTIMIZATION_LEASE_SECONDS = int(env("OPTIMIZATION_LEASE_SECONDS", default=240))
-OPTIMIZATION_LEASE_SAFETY_MARGIN_SECONDS = 30
+OPTIMIZATION_LEASE_SECONDS = int(env("OPTIMIZATION_LEASE_SECONDS", default=300))
+OPTIMIZATION_LEASE_SAFETY_MARGIN_SECONDS = 60
+
+# Buffer sensitivity batch task limits.
+BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT = int(
+    env("BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT", default=600)
+)
+BUFFER_SENSITIVITY_TASK_TIME_LIMIT = int(
+    env("BUFFER_SENSITIVITY_TASK_TIME_LIMIT", default=720)
+)
+BUFFER_SENSITIVITY_LEASE_SECONDS = int(
+    env("BUFFER_SENSITIVITY_LEASE_SECONDS", default=840)
+)
+BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS = 120
+BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED = env("BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED")
+BUFFER_SENSITIVITY_QUEUE = "buffer_sensitivity"
+
+CELERY_TASK_ANNOTATIONS = {
+    "calculations.run_optimization_job": {
+        "soft_time_limit": OPTIMIZATION_TASK_SOFT_TIME_LIMIT,
+        "time_limit": OPTIMIZATION_TASK_TIME_LIMIT,
+    },
+    "calculations.run_buffer_sensitivity_job": {
+        "soft_time_limit": BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT,
+        "time_limit": BUFFER_SENSITIVITY_TASK_TIME_LIMIT,
+    },
+}
+CELERY_TASK_ROUTES = {
+    "calculations.run_buffer_sensitivity_job": {
+        "queue": BUFFER_SENSITIVITY_QUEUE,
+    },
+}
 
 
 def validate_lease_configuration(
     *,
     lease_seconds: int,
     task_time_limit: int,
-    safety_margin_seconds: int = OPTIMIZATION_LEASE_SAFETY_MARGIN_SECONDS,
+    safety_margin_seconds: int = 30,
 ) -> None:
-    """Require lease longer than the hard kill with a safety margin."""
+    """Require lease longer than the hard kill with a safety margin.
+
+    Default safety margin remains 30s for backward-compatible unit tests.
+    Startup validation for production job types uses the larger margins below.
+    """
     if lease_seconds <= task_time_limit:
         raise ImproperlyConfigured(
-            "OPTIMIZATION_LEASE_SECONDS must be greater than CELERY_TASK_TIME_LIMIT "
+            "Lease seconds must be greater than the hard time limit "
             f"(got lease={lease_seconds}, time_limit={task_time_limit})."
         )
     minimum_with_margin = task_time_limit + safety_margin_seconds
     if lease_seconds < minimum_with_margin:
         raise ImproperlyConfigured(
-            "OPTIMIZATION_LEASE_SECONDS must be at least CELERY_TASK_TIME_LIMIT "
+            "Lease seconds must be at least hard time limit "
             f"+ {safety_margin_seconds}s safety margin "
             f"(got lease={lease_seconds}, required>={minimum_with_margin})."
         )
 
 
-validate_lease_configuration(
+def validate_task_time_limits(
+    *,
+    soft_time_limit: int,
+    hard_time_limit: int,
+    lease_seconds: int,
+    safety_margin_seconds: int,
+    label: str,
+) -> None:
+    """Validate soft < hard and lease > hard with the configured margin."""
+    if soft_time_limit >= hard_time_limit:
+        raise ImproperlyConfigured(
+            f"{label}: soft time limit must be less than hard time limit "
+            f"(got soft={soft_time_limit}, hard={hard_time_limit})."
+        )
+    validate_lease_configuration(
+        lease_seconds=lease_seconds,
+        task_time_limit=hard_time_limit,
+        safety_margin_seconds=safety_margin_seconds,
+    )
+
+
+validate_task_time_limits(
+    soft_time_limit=OPTIMIZATION_TASK_SOFT_TIME_LIMIT,
+    hard_time_limit=OPTIMIZATION_TASK_TIME_LIMIT,
     lease_seconds=OPTIMIZATION_LEASE_SECONDS,
-    task_time_limit=CELERY_TASK_TIME_LIMIT,
+    safety_margin_seconds=OPTIMIZATION_LEASE_SAFETY_MARGIN_SECONDS,
+    label="optimization job",
+)
+validate_task_time_limits(
+    soft_time_limit=BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT,
+    hard_time_limit=BUFFER_SENSITIVITY_TASK_TIME_LIMIT,
+    lease_seconds=BUFFER_SENSITIVITY_LEASE_SECONDS,
+    safety_margin_seconds=BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS,
+    label="buffer sensitivity job",
 )
 
 LOGGING = {

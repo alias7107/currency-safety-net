@@ -102,11 +102,34 @@ Run the API:
 python manage.py runserver
 ```
 
-Run the Celery worker (required for real optimizations):
+Run Celery workers (required for real optimizations):
+
+Ordinary optimization queue (default):
 
 ```bash
-celery -A project worker --loglevel=INFO --concurrency=1 --prefetch-multiplier=1 --max-tasks-per-child=1
+celery -A project worker --loglevel=INFO --hostname=opt@%h \
+  --queues=celery --concurrency=1 --prefetch-multiplier=1 --max-tasks-per-child=1
 ```
+
+Dedicated buffer-sensitivity queue (production design):
+
+```bash
+celery -A project worker --loglevel=INFO --hostname=buffer@%h \
+  --queues=buffer_sensitivity --concurrency=1 --prefetch-multiplier=1 --max-tasks-per-child=1
+```
+
+Allow **≥ 2 GiB RAM** for the batch worker. Running both workers on one host
+needs roughly **4 GiB or more** free for simultaneous peaks plus system
+overhead. Local development may temporarily consume both queues on one worker
+only as an explicit convenience:
+
+```bash
+celery -A project worker --loglevel=INFO --concurrency=1 \
+  --prefetch-multiplier=1 --max-tasks-per-child=1 \
+  --queues=celery,buffer_sensitivity
+```
+
+Production documentation and operations must keep queue separation.
 
 API endpoints
 -------------
@@ -118,8 +141,10 @@ API endpoints
 | GET | `/api/v1/model/options/` | Documented request choices |
 | POST | `/api/v1/optimization-jobs/` | Queue or reuse an optimization job |
 | GET | `/api/v1/optimization-jobs/<uuid>/` | Poll job status / result |
+| POST | `/api/v1/buffer-sensitivity-jobs/` | Queue or reuse a four-buffer batch job |
+| GET | `/api/v1/buffer-sensitivity-jobs/<uuid>/` | Poll batch status / result |
 
-Example:
+Example (single optimization):
 
 ```bash
 curl -s -X POST http://127.0.0.1:8000/api/v1/optimization-jobs/ \
@@ -127,8 +152,19 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/optimization-jobs/ \
   -d '{"profile":"P2","horizon_years":3,"expense_income_ratio":0.95,"buffer_months":1,"rebalance_frequency":"monthly","conversion_cost":0.0}'
 ```
 
+Example (buffer sensitivity batch — server always evaluates `[1,3,6,12]`):
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/api/v1/buffer-sensitivity-jobs/ \
+  -H 'Content-Type: application/json' \
+  -d '{"profile":"P2","horizon_years":3,"expense_income_ratio":0.95,"rebalance_frequency":"monthly","conversion_cost":0.0}'
+```
+
 Clients must not send `n_paths`, `seed`, `_fx_bundle`, `model_version`, or
-dataset paths. Those values are fixed by the verified model.
+dataset paths. Those values are fixed by the verified model. Batch POSTs must
+not send `buffer_months`, buffer lists, or diagnostic targets.
+`BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False` disables new batch POSTs while
+keeping GET of existing jobs available.
 
 Frontend (Angular MVP)
 ----------------------
@@ -221,11 +257,18 @@ See `.env.example`. Important variables:
 - `CORS_ALLOWED_ORIGINS` — defaults to `http://localhost:4200`
 - `CELERY_TASK_ALWAYS_EAGER` — set `True` in tests only
 - `DRF_OPTIMIZATION_SUBMIT_THROTTLE` — default `3/hour` (memory-heavy POSTs)
-- `DRF_JOB_POLL_THROTTLE` — default `120/min`
+- `DRF_BUFFER_SENSITIVITY_SUBMIT_THROTTLE` — default `2/hour` (separate from optimization)
+- `DRF_JOB_POLL_THROTTLE` — default `120/min` (shared poll scope; does not consume submit quotas)
 - `DRF_MODEL_METADATA_THROTTLE` — default `60/min`
 - `OPTIMIZATION_MAX_ATTEMPTS` — default `2`
-- `OPTIMIZATION_LEASE_SECONDS` — default `240` (must exceed `CELERY_TASK_TIME_LIMIT`
-  of `180` by at least a 30-second safety margin)
+- `OPTIMIZATION_TASK_SOFT_TIME_LIMIT` / `OPTIMIZATION_TASK_TIME_LIMIT` — defaults `180` / `240`
+- `OPTIMIZATION_LEASE_SECONDS` — default `300` (≥ hard + 60s margin)
+- `BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT` / `BUFFER_SENSITIVITY_TASK_TIME_LIMIT` — defaults `600` / `720`
+- `BUFFER_SENSITIVITY_LEASE_SECONDS` — default `840` (≥ hard + 120s margin)
+- `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` — default `True` in development; set `False` in
+  production to freeze new batch submissions without removing GET access
+- Global `CELERY_TASK_SOFT_TIME_LIMIT` / `CELERY_TASK_TIME_LIMIT` remain `120` / `180` for
+  unrelated tasks; optimization and batch tasks use task-specific annotations
 
 Job lifecycle notes
 -------------------

@@ -1,0 +1,1109 @@
+{
+  "artifact": "buffer-sensitivity-batch-probe",
+  "candidate_batch_limits_under_evaluation": {
+    "basis": "Public-path max observed batch total on this host was P1 5y (~466.6 s). Candidates use ~29% soft headroom above that observation.",
+    "hard_seconds": 720,
+    "lease_rule": "lease > hard and lease >= hard + safety margin",
+    "lease_seconds": 840,
+    "soft_seconds": 600
+  },
+  "candidate_single_job_limits_under_evaluation": {
+    "basis": "Public-path max observed single optimize wall time on this host was P2 5y \u03b7=1.05 B=1 (~125.2 s), which already exceeds the current 120 s soft limit. P1 5y single calls are ~116.7 s (near the soft ceiling).",
+    "hard_seconds": 240,
+    "lease_rule": "lease > hard and lease >= hard + safety margin",
+    "lease_seconds": 300,
+    "soft_seconds": 180
+  },
+  "canonical_matching": {
+    "cvar95_abs": 1e-06,
+    "rule": "tolerance-based absolute tolerances (not bitwise equality)",
+    "shortfall_probability_abs": 0.0001,
+    "source": "backend/tests/test_research_engine_regression.py",
+    "weights_abs": 1e-12
+  },
+  "cases": [
+    {
+      "acceptance_ok": true,
+      "buffers": [
+        1,
+        3,
+        6,
+        12
+      ],
+      "canonical_b1_gates_expected": {
+        "cvar95_cumulative_shortfall": 1.1871802686857733,
+        "shortfall_probability": 0.0491
+      },
+      "case_id": "P2_3y_ei0.95_monthly_cost0",
+      "checks": {
+        "buffers_exact_order": true,
+        "canonical_b1": {
+          "cvar95_numerically_identical_to_gate": true,
+          "cvar95_within_tolerance": true,
+          "expected": {
+            "cvar95_cumulative_shortfall": 1.1871802686857733,
+            "shortfall_probability": 0.0491
+          },
+          "observed": {
+            "cvar95_cumulative_shortfall": 1.1871802686857733,
+            "shortfall_probability": 0.0491,
+            "weights": [
+              1.0,
+              0.0,
+              0.0
+            ]
+          },
+          "shortfall_probability_numerically_identical_to_gate": true,
+          "shortfall_probability_within_tolerance": true,
+          "tolerances": {
+            "cvar95_abs": 1e-06,
+            "matching_rule": "tolerance-based (same as backend/tests/test_research_engine_regression.py pytest.approx abs=...); not bitwise equality",
+            "shortfall_probability_abs": 0.0001,
+            "weights_abs": 1e-12
+          },
+          "weights_all_kzt_within_tolerance": true
+        },
+        "cvar95_nonincreasing": true,
+        "finite_metrics": true,
+        "identification_classes": [
+          "A_WELL_IDENTIFIED",
+          "A_WELL_IDENTIFIED",
+          "A_WELL_IDENTIFIED",
+          "C_NOT_IDENTIFIED"
+        ],
+        "identification_policy": "Identification class is surface geometry, not a risk metric; monotonic improvement is not required and is not an acceptance gate.",
+        "json_safe": true,
+        "mean_shortfall_nonincreasing_implementation_only": true,
+        "mean_shortfall_not_duplicated_outside_implementation_only": true,
+        "shared_data_as_of": true,
+        "shared_model_version": true,
+        "shared_simulation_paths": true,
+        "shared_simulation_seed": true,
+        "shortfall_probability_nonincreasing": true,
+        "var95_nonincreasing": true
+      },
+      "execution_ok": true,
+      "failed_checks": [],
+      "fx_policy": "Each optimize_allocation call regenerates the deterministic production FX path set (paths/seed fixed). Not in-memory private-bundle reuse.",
+      "inputs": {
+        "buffers": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "conversion_cost": 0.0,
+        "expense_income_ratio": 0.95,
+        "horizon_years": 3,
+        "profile": "P2",
+        "rebalance_frequency": "monthly"
+      },
+      "measurement_mode": "production_public_api_sequential",
+      "memory": {
+        "peak_rss_bytes": 1221263360,
+        "peak_rss_mib": 1164.6875
+      },
+      "notes": null,
+      "provenance": {
+        "canonical_optimization_specification": "Phase 2C grid-integrity corrected",
+        "contract_version": "buffer_sensitivity_batch_v1",
+        "data_as_of": "2025-12-31",
+        "dataset_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+        "model_version": "1.0.0",
+        "presentation_version": "presentation_v1",
+        "simulation_paths": 10000,
+        "simulation_seed": 42,
+        "units": {
+          "cumulative_shortfall": "months_of_initial_monthly_income_I0_equals_1"
+        }
+      },
+      "results_by_buffer": [
+        {
+          "buffer_months": 1.0,
+          "cvar95_cumulative_shortfall": 1.1871802686857733,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.05935901343428867,
+            "mean_terminal_wealth": 9.117027760735608,
+            "median_terminal_wealth": 7.56748856436296,
+            "p05_terminal_wealth": 0.576860575153062,
+            "p95_terminal_wealth": 22.64908125130461,
+            "wealth_depletion_probability": 0.0284
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 199,
+          "n_surface": 1473,
+          "near_optimal_1pct_count": 35,
+          "near_optimal_1pct_frac": 0.02376103190767142,
+          "optimize_wall_seconds": 17.932038541,
+          "shortfall_probability": 0.0491,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 3.0,
+          "cvar95_cumulative_shortfall": 0.2333919254698744,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.01166959627349372,
+            "mean_terminal_wealth": 10.969338343574812,
+            "median_terminal_wealth": 9.467488564362958,
+            "p05_terminal_wealth": 2.38715881886855,
+            "p95_terminal_wealth": 24.549081251304614,
+            "wealth_depletion_probability": 0.0078
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 52,
+          "n_surface": 1364,
+          "near_optimal_1pct_count": 5,
+          "near_optimal_1pct_frac": 0.0036656891495601175,
+          "optimize_wall_seconds": 15.699372624999999,
+          "shortfall_probability": 0.0095,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 6.0,
+          "cvar95_cumulative_shortfall": 0.0247547541682853,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0012377377084142652,
+            "mean_terminal_wealth": 13.808906485009734,
+            "median_terminal_wealth": 12.317488564362964,
+            "p05_terminal_wealth": 5.2371588188685445,
+            "p95_terminal_wealth": 27.399081251304615,
+            "wealth_depletion_probability": 0.0012
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 21,
+          "n_surface": 1341,
+          "near_optimal_1pct_count": 1,
+          "near_optimal_1pct_frac": 0.0007457121551081282,
+          "optimize_wall_seconds": 15.300687415999995,
+          "shortfall_probability": 0.0012,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 12.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 19.50766874730134,
+            "median_terminal_wealth": 18.01748856436298,
+            "p05_terminal_wealth": 10.937158818868575,
+            "p95_terminal_wealth": 33.099081251304625,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 1095,
+          "n_surface": 2142,
+          "near_optimal_1pct_count": 2142,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 28.05745125,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "single_job_limit_comparisons": [
+        {
+          "buffer_months": 1.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 17.932038541
+        },
+        {
+          "buffer_months": 3.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 15.699372624999999
+        },
+        {
+          "buffer_months": 6.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 15.300687415999995
+        },
+        {
+          "buffer_months": 12.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 28.05745125
+        }
+      ],
+      "timing": {
+        "note": "Per-buffer wall time includes deterministic FX regeneration inside each public optimize_allocation call.",
+        "optimize_sum_seconds": 76.989549832,
+        "per_buffer_public_optimize_seconds": [
+          17.932038541,
+          15.699372624999999,
+          15.300687415999995,
+          28.05745125
+        ],
+        "total_batch_seconds": 78.96022925
+      }
+    },
+    {
+      "acceptance_ok": true,
+      "buffers": [
+        1,
+        3,
+        6,
+        12
+      ],
+      "canonical_b1_gates_expected": {
+        "cvar95_cumulative_shortfall": 0.5082906243903793,
+        "shortfall_probability": 0.0283
+      },
+      "case_id": "P4_3y_ei0.95_monthly_cost0",
+      "checks": {
+        "buffers_exact_order": true,
+        "canonical_b1": {
+          "cvar95_numerically_identical_to_gate": true,
+          "cvar95_within_tolerance": true,
+          "expected": {
+            "cvar95_cumulative_shortfall": 0.5082906243903793,
+            "shortfall_probability": 0.0283
+          },
+          "observed": {
+            "cvar95_cumulative_shortfall": 0.5082906243903793,
+            "shortfall_probability": 0.0283,
+            "weights": [
+              1.0,
+              0.0,
+              0.0
+            ]
+          },
+          "shortfall_probability_numerically_identical_to_gate": true,
+          "shortfall_probability_within_tolerance": true,
+          "tolerances": {
+            "cvar95_abs": 1e-06,
+            "matching_rule": "tolerance-based (same as backend/tests/test_research_engine_regression.py pytest.approx abs=...); not bitwise equality",
+            "shortfall_probability_abs": 0.0001,
+            "weights_abs": 1e-12
+          },
+          "weights_all_kzt_within_tolerance": true
+        },
+        "cvar95_nonincreasing": true,
+        "finite_metrics": true,
+        "identification_classes": [
+          "A_WELL_IDENTIFIED",
+          "A_WELL_IDENTIFIED",
+          "A_WELL_IDENTIFIED",
+          "C_NOT_IDENTIFIED"
+        ],
+        "identification_policy": "Identification class is surface geometry, not a risk metric; monotonic improvement is not required and is not an acceptance gate.",
+        "json_safe": true,
+        "mean_shortfall_nonincreasing_implementation_only": true,
+        "mean_shortfall_not_duplicated_outside_implementation_only": true,
+        "shared_data_as_of": true,
+        "shared_model_version": true,
+        "shared_simulation_paths": true,
+        "shared_simulation_seed": true,
+        "shortfall_probability_nonincreasing": true,
+        "var95_nonincreasing": true
+      },
+      "execution_ok": true,
+      "failed_checks": [],
+      "fx_policy": "Each optimize_allocation call regenerates the deterministic production FX path set (paths/seed fixed). Not in-memory private-bundle reuse.",
+      "inputs": {
+        "buffers": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "conversion_cost": 0.0,
+        "expense_income_ratio": 0.95,
+        "horizon_years": 3,
+        "profile": "P4",
+        "rebalance_frequency": "monthly"
+      },
+      "measurement_mode": "production_public_api_sequential",
+      "memory": {
+        "peak_rss_bytes": 1250426880,
+        "peak_rss_mib": 1192.5
+      },
+      "notes": null,
+      "provenance": {
+        "canonical_optimization_specification": "Phase 2C grid-integrity corrected",
+        "contract_version": "buffer_sensitivity_batch_v1",
+        "data_as_of": "2025-12-31",
+        "dataset_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+        "model_version": "1.0.0",
+        "presentation_version": "presentation_v1",
+        "simulation_paths": 10000,
+        "simulation_seed": 42,
+        "units": {
+          "cumulative_shortfall": "months_of_initial_monthly_income_I0_equals_1"
+        }
+      },
+      "results_by_buffer": [
+        {
+          "buffer_months": 1.0,
+          "cvar95_cumulative_shortfall": 0.5082906243903793,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.025414531219518963,
+            "mean_terminal_wealth": 8.037557244490783,
+            "median_terminal_wealth": 6.883017977934983,
+            "p05_terminal_wealth": 1.0127791793310061,
+            "p95_terminal_wealth": 19.050912152667145,
+            "wealth_depletion_probability": 0.0172
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 105,
+          "n_surface": 1403,
+          "near_optimal_1pct_count": 15,
+          "near_optimal_1pct_frac": 0.010691375623663579,
+          "optimize_wall_seconds": 15.5045185,
+          "shortfall_probability": 0.0283,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 3.0,
+          "cvar95_cumulative_shortfall": 0.07971630207331458,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.003985815103665729,
+            "mean_terminal_wealth": 9.916128528374932,
+            "median_terminal_wealth": 8.782070875866225,
+            "p05_terminal_wealth": 2.8955275150397797,
+            "p95_terminal_wealth": 20.950912152667147,
+            "wealth_depletion_probability": 0.0033
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 36,
+          "n_surface": 1352,
+          "near_optimal_1pct_count": 3,
+          "near_optimal_1pct_frac": 0.0022189349112426036,
+          "optimize_wall_seconds": 15.388628416,
+          "shortfall_probability": 0.0036,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 6.0,
+          "cvar95_cumulative_shortfall": 0.005477338282476568,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.00027386691412382833,
+            "mean_terminal_wealth": 12.76241658018539,
+            "median_terminal_wealth": 11.632070875866226,
+            "p05_terminal_wealth": 5.7455275150397895,
+            "p95_terminal_wealth": 23.80091215266714,
+            "wealth_depletion_probability": 0.0003
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 21,
+          "n_surface": 1341,
+          "near_optimal_1pct_count": 1,
+          "near_optimal_1pct_frac": 0.0007457121551081282,
+          "optimize_wall_seconds": 15.832220374999999,
+          "shortfall_probability": 0.0003,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 12.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 18.462142713271255,
+            "median_terminal_wealth": 17.33207087586623,
+            "p05_terminal_wealth": 11.445527515039787,
+            "p95_terminal_wealth": 29.50091215266713,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 3752,
+          "n_surface": 4130,
+          "near_optimal_1pct_count": 4130,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 65.94089987500001,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "single_job_limit_comparisons": [
+        {
+          "buffer_months": 1.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 15.5045185
+        },
+        {
+          "buffer_months": 3.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 15.388628416
+        },
+        {
+          "buffer_months": 6.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 15.832220374999999
+        },
+        {
+          "buffer_months": 12.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 65.94089987500001
+        }
+      ],
+      "timing": {
+        "note": "Per-buffer wall time includes deterministic FX regeneration inside each public optimize_allocation call.",
+        "optimize_sum_seconds": 112.66626716600001,
+        "per_buffer_public_optimize_seconds": [
+          15.5045185,
+          15.388628416,
+          15.832220374999999,
+          65.94089987500001
+        ],
+        "total_batch_seconds": 113.384383667
+      }
+    },
+    {
+      "acceptance_ok": true,
+      "buffers": [
+        1,
+        3,
+        6,
+        12
+      ],
+      "canonical_b1_gates_expected": null,
+      "case_id": "P2_5y_ei1.05_monthly_cost0",
+      "checks": {
+        "buffers_exact_order": true,
+        "cvar95_nonincreasing": true,
+        "finite_metrics": true,
+        "identification_classes": [
+          "C_NOT_IDENTIFIED",
+          "B_WEAKLY_IDENTIFIED",
+          "A_WELL_IDENTIFIED",
+          "A_WELL_IDENTIFIED"
+        ],
+        "identification_policy": "Identification class is surface geometry, not a risk metric; monotonic improvement is not required and is not an acceptance gate.",
+        "json_safe": true,
+        "mean_shortfall_nonincreasing_implementation_only": true,
+        "mean_shortfall_not_duplicated_outside_implementation_only": true,
+        "shared_data_as_of": true,
+        "shared_model_version": true,
+        "shared_simulation_paths": true,
+        "shared_simulation_seed": true,
+        "shortfall_probability_nonincreasing": true,
+        "var95_nonincreasing": true
+      },
+      "execution_ok": true,
+      "failed_checks": [],
+      "fx_policy": "Each optimize_allocation call regenerates the deterministic production FX path set (paths/seed fixed). Not in-memory private-bundle reuse.",
+      "inputs": {
+        "buffers": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "conversion_cost": 0.0,
+        "expense_income_ratio": 1.05,
+        "horizon_years": 5,
+        "profile": "P2",
+        "rebalance_frequency": "monthly"
+      },
+      "measurement_mode": "production_public_api_sequential",
+      "memory": {
+        "peak_rss_bytes": 1238941696,
+        "peak_rss_mib": 1181.546875
+      },
+      "notes": "Documented 5-year stress case; exploratory for timing/monotonicity. Also exposes single-job timeout risk on B=1 alone.",
+      "provenance": {
+        "canonical_optimization_specification": "Phase 2C grid-integrity corrected",
+        "contract_version": "buffer_sensitivity_batch_v1",
+        "data_as_of": "2025-12-31",
+        "dataset_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+        "model_version": "1.0.0",
+        "presentation_version": "presentation_v1",
+        "simulation_paths": 10000,
+        "simulation_seed": 42,
+        "units": {
+          "cumulative_shortfall": "months_of_initial_monthly_income_I0_equals_1"
+        }
+      },
+      "results_by_buffer": [
+        {
+          "buffer_months": 1.0,
+          "cvar95_cumulative_shortfall": 7.7779310492719445,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": true,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.7876914400393228,
+            "mean_terminal_wealth": 17.50958483802154,
+            "median_terminal_wealth": 13.506328003869315,
+            "p05_terminal_wealth": 0.0,
+            "p95_terminal_wealth": 50.074441322708104,
+            "wealth_depletion_probability": 0.065
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 5151,
+          "n_surface": 5151,
+          "near_optimal_1pct_count": 5151,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 125.17361241699999,
+          "shortfall_probability": 0.3141,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 4.783173281918355,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 3.0,
+          "cvar95_cumulative_shortfall": 5.677931049271943,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "B_WEAKLY_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.36896939061107825,
+            "mean_terminal_wealth": 19.190862788593293,
+            "median_terminal_wealth": 15.42172606031885,
+            "p05_terminal_wealth": 0.0,
+            "p95_terminal_wealth": 52.174441322708105,
+            "wealth_depletion_probability": 0.0539
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 901,
+          "n_surface": 1997,
+          "near_optimal_1pct_count": 185,
+          "near_optimal_1pct_frac": 0.09263895843765649,
+          "optimize_wall_seconds": 38.006331125,
+          "shortfall_probability": 0.1256,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 2.6831732819183554,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 6.0,
+          "cvar95_cumulative_shortfall": 2.5644421202738923,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.12822210601369458,
+            "mean_terminal_wealth": 22.100115503995905,
+            "median_terminal_wealth": 18.560098481725152,
+            "p05_terminal_wealth": 1.0386068656913903,
+            "p95_terminal_wealth": 55.324441322708104,
+            "wealth_depletion_probability": 0.0304
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 94,
+          "n_surface": 1395,
+          "near_optimal_1pct_count": 12,
+          "near_optimal_1pct_frac": 0.008602150537634409,
+          "optimize_wall_seconds": 24.490498833000004,
+          "shortfall_probability": 0.0425,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 12.0,
+          "cvar95_cumulative_shortfall": 0.226384740580852,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "A_WELL_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0113192370290426,
+            "mean_terminal_wealth": 28.283212635011232,
+            "median_terminal_wealth": 24.86009848172511,
+            "p05_terminal_wealth": 7.192084944741881,
+            "p95_terminal_wealth": 61.62444132270814,
+            "wealth_depletion_probability": 0.005
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 21,
+          "n_surface": 1341,
+          "near_optimal_1pct_count": 1,
+          "near_optimal_1pct_frac": 0.0007457121551081282,
+          "optimize_wall_seconds": 23.04181679199999,
+          "shortfall_probability": 0.0053,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "single_job_limit_comparisons": [
+        {
+          "buffer_months": 1.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": true,
+          "optimize_wall_seconds": 125.17361241699999
+        },
+        {
+          "buffer_months": 3.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 38.006331125
+        },
+        {
+          "buffer_months": 6.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 24.490498833000004
+        },
+        {
+          "buffer_months": 12.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 23.04181679199999
+        }
+      ],
+      "timing": {
+        "note": "Per-buffer wall time includes deterministic FX regeneration inside each public optimize_allocation call.",
+        "optimize_sum_seconds": 210.71225916699998,
+        "per_buffer_public_optimize_seconds": [
+          125.17361241699999,
+          38.006331125,
+          24.490498833000004,
+          23.04181679199999
+        ],
+        "total_batch_seconds": 211.424700833
+      }
+    },
+    {
+      "acceptance_ok": true,
+      "buffers": [
+        1,
+        3,
+        6,
+        12
+      ],
+      "canonical_b1_gates_expected": null,
+      "case_id": "P1_5y_ei0.95_monthly_cost0",
+      "checks": {
+        "buffers_exact_order": true,
+        "cvar95_nonincreasing": true,
+        "finite_metrics": true,
+        "identification_classes": [
+          "C_NOT_IDENTIFIED",
+          "C_NOT_IDENTIFIED",
+          "C_NOT_IDENTIFIED",
+          "C_NOT_IDENTIFIED"
+        ],
+        "identification_policy": "Identification class is surface geometry, not a risk metric; monotonic improvement is not required and is not an acceptance gate.",
+        "json_safe": true,
+        "mean_shortfall_nonincreasing_implementation_only": true,
+        "mean_shortfall_not_duplicated_outside_implementation_only": true,
+        "shared_data_as_of": true,
+        "shared_model_version": true,
+        "shared_simulation_paths": true,
+        "shared_simulation_seed": true,
+        "shortfall_probability_nonincreasing": true,
+        "var95_nonincreasing": true
+      },
+      "execution_ok": true,
+      "failed_checks": [],
+      "fx_policy": "Each optimize_allocation call regenerates the deterministic production FX path set (paths/seed fixed). Not in-memory private-bundle reuse.",
+      "inputs": {
+        "buffers": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "conversion_cost": 0.0,
+        "expense_income_ratio": 0.95,
+        "horizon_years": 5,
+        "profile": "P1",
+        "rebalance_frequency": "monthly"
+      },
+      "measurement_mode": "production_public_api_sequential",
+      "memory": {
+        "peak_rss_bytes": 1193639936,
+        "peak_rss_mib": 1138.34375
+      },
+      "notes": "Documented potentially broad near-optimal-surface case for public-path batch timing.",
+      "provenance": {
+        "canonical_optimization_specification": "Phase 2C grid-integrity corrected",
+        "contract_version": "buffer_sensitivity_batch_v1",
+        "data_as_of": "2025-12-31",
+        "dataset_sha256": "def1997c9bac432d918772c31b78a12632e50674353ecc0ed0ba2e7e3f25c494",
+        "model_version": "1.0.0",
+        "presentation_version": "presentation_v1",
+        "simulation_paths": 10000,
+        "simulation_seed": 42,
+        "units": {
+          "cumulative_shortfall": "months_of_initial_monthly_income_I0_equals_1"
+        }
+      },
+      "results_by_buffer": [
+        {
+          "buffer_months": 1.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 3.949999999999989,
+            "median_terminal_wealth": 3.9499999999999895,
+            "p05_terminal_wealth": 3.9499999999999895,
+            "p95_terminal_wealth": 3.9499999999999895,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 5151,
+          "n_surface": 5151,
+          "near_optimal_1pct_count": 5151,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 116.723442542,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 3.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 5.84999999999999,
+            "median_terminal_wealth": 5.849999999999989,
+            "p05_terminal_wealth": 5.849999999999989,
+            "p95_terminal_wealth": 5.849999999999989,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 5151,
+          "n_surface": 5151,
+          "near_optimal_1pct_count": 5151,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 116.41032529100002,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 6.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 8.700000000000017,
+            "median_terminal_wealth": 8.700000000000017,
+            "p05_terminal_wealth": 8.700000000000017,
+            "p95_terminal_wealth": 8.700000000000017,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 5151,
+          "n_surface": 5151,
+          "near_optimal_1pct_count": 5151,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 116.47663408399998,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "buffer_months": 12.0,
+          "cvar95_cumulative_shortfall": 0.0,
+          "data_as_of": "2025-12-31",
+          "exceeds_single_job_hard_limit_180s": false,
+          "exceeds_single_job_soft_limit_120s": false,
+          "identification_class": "C_NOT_IDENTIFIED",
+          "implementation_only": {
+            "mean_cumulative_shortfall": 0.0,
+            "mean_terminal_wealth": 14.400000000000034,
+            "median_terminal_wealth": 14.400000000000041,
+            "p05_terminal_wealth": 14.400000000000041,
+            "p95_terminal_wealth": 14.400000000000041,
+            "wealth_depletion_probability": 0.0
+          },
+          "model_version": "1.0.0",
+          "n_coarse": 1326,
+          "n_refined": 5151,
+          "n_surface": 5151,
+          "near_optimal_1pct_count": 5151,
+          "near_optimal_1pct_frac": 1.0,
+          "optimize_wall_seconds": 116.35078445799996,
+          "shortfall_probability": 0.0,
+          "simulation_paths": 10000,
+          "simulation_seed": 42,
+          "var95_cumulative_shortfall": 0.0,
+          "weights": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "single_job_limit_comparisons": [
+        {
+          "buffer_months": 1.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 116.723442542
+        },
+        {
+          "buffer_months": 3.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 116.41032529100002
+        },
+        {
+          "buffer_months": 6.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 116.47663408399998
+        },
+        {
+          "buffer_months": 12.0,
+          "exceeds_hard_180s": false,
+          "exceeds_soft_120s": false,
+          "optimize_wall_seconds": 116.35078445799996
+        }
+      ],
+      "timing": {
+        "note": "Per-buffer wall time includes deterministic FX regeneration inside each public optimize_allocation call.",
+        "optimize_sum_seconds": 465.96118637499995,
+        "per_buffer_public_optimize_seconds": [
+          116.723442542,
+          116.41032529100002,
+          116.47663408399998,
+          116.35078445799996
+        ],
+        "total_batch_seconds": 466.551690125
+      }
+    }
+  ],
+  "compute_design": {
+    "buffer_execution": "sequential inside one process",
+    "optimizer": "research_engine.optimize_allocation (unmodified public API)",
+    "paths": 10000,
+    "private_hook_status": "_fx_bundle remains test-only. Prior shared-bundle timings are experimental only and are not the production design.",
+    "production_proposal": "Four sequential public optimize_allocation calls; each regenerates the deterministic production FX path set. Do not call _fx_bundle in Phase 3C production workers.",
+    "seed": 42
+  },
+  "contract_version": "buffer_sensitivity_batch_v1",
+  "critical_findings": {
+    "any_public_call_exceeded_single_job_hard_180s": false,
+    "any_public_call_exceeded_single_job_soft_120s": true,
+    "single_job_soft_limit_risk": "Existing single-job Celery soft limit (120 s) is already exceeded by at least one advertised valid public optimize call on this host (P2 5y \u03b7=1.05 B=1 \u2248 125.2 s). Phase 3C must introduce task-specific single-job soft/hard/lease limits with lease > hard + margin, or demonstrate on deployment hardware that all advertised inputs fit the existing limits with adequate margin. Do not silently restrict advertised scientific inputs. Do not leave 120/180/240 unqualified."
+  },
+  "documented_buffers": [
+    1,
+    3,
+    6,
+    12
+  ],
+  "environment": {
+    "architecture": "arm64",
+    "backend_package_root": "backend",
+    "cpu_count": 10,
+    "machine_memory_bytes": 17179869184,
+    "machine_memory_gib": 16.0,
+    "model_manifest": "backend/research_engine/MODEL_MANIFEST.json",
+    "model_manifest_sha256": "2b1a16d02c7b1c70a3fa23b691d87f108b64dcac27acfaddddad98ef3d00b5c3",
+    "numpy_version": "2.0.2",
+    "pandas_version": "2.3.3",
+    "platform": "macOS-26.1-arm64-arm-64bit",
+    "python_version": "3.9.6",
+    "scipy_version": "1.13.1",
+    "script": "scripts/benchmarks/buffer_sensitivity_batch_probe.py",
+    "script_sha256": "cfead727c8eb9eff298cee3e5636b0ece2a711bef86127f097edc2441966054f",
+    "statsmodels_version": "0.14.6"
+  },
+  "existing_worker_limits_reference": {
+    "CELERY_TASK_SOFT_TIME_LIMIT": 120,
+    "CELERY_TASK_TIME_LIMIT": 180,
+    "CELERY_WORKER_CONCURRENCY": 1,
+    "OPTIMIZATION_LEASE_SECONDS": 240,
+    "optimization_submit_throttle_default": "3/hour"
+  },
+  "generated_at_utc": "2026-09-12T10:35:39Z",
+  "limit_comparisons": [
+    {
+      "acceptance_ok": true,
+      "case_id": "P2_3y_ei0.95_monthly_cost0",
+      "exceeds_candidate_batch_hard_seconds": false,
+      "exceeds_candidate_batch_soft_seconds": false,
+      "execution_ok": true,
+      "failed_checks": [],
+      "total_batch_seconds": 78.96022925,
+      "within_candidate_batch_lease_seconds": true
+    },
+    {
+      "acceptance_ok": true,
+      "case_id": "P4_3y_ei0.95_monthly_cost0",
+      "exceeds_candidate_batch_hard_seconds": false,
+      "exceeds_candidate_batch_soft_seconds": false,
+      "execution_ok": true,
+      "failed_checks": [],
+      "total_batch_seconds": 113.384383667,
+      "within_candidate_batch_lease_seconds": true
+    },
+    {
+      "acceptance_ok": true,
+      "case_id": "P2_5y_ei1.05_monthly_cost0",
+      "exceeds_candidate_batch_hard_seconds": false,
+      "exceeds_candidate_batch_soft_seconds": false,
+      "execution_ok": true,
+      "failed_checks": [],
+      "total_batch_seconds": 211.424700833,
+      "within_candidate_batch_lease_seconds": true
+    },
+    {
+      "acceptance_ok": true,
+      "case_id": "P1_5y_ei0.95_monthly_cost0",
+      "exceeds_candidate_batch_hard_seconds": false,
+      "exceeds_candidate_batch_soft_seconds": false,
+      "execution_ok": true,
+      "failed_checks": [],
+      "total_batch_seconds": 466.551690125,
+      "within_candidate_batch_lease_seconds": true
+    }
+  ],
+  "phase": "3B",
+  "presentation_version": "presentation_v1"
+}
