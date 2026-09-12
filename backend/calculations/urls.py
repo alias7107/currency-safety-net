@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    BufferSensitivityJobCreateView,
+    BufferSensitivityJobDetailView,
     HealthView,
     ModelMetadataView,
     ModelOptionsView,
@@ -21,5 +23,15 @@ urlpatterns = [
         "optimization-jobs/<uuid:job_id>/",
         OptimizationJobDetailView.as_view(),
         name="optimization-job-detail",
+    ),
+    path(
+        "buffer-sensitivity-jobs/",
+        BufferSensitivityJobCreateView.as_view(),
+        name="buffer-sensitivity-job-create",
+    ),
+    path(
+        "buffer-sensitivity-jobs/<uuid:job_id>/",
+        BufferSensitivityJobDetailView.as_view(),
+        name="buffer-sensitivity-job-detail",
     ),
 ]
