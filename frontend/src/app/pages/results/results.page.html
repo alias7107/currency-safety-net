@@ -10,7 +10,7 @@
           [body]="strings.results.missingJobBody"
         />
         <div>
-          <a class="button button--primary" routerLink="/calculator">{{
+          <a class="button button--primary" routerLink="/assessment">{{
             strings.landing.heroCta
           }}</a>
         </div>
@@ -19,7 +19,7 @@
       <div class="stack stack--4">
         <app-section-heading [level]="1" [heading]="strings.results.title" />
         <app-error-panel [error]="apiError" (retry)="retry()">
-          <a class="button button--primary" routerLink="/calculator">{{
+          <a class="button button--primary" routerLink="/assessment">{{
             strings.results.actionRunAnother
           }}</a>
         </app-error-panel>
@@ -77,6 +77,8 @@
           <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
         </div>
 
+        <app-scenario-overview [result]="modelResult" [profileTitle]="profileTitle()" />
+
         <section aria-labelledby="allocation-title" class="panel">
           <app-section-heading
             headingId="allocation-title"
@@ -89,61 +91,146 @@
           />
         </section>
 
-        <section aria-labelledby="metrics-title" class="panel">
+        <app-result-narrative [result]="modelResult" />
+
+        <section
+          aria-labelledby="objective-title"
+          class="panel panel--objective"
+          data-testid="primary-objective"
+        >
           <app-section-heading
-            headingId="metrics-title"
-            [heading]="strings.results.metricsHeading"
-            [body]="strings.results.metricsBody"
+            headingId="objective-title"
+            [heading]="strings.results.phase2b.objectiveHeading"
+            [body]="strings.results.phase2b.objectiveBody"
           />
+          <p class="objective__value" data-testid="objective-value">
+            <span class="objective__label">{{ strings.results.phase2b.objectiveValueLabel }}</span>
+            <span class="objective__number">
+              {{ cvar95Value() }}
+              <span class="objective__unit">{{ strings.results.phase2b.objectiveUnit }}</span>
+            </span>
+          </p>
           <p class="normalization-note" data-testid="normalization-note">
             <strong>{{ strings.results.normalizationLabel }}.</strong>
             {{ strings.results.normalizationNote }}
           </p>
-          <div class="metric-grid">
-            @for (metric of metrics(); track metric.key) {
-              <app-metric-card
-                [attr.data-metric]="metric.key"
+          <p>{{ strings.results.phase2b.objectiveNotAdvice }}</p>
+          <div>
+            <a
+              class="button button--secondary"
+              routerLink="/research"
+              data-testid="objective-research-link"
+            >
+              {{ strings.results.phase2b.objectiveResearchLink }}
+            </a>
+          </div>
+        </section>
+
+        <section aria-labelledby="diagnostics-title" class="panel" data-testid="diagnostics">
+          <app-section-heading
+            headingId="diagnostics-title"
+            [heading]="strings.results.phase2b.diagnosticsHeading"
+            [body]="strings.results.phase2b.diagnosticsBody"
+          />
+          <div class="metric-explanation-grid">
+            @for (metric of diagnostics(); track metric.key) {
+              <app-metric-explanation
+                [metricKey]="metric.key"
                 [label]="metric.label"
                 [value]="metric.value"
                 [unit]="metric.unit"
-                [explanation]="metric.explanation"
-                [emphasis]="metric.emphasis"
+                [definition]="metric.definition"
+                [howToRead]="metric.howToRead"
+                [note]="metric.note"
               />
             }
           </div>
         </section>
 
-        @if (identificationLabel(); as identification) {
+        @if (identification(); as identity) {
           <section aria-labelledby="identification-title" class="panel">
             <app-section-heading
               headingId="identification-title"
               [heading]="strings.results.identificationHeading"
             />
-            <p class="identification__value" data-testid="identification">{{ identification }}</p>
-            <p class="identification__body">
-              @if (isWellIdentified()) {
-                {{ strings.results.identificationWellIdentifiedBody }}
-              } @else {
-                {{ strings.results.identificationOtherBody }}
-              }
-            </p>
-            <p class="identification__raw">
-              {{ strings.results.identificationClassLabel }}:
-              <code>{{ modelResult.identification_class }}</code>
-            </p>
+            <p class="identification__value" data-testid="identification">{{ identity.label }}</p>
+            <p class="identification__body">{{ identity.body }}</p>
           </section>
         }
 
-        <section aria-labelledby="interpretation-title" class="panel">
-          <app-section-heading
-            headingId="interpretation-title"
-            [heading]="strings.results.interpretationHeading"
-          />
-          <ul class="bullet-list">
-            @for (point of strings.results.interpretationPoints; track point) {
+        <app-info-callout
+          tone="warning"
+          data-testid="result-limitations"
+          [heading]="strings.results.phase2b.limitationsHeading"
+        >
+          <ul class="list">
+            @for (point of strings.results.phase2b.limitationsPoints; track point) {
               <li>{{ point }}</li>
             }
           </ul>
+        </app-info-callout>
+
+        <section aria-labelledby="next-title" class="panel" data-testid="what-next">
+          <app-section-heading
+            headingId="next-title"
+            [heading]="strings.results.phase2b.nextHeading"
+            [body]="strings.results.phase2b.nextBody"
+          />
+          <ul class="list">
+            <li>{{ strings.results.phase2b.nextCompare }}</li>
+            <li>{{ strings.results.phase2b.nextChange }}</li>
+            <li>{{ strings.results.phase2b.nextAssumptions }}</li>
+            <li>{{ strings.results.phase2b.nextResearch }}</li>
+          </ul>
+          <div class="results__actions results__comparison" data-testid="results-comparison">
+            @if (isInComparison()) {
+              <p data-testid="comparison-saved">{{ strings.results.comparisonSaved }}</p>
+              <a class="button button--primary" routerLink="/compare" data-testid="comparison-open">
+                {{ strings.results.phase2b.nextOpenCompare }}
+              </a>
+            } @else if (comparisonIsFull()) {
+              <p data-testid="comparison-full">{{ strings.results.comparisonFull }}</p>
+              <a
+                class="button button--secondary"
+                routerLink="/compare"
+                data-testid="comparison-open"
+              >
+                {{ strings.results.phase2b.nextOpenCompare }}
+              </a>
+            } @else {
+              <button
+                type="button"
+                class="button button--primary"
+                data-testid="comparison-add"
+                [attr.aria-label]="strings.results.phase2b.nextAddCompare"
+                (click)="addToComparison()"
+              >
+                {{ strings.results.phase2b.nextAddCompare }}
+              </button>
+            }
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="next-change-assumptions"
+              (click)="changeAssumptions()"
+            >
+              {{ strings.results.actionChangeAssumptions }}
+            </button>
+            <a class="button button--ghost" routerLink="/assessment" data-testid="next-assessment">
+              {{ strings.results.phase2b.nextOpenAssessment }}
+            </a>
+            <a class="button button--ghost" routerLink="/research" data-testid="next-research">
+              {{ strings.results.phase2b.nextOpenResearch }}
+            </a>
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="open-printable-report"
+              (click)="openPrintableReport()"
+            >
+              {{ strings.report.openAction }}
+            </button>
+          </div>
         </section>
 
         <section aria-labelledby="details-title" class="panel">
@@ -171,55 +258,6 @@
             <app-assumption-summary [scenario]="inputs" [profileTitle]="profileTitle()" />
           </section>
         }
-
-        <section aria-labelledby="actions-title" class="panel">
-          <app-section-heading
-            headingId="actions-title"
-            [heading]="strings.results.actionsHeading"
-          />
-          <div class="results__actions">
-            <button type="button" class="button button--primary" (click)="runAnother()">
-              {{ strings.results.actionRunAnother }}
-            </button>
-            <button type="button" class="button button--secondary" (click)="changeAssumptions()">
-              {{ strings.results.actionChangeAssumptions }}
-            </button>
-            <a class="button button--ghost" routerLink="/research">{{
-              strings.results.actionMethodology
-            }}</a>
-          </div>
-
-          <div class="results__comparison stack stack--3" data-testid="results-comparison">
-            @if (isInComparison()) {
-              <p data-testid="comparison-saved">{{ strings.results.comparisonSaved }}</p>
-              <a
-                class="button button--secondary"
-                routerLink="/compare"
-                data-testid="comparison-open"
-              >
-                {{ strings.results.comparisonOpen }}
-              </a>
-            } @else if (comparisonIsFull()) {
-              <p data-testid="comparison-full">{{ strings.results.comparisonFull }}</p>
-              <a
-                class="button button--secondary"
-                routerLink="/compare"
-                data-testid="comparison-open"
-              >
-                {{ strings.results.comparisonOpen }}
-              </a>
-            } @else {
-              <button
-                type="button"
-                class="button button--secondary"
-                data-testid="comparison-add"
-                (click)="addToComparison()"
-              >
-                {{ strings.results.comparisonAdd }}
-              </button>
-            }
-          </div>
-        </section>
       </div>
     }
   </app-page-container>

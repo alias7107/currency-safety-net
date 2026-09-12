@@ -1,0 +1,163 @@
+/* Printable scenario report (Phase 2C). */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+
+  .no-print,
+  .skip-link,
+  app-header,
+  app-footer,
+  .report-toolbar {
+    display: none !important;
+  }
+
+  .app-shell,
+  .app-shell__main,
+  .section,
+  .page-container {
+    display: block;
+    min-height: 0;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Outer report may span multiple A4 pages. */
+  .report-document,
+  .report-document.panel {
+    break-inside: auto;
+    page-break-inside: auto;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #bbb !important;
+  }
+
+  /* Large nested panels remain breakable when they exceed one page. */
+  .report-document .panel:not(.panel--objective) {
+    break-inside: auto;
+    page-break-inside: auto;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #bbb !important;
+  }
+
+  /* Compact self-contained blocks stay together where practical. */
+  .metric-explanation,
+  .panel--objective,
+  .report-document__header,
+  .detail-grid__row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #bbb !important;
+  }
+
+  .report-document__header,
+  .report-document__title,
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+    color: #111 !important;
+  }
+
+  .report-document__brand {
+    color: #333 !important;
+  }
+
+  a.report-link,
+  a {
+    color: #111 !important;
+    text-decoration: underline;
+  }
+
+  .report-link-url {
+    display: inline;
+    color: #333;
+  }
+
+  .allocation__legend-value,
+  .allocation__legend-code,
+  .allocation__legend-name {
+    color: #111 !important;
+  }
+
+  .metric-explanation__expanded {
+    display: block;
+  }
+
+  .detail-grid__term,
+  .detail-grid__value,
+  .list,
+  .normalization-note,
+  .identification__body {
+    color: #111 !important;
+  }
+}
+
+.report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.report-toolbar__help {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  max-width: 40ch;
+}
+
+.report-document__header {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-4);
+}
+
+.report-document__brand {
+  margin: 0 0 var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-document__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+}
+
+.report-link-url {
+  display: none;
+}
+
+.metric-explanation__expanded {
+  margin-top: var(--space-2);
+}
+
+.metric-explanation__how-label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}

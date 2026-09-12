@@ -25,6 +25,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/results/results.page').then((m) => m.ResultsPage),
   },
   {
+    path: 'report/:jobId',
+    title: `${EN_STRINGS.report.documentTitle} — ${EN_STRINGS.app.name}`,
+    loadComponent: () => import('./pages/report/report.page').then((m) => m.ReportPage),
+  },
+  {
     path: 'compare',
     title: `${EN_STRINGS.compare.documentTitle} — ${EN_STRINGS.app.name}`,
     loadComponent: () => import('./pages/compare/compare.page').then((m) => m.ComparePage),

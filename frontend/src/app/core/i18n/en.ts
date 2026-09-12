@@ -172,7 +172,7 @@ export const EN_STRINGS = {
       },
       {
         title: 'Buffer depletion probability',
-        body: 'How often the starting emergency buffer was fully used before the horizon ended.',
+        body: 'The share of simulated paths whose buffer wealth was at or below the model’s depletion tolerance at the end of the horizon.',
       },
       {
         title: 'Identification / stability information',
@@ -337,7 +337,7 @@ export const EN_STRINGS = {
       depletion: {
         label: 'Buffer depletion rate',
         explanation:
-          'Share of simulated paths where the starting buffer was fully used up before the end of the horizon.',
+          'The share of simulated paths whose buffer wealth was at or below the model’s depletion tolerance at the end of the horizon.',
       },
     },
 
@@ -392,6 +392,99 @@ export const EN_STRINGS = {
     comparisonAddedLive: 'Scenario saved for comparison.',
     comparisonDuplicateLive: 'This scenario is already saved for comparison.',
     comparisonFullLive: 'Comparison is full. Remove a scenario on the Compare page first.',
+
+    phase2b: {
+      scenarioOverviewHeading: 'Scenario evaluated',
+      scenarioOverviewBody:
+        'These are the assumptions the model used for this run. Nothing below is a recommendation.',
+      ratioObservationBelow:
+        'Expense-to-income ratio is below 1: assumed income exceeds expenses in this scenario.',
+      ratioObservationEqual:
+        'Expense-to-income ratio is equal to 1: assumed income and expenses are equal in this scenario.',
+      ratioObservationAbove:
+        'Expense-to-income ratio is above 1: assumed expenses exceed income in this scenario.',
+
+      narrativeHeading: 'What the model found',
+      narrativeBody:
+        'A factual summary of the returned allocation and the assumptions included in this calculation.',
+      allocationList: 'KZT {kzt}, USD {usd}, EUR {eur}',
+      narrativeAllocation: 'The model returned an allocation of {allocation}.',
+      narrativeLargest:
+        'For this scenario, the largest returned weight is {currency} ({code}) at {percent}.',
+      narrativeLargestTied:
+        'For this scenario, {currencies} share the largest returned weight at {percent}.',
+      narrativeConcentrated:
+        'The simulated result shows an allocation concentrated in {currency} ({code}), with no positive weight in the other listed currencies.',
+      narrativeDistributed:
+        'The simulated result shows an allocation distributed across {count} currencies with positive returned weights.',
+      narrativeHorizonBuffer:
+        'This calculation used a horizon of {horizon} {horizonUnit} and a starting buffer of {buffer} {bufferUnit}.',
+      yearSingular: 'year',
+      yearPlural: 'years',
+      monthSingular: 'month',
+      monthPlural: 'months',
+
+      objectiveHeading: 'Primary optimization objective',
+      objectiveBody:
+        'CVaR95 is the average cumulative shortfall among the worst 5% of simulated paths. The optimizer searches for the allocation that minimizes this measure for the selected scenario.',
+      objectiveValueLabel: 'Returned CVaR95 cumulative shortfall',
+      objectiveUnit: 'months of income',
+      objectiveResearchLink: 'Read the full methodology',
+      objectiveNotAdvice:
+        'This value is a modelled shortfall measure for the selected scenario. It is not a personal financial recommendation.',
+
+      diagnosticsHeading: 'Diagnostic metrics',
+      diagnosticsBody:
+        'These figures help describe simulated outcomes for this scenario. They were not jointly optimized with CVaR95.',
+      howToRead: 'How to read this',
+      diagnostics: {
+        shortfallProbability: {
+          definition:
+            'Share of simulated paths where expenses could not be fully covered at some point during the horizon.',
+          howToRead:
+            'A higher share means shortfall occurred on more simulated paths. This is a diagnostic description, not the objective the allocator minimized.',
+        },
+        var95: {
+          definition: 'Cumulative shortfall level that is not exceeded on 95% of simulated paths.',
+          howToRead:
+            'This percentile summary describes the distribution of cumulative shortfall across paths. It is reported alongside the objective; it was not jointly optimized with CVaR95.',
+          zeroNote:
+            'A VaR95 of zero does not mean there is no risk. Losses can still appear in the worst tail of simulated paths, which CVaR95 and other diagnostics describe.',
+        },
+        meanShortfall: {
+          definition:
+            'Mean cumulative shortfall across every simulated path, including paths with no shortfall.',
+          howToRead:
+            'This average mixes paths with and without shortfall. It describes the simulated distribution; it was not jointly optimized with CVaR95.',
+        },
+        depletion: {
+          definition:
+            'The share of simulated paths whose buffer wealth was at or below the model’s depletion tolerance at the end of the horizon.',
+          howToRead:
+            'This end-of-horizon diagnostic describes how often terminal buffer wealth was at or below the model’s depletion tolerance. It is not an anytime-during-the-path measure, and it was not jointly optimized with CVaR95.',
+        },
+      },
+
+      nextHeading: 'What you can do next',
+      nextBody: 'These are product actions inside Currency Safety Net, not financial instructions.',
+      nextCompare: 'Compare this result with another scenario',
+      nextChange: 'Change one assumption and run the assessment again',
+      nextAssumptions:
+        'Review how expense-to-income ratio, buffer, horizon, rebalancing, and conversion cost define the scenario',
+      nextResearch: 'Read the research methodology and limitations',
+      nextOpenAssessment: 'Open the assessment',
+      nextOpenResearch: 'Open the research page',
+      nextOpenCompare: 'Open comparison',
+      nextAddCompare: 'Add this result to comparison',
+
+      limitationsHeading: 'Limitations',
+      limitationsPoints: [
+        'Results are simulation-based model outputs for the scenario you entered.',
+        'Outputs depend on the model assumptions and the historical FX dataset used by the service.',
+        'Exchange rates and household cash flows can differ from the simulated paths.',
+        'This result is informational. It is not a guarantee and not individualized financial advice.',
+      ],
+    },
 
     failedTitle: 'Scenario could not be completed',
     failedBody: 'The model run did not finish. You can adjust your inputs and try again.',
@@ -576,6 +669,44 @@ export const EN_STRINGS = {
     allocationText: 'KZT {kzt}, USD {usd}, EUR {eur}',
     clearedLive: 'Comparison cleared.',
     removedLive: 'Scenario removed from comparison.',
+  },
+
+  report: {
+    documentTitle: 'Scenario report',
+    title: 'Scenario report',
+    brand: 'Currency Safety Net',
+    openAction: 'Open printable report',
+    printAction: 'Print or save as PDF',
+    printHelp: 'In the print dialog, choose “Save as PDF” to download a PDF copy.',
+    printAria: 'Open the browser print dialog to print or save this report as a PDF',
+    loadingTitle: 'Loading scenario report',
+    loadingBody: 'Retrieving the scenario result for this report.',
+    loadingLive: 'Loading scenario report.',
+    notReadyTitle: 'Report not ready yet',
+    notReadyBody:
+      'This scenario is still queued or running. Open the results page to wait for the completed model output.',
+    notReadyCta: 'Open results page',
+    failedTitle: 'Scenario could not be completed',
+    failedBody: 'The model run did not finish, so a printable report is not available.',
+    missingJobTitle: 'No scenario selected',
+    missingJobBody: 'Open the assessment to run a scenario before generating a report.',
+    scopeHeading: 'Report scope',
+    scopeBody:
+      'This document contains simulation-based results for the selected scenario. It is not individualized financial advice and not a guarantee.',
+    allocationHeading: 'Returned allocation',
+    reproducibilityHeading: 'Reproducibility details',
+    reproducibilityBody:
+      'Values needed to identify this model run. They come from the API payload.',
+    methodologyHeading: 'Methodology and limitations',
+    methodologyPoints: [
+      'Outputs are simulation-based model results for the selected scenario.',
+      'Results depend on the selected model assumptions and the historical FX dataset used by the service.',
+      'The model does not forecast exchange rates; it resamples historical behaviour up to the data as-of date.',
+      'Actual household cash flows and exchange rates can differ from the simulated paths.',
+      'This report is informational. It is not a guarantee and not individualized financial advice.',
+    ],
+    researchLink: 'Read the full research methodology',
+    backToResults: 'Back to results',
   },
 
   errors: {

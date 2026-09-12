@@ -1,0 +1,212 @@
+<section class="section section--tight report-page">
+  <app-page-container>
+    <p class="visually-hidden" aria-live="polite" data-testid="report-live">{{ liveMessage() }}</p>
+
+    @if (!jobId()) {
+      <div class="stack stack--4 no-print">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.report.missingJobTitle"
+          [body]="strings.report.missingJobBody"
+        />
+        <div>
+          <a
+            class="button button--primary"
+            routerLink="/assessment"
+            data-testid="report-assessment"
+          >
+            {{ strings.nav.primaryAction }}
+          </a>
+        </div>
+      </div>
+    } @else if (loading()) {
+      <div class="stack stack--4 no-print" data-testid="report-loading">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.report.loadingTitle"
+          [body]="strings.report.loadingBody"
+        />
+        <app-loading-indicator [label]="strings.report.loadingTitle" />
+      </div>
+    } @else if (error(); as apiError) {
+      <div class="stack stack--4 no-print" data-testid="report-error">
+        <app-section-heading [level]="1" [heading]="strings.report.documentTitle" />
+        <app-error-panel [error]="apiError" (retry)="retry()">
+          <a class="button button--primary" routerLink="/assessment">{{
+            strings.nav.primaryAction
+          }}</a>
+        </app-error-panel>
+      </div>
+    } @else if (failure(); as jobFailure) {
+      <div class="stack stack--4 no-print" data-testid="report-failed">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.report.failedTitle"
+          [body]="strings.report.failedBody"
+        />
+        <app-info-callout tone="warning">
+          <p data-testid="report-failure-message">
+            {{ jobFailure.message ?? strings.errors.serverBody }}
+          </p>
+        </app-info-callout>
+        <div>
+          <a class="button button--primary" routerLink="/assessment">{{
+            strings.nav.primaryAction
+          }}</a>
+        </div>
+      </div>
+    } @else if (isNotReady()) {
+      <div class="stack stack--4 no-print" data-testid="report-not-ready">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.report.notReadyTitle"
+          [body]="strings.report.notReadyBody"
+        />
+        <div>
+          <a
+            class="button button--primary"
+            [routerLink]="['/results', jobId()]"
+            data-testid="report-open-results"
+          >
+            {{ strings.report.notReadyCta }}
+          </a>
+        </div>
+      </div>
+    } @else if (result(); as modelResult) {
+      <div class="stack stack--5" data-testid="report-document">
+        <div class="report-toolbar no-print">
+          <button
+            type="button"
+            class="button button--primary"
+            data-testid="report-print"
+            [attr.aria-label]="strings.report.printAria"
+            (click)="printReport()"
+          >
+            {{ strings.report.printAction }}
+          </button>
+          <p class="report-toolbar__help">{{ strings.report.printHelp }}</p>
+          <a class="button button--ghost" [routerLink]="['/results', jobId()]">{{
+            strings.report.backToResults
+          }}</a>
+        </div>
+
+        <article class="report-document panel stack stack--6">
+          <header class="report-document__header">
+            <p class="report-document__brand">{{ strings.report.brand }}</p>
+            <h1 class="report-document__title">{{ strings.report.title }}</h1>
+          </header>
+
+          <section aria-labelledby="report-scope-title" class="stack stack--3">
+            <h2 id="report-scope-title" class="section-heading__title">
+              {{ strings.report.scopeHeading }}
+            </h2>
+            <p data-testid="report-scope">{{ strings.report.scopeBody }}</p>
+          </section>
+
+          <app-scenario-overview [result]="modelResult" [profileTitle]="profileTitle()" />
+
+          <section aria-labelledby="report-allocation-title" class="stack stack--4">
+            <h2 id="report-allocation-title" class="section-heading__title">
+              {{ strings.report.allocationHeading }}
+            </h2>
+            <app-allocation-chart
+              [weights]="modelResult.weights"
+              [label]="strings.results.allocationChartLabel"
+            />
+            <app-result-narrative [result]="modelResult" />
+          </section>
+
+          <section
+            aria-labelledby="report-objective-title"
+            class="panel panel--objective stack stack--3"
+            data-testid="report-objective"
+          >
+            <h2 id="report-objective-title" class="section-heading__title">
+              {{ strings.results.phase2b.objectiveHeading }}
+            </h2>
+            <p>{{ strings.results.phase2b.objectiveBody }}</p>
+            <p class="objective__value" data-testid="report-objective-value">
+              <span class="objective__label">{{
+                strings.results.phase2b.objectiveValueLabel
+              }}</span>
+              <span class="objective__number">
+                {{ cvar95Value() }}
+                <span class="objective__unit">{{ strings.results.phase2b.objectiveUnit }}</span>
+              </span>
+            </p>
+            <p class="normalization-note">
+              <strong>{{ strings.results.normalizationLabel }}.</strong>
+              {{ strings.results.normalizationNote }}
+            </p>
+            <p>{{ strings.results.phase2b.objectiveNotAdvice }}</p>
+          </section>
+
+          <section aria-labelledby="report-diagnostics-title" class="stack stack--4">
+            <h2 id="report-diagnostics-title" class="section-heading__title">
+              {{ strings.results.phase2b.diagnosticsHeading }}
+            </h2>
+            <p>{{ strings.results.phase2b.diagnosticsBody }}</p>
+            <div class="metric-explanation-grid">
+              @for (metric of diagnostics(); track metric.key) {
+                <app-metric-explanation
+                  [metricKey]="metric.key"
+                  [label]="metric.label"
+                  [value]="metric.value"
+                  [unit]="metric.unit"
+                  [definition]="metric.definition"
+                  [howToRead]="metric.howToRead"
+                  [note]="metric.note"
+                  [alwaysExpanded]="true"
+                />
+              }
+            </div>
+          </section>
+
+          @if (identification(); as identity) {
+            <section aria-labelledby="report-identification-title" class="stack stack--3">
+              <h2 id="report-identification-title" class="section-heading__title">
+                {{ strings.results.identificationHeading }}
+              </h2>
+              <p class="identification__value" data-testid="report-identification">
+                {{ identity.label }}
+              </p>
+              <p class="identification__body">{{ identity.body }}</p>
+            </section>
+          }
+
+          <section aria-labelledby="report-provenance-title" class="stack stack--3">
+            <h2 id="report-provenance-title" class="section-heading__title">
+              {{ strings.report.reproducibilityHeading }}
+            </h2>
+            <p>{{ strings.report.reproducibilityBody }}</p>
+            <dl class="detail-grid">
+              @for (row of provenanceRows(); track row.key) {
+                <div class="detail-grid__row" [attr.data-report-detail]="row.key">
+                  <dt class="detail-grid__term">{{ row.label }}</dt>
+                  <dd class="detail-grid__value">{{ row.value }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section aria-labelledby="report-methodology-title" class="stack stack--3">
+            <h2 id="report-methodology-title" class="section-heading__title">
+              {{ strings.report.methodologyHeading }}
+            </h2>
+            <ul class="list" data-testid="report-methodology-list">
+              @for (point of strings.report.methodologyPoints; track point) {
+                <li>{{ point }}</li>
+              }
+            </ul>
+            <p>
+              <a routerLink="/research" class="report-link" data-testid="report-research-link">{{
+                strings.report.researchLink
+              }}</a>
+              <span class="report-link-url"> (/research)</span>
+            </p>
+          </section>
+        </article>
+      </div>
+    }
+  </app-page-container>
+</section>
