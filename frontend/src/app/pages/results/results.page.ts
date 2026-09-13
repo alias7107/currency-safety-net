@@ -19,6 +19,8 @@ import type {
 } from '../../core/api/models';
 import {
   OptimizationApiService,
+  bufferSensitivityRequestFromResult,
+  isValidOriginJobId,
   sanitizeUserFacingMessage,
 } from '../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../core/i18n/en';
@@ -26,19 +28,14 @@ import { ScenarioComparisonStore } from '../../core/state/scenario-comparison.st
 import { ScenarioFormStore } from '../../core/state/scenario-form.store';
 import { interpolate, profileIdFromName } from '../../core/util/format.util';
 import { profileDisplayTitle } from '../../core/util/result-interpretation.util';
-import {
-  buildDiagnosticMetricViews,
-  buildIdentificationPresentation,
-  buildProvenanceDetailRows,
-  formatCvar95Value,
-} from '../../core/util/result-presentation.util';
+import { buildProvenanceDetailRows } from '../../core/util/result-presentation.util';
 import { AllocationChart } from '../../shared/components/allocation-chart/allocation-chart';
 import { AssumptionSummary } from '../../shared/components/assumption-summary/assumption-summary';
 import { ErrorPanel } from '../../shared/components/error-panel/error-panel';
 import { InfoCallout } from '../../shared/components/info-callout/info-callout';
 import { LoadingIndicator } from '../../shared/components/loading-indicator/loading-indicator';
-import { MetricExplanation } from '../../shared/components/metric-explanation/metric-explanation';
 import { PageContainer } from '../../shared/components/page-container/page-container';
+import { ResilienceProfile } from '../../shared/components/resilience-profile/resilience-profile';
 import { ResultNarrative } from '../../shared/components/result-narrative/result-narrative';
 import { ScenarioOverview } from '../../shared/components/scenario-overview/scenario-overview';
 import { SectionHeading } from '../../shared/components/section-heading/section-heading';
@@ -64,7 +61,7 @@ export const POLL_INTERVAL_MS = 2000;
     AssumptionSummary,
     ScenarioOverview,
     ResultNarrative,
-    MetricExplanation,
+    ResilienceProfile,
   ],
   templateUrl: './results.page.html',
 })
@@ -86,6 +83,8 @@ export class ResultsPage {
   protected readonly error = signal<ApiError | null>(null);
   protected readonly failure = signal<{ code: string | null; message: string | null } | null>(null);
   protected readonly comparisonNotice = signal('');
+  protected readonly explorePending = signal(false);
+  protected readonly exploreError = signal<string | null>(null);
 
   constructor() {
     const seeded = this.seededResult();
@@ -252,20 +251,6 @@ export class ResultsPage {
     };
   });
 
-  protected readonly cvar95Value = computed(() => {
-    const result = this.result();
-    return result ? formatCvar95Value(result) : '—';
-  });
-
-  protected readonly diagnostics = computed(() => {
-    const result = this.result();
-    return result ? buildDiagnosticMetricViews(result) : [];
-  });
-
-  protected readonly identification = computed(() =>
-    buildIdentificationPresentation(this.result()?.identification_class),
-  );
-
   protected readonly modelDetails = computed(() => {
     const result = this.result();
     if (!result) {
@@ -281,6 +266,53 @@ export class ResultsPage {
       return;
     }
     void this.router.navigate(['/report', jobId], { state: { result } });
+  }
+
+  protected exploreBuffers(): void {
+    const result = this.result();
+    if (!result || this.explorePending()) {
+      return;
+    }
+    this.explorePending.set(true);
+    this.exploreError.set(null);
+    const request = bufferSensitivityRequestFromResult({
+      profile: profileIdFromName(result.profile) ?? result.profile,
+      horizon_years: result.horizon_years,
+      expense_income_ratio: result.expense_income_ratio,
+      rebalance_frequency: result.rebalance_frequency,
+      conversion_cost: result.conversion_cost,
+    });
+
+    this.api
+      .createBufferSensitivityJob(request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (submission) => {
+          this.explorePending.set(false);
+          const batchJobId = submission.body.job_id;
+          const originJobId = this.jobId();
+          const queryParams =
+            originJobId && isValidOriginJobId(originJobId) ? { origin: originJobId } : undefined;
+          if (submission.httpStatus === 200 && submission.body.result) {
+            void this.router.navigate(['/buffer-sensitivity', batchJobId], {
+              queryParams,
+              state: {
+                result: submission.body.result,
+                originJobId,
+              },
+            });
+            return;
+          }
+          void this.router.navigate(['/buffer-sensitivity', batchJobId], {
+            queryParams,
+            state: { originJobId },
+          });
+        },
+        error: () => {
+          this.explorePending.set(false);
+          this.exploreError.set(EN_STRINGS.results.phase2b.exploreBuffersError);
+        },
+      });
   }
 
   protected runAnother(): void {

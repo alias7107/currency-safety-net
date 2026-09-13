@@ -23,6 +23,29 @@
   </app-page-container>
 </section>
 
+<section class="section section--surface" aria-labelledby="product-notes-title">
+  <app-page-container size="narrow">
+    <app-section-heading
+      headingId="product-notes-title"
+      [heading]="strings.research.productNotes.heading"
+    />
+    <div class="prose stack stack--4" data-testid="research-product-notes">
+      <article class="prose__block">
+        <h3 class="prose__title">{{ strings.research.productNotes.noScoreTitle }}</h3>
+        <p class="prose__body">{{ strings.research.productNotes.noScoreBody }}</p>
+      </article>
+      <article class="prose__block">
+        <h3 class="prose__title">{{ strings.research.productNotes.noRecommendedBufferTitle }}</h3>
+        <p class="prose__body">{{ strings.research.productNotes.noRecommendedBufferBody }}</p>
+      </article>
+      <article class="prose__block">
+        <h3 class="prose__title">{{ strings.research.productNotes.testedBuffersTitle }}</h3>
+        <p class="prose__body">{{ strings.research.productNotes.testedBuffersBody }}</p>
+      </article>
+    </div>
+  </app-page-container>
+</section>
+
 <section class="section" aria-labelledby="plain-title">
   <app-page-container size="narrow">
     <app-section-heading headingId="plain-title" [heading]="strings.methodology.plainHeading" />
@@ -105,9 +128,12 @@
       </ul>
     </app-info-callout>
     <p class="section__footnote">
-      <a class="button button--primary" routerLink="/assessment" data-testid="research-assessment-cta">{{
-        strings.research.openAssessment
-      }}</a>
+      <a
+        class="button button--primary"
+        routerLink="/assessment"
+        data-testid="research-assessment-cta"
+        >{{ strings.research.openAssessment }}</a
+      >
     </p>
   </app-page-container>
 </section>

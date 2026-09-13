@@ -12,8 +12,6 @@ import {
 } from './format.util';
 import { profileDisplayTitle } from './result-interpretation.util';
 
-const WELL_IDENTIFIED = 'A_WELL_IDENTIFIED';
-
 export interface DiagnosticMetricView {
   key: string;
   label: string;
@@ -90,26 +88,44 @@ export function buildDiagnosticMetricViews(result: OptimizationResult): Diagnost
 }
 
 /**
- * Safe public identification presentation.
- * Only the documented well-identified class gets a mapped label; other raw
- * identifiers are not exposed.
+ * Safe public identification presentation for the three supported classes.
+ * Raw backend identifiers are never shown. Missing/unknown → Not available.
  */
 export function buildIdentificationPresentation(
   identificationClass: string | null | undefined,
-): IdentificationPresentation | null {
-  if (!identificationClass) {
-    return null;
-  }
-  if (identificationClass === WELL_IDENTIFIED) {
+): IdentificationPresentation {
+  const surface =
+    'Identification describes how clearly the reported allocation separates from nearby alternatives on the evaluated optimization surface. It is not a measure of household safety, not a forecast, and not a guarantee.';
+
+  if (!identificationClass || !identificationClass.trim()) {
     return {
-      label: EN_STRINGS.results.identificationWellIdentified,
-      body: EN_STRINGS.results.identificationWellIdentifiedBody,
+      label: EN_STRINGS.common.notAvailable,
+      body: EN_STRINGS.results.identificationOtherBody,
     };
   }
-  return {
-    label: EN_STRINGS.common.notAvailable,
-    body: EN_STRINGS.results.identificationOtherBody,
-  };
+
+  switch (identificationClass) {
+    case 'A_WELL_IDENTIFIED':
+      return {
+        label: EN_STRINGS.results.identificationWellIdentified,
+        body: EN_STRINGS.results.identificationWellIdentifiedBody || surface,
+      };
+    case 'B_WEAKLY_IDENTIFIED':
+      return {
+        label: EN_STRINGS.results.identificationWeaklyIdentified,
+        body: EN_STRINGS.results.identificationWeaklyIdentifiedBody || surface,
+      };
+    case 'C_NOT_IDENTIFIED':
+      return {
+        label: EN_STRINGS.results.identificationNotIdentified,
+        body: EN_STRINGS.results.identificationNotIdentifiedBody || surface,
+      };
+    default:
+      return {
+        label: EN_STRINGS.common.notAvailable,
+        body: EN_STRINGS.results.identificationOtherBody,
+      };
+  }
 }
 
 /**

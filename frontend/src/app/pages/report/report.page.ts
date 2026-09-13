@@ -21,18 +21,13 @@ import {
 } from '../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../core/i18n/en';
 import { profileDisplayTitle } from '../../core/util/result-interpretation.util';
-import {
-  buildDiagnosticMetricViews,
-  buildIdentificationPresentation,
-  buildReportProvenanceRows,
-  formatCvar95Value,
-} from '../../core/util/result-presentation.util';
+import { buildReportProvenanceRows } from '../../core/util/result-presentation.util';
 import { AllocationChart } from '../../shared/components/allocation-chart/allocation-chart';
 import { ErrorPanel } from '../../shared/components/error-panel/error-panel';
 import { InfoCallout } from '../../shared/components/info-callout/info-callout';
 import { LoadingIndicator } from '../../shared/components/loading-indicator/loading-indicator';
-import { MetricExplanation } from '../../shared/components/metric-explanation/metric-explanation';
 import { PageContainer } from '../../shared/components/page-container/page-container';
+import { ResilienceProfile } from '../../shared/components/resilience-profile/resilience-profile';
 import { ResultNarrative } from '../../shared/components/result-narrative/result-narrative';
 import { ScenarioOverview } from '../../shared/components/scenario-overview/scenario-overview';
 import { SectionHeading } from '../../shared/components/section-heading/section-heading';
@@ -50,7 +45,7 @@ import { SectionHeading } from '../../shared/components/section-heading/section-
     LoadingIndicator,
     ScenarioOverview,
     ResultNarrative,
-    MetricExplanation,
+    ResilienceProfile,
   ],
   templateUrl: './report.page.html',
 })
@@ -141,8 +136,6 @@ export class ReportPage {
       });
       return;
     }
-
-    // queued / running — report not ready; no polling.
   }
 
   protected readonly isNotReady = computed(() => {
@@ -161,20 +154,6 @@ export class ReportPage {
   });
 
   protected readonly profileTitle = computed(() => profileDisplayTitle(this.result()?.profile));
-
-  protected readonly cvar95Value = computed(() => {
-    const result = this.result();
-    return result ? formatCvar95Value(result) : '—';
-  });
-
-  protected readonly diagnostics = computed(() => {
-    const result = this.result();
-    return result ? buildDiagnosticMetricViews(result) : [];
-  });
-
-  protected readonly identification = computed(() =>
-    buildIdentificationPresentation(this.result()?.identification_class),
-  );
 
   protected readonly provenanceRows = computed(() => {
     const result = this.result();

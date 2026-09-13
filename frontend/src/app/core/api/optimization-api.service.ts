@@ -2,8 +2,18 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
 
+import {
+  isValidOriginJobId,
+  validateBufferSensitivityJobAccepted,
+  validateBufferSensitivityJobStatus,
+  validateBufferSensitivityResult,
+} from './buffer-sensitivity.validation';
 import type {
   ApiError,
+  BufferSensitivityJobAccepted,
+  BufferSensitivityJobStatus,
+  BufferSensitivityRequest,
+  BufferSensitivityResult,
   ModelMetadata,
   ModelOptions,
   OptimizationJobAccepted,
@@ -22,6 +32,11 @@ export const API_BASE_URL = '/api/v1';
 export interface OptimizationJobSubmission {
   httpStatus: number;
   body: OptimizationJobAccepted;
+}
+
+export interface BufferSensitivityJobSubmission {
+  httpStatus: number;
+  body: BufferSensitivityJobAccepted;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -56,12 +71,91 @@ export class OptimizationApiService {
 
   getOptimizationJob(jobId: string): Observable<OptimizationJobStatus> {
     return this.http
-      .get<OptimizationJobStatus>(
-        `${API_BASE_URL}/optimization-jobs/${encodeURIComponent(jobId)}/`,
-      )
+      .get<OptimizationJobStatus>(`${API_BASE_URL}/optimization-jobs/${encodeURIComponent(jobId)}/`)
       .pipe(catchError(toApiError));
   }
+
+  createBufferSensitivityJob(
+    request: BufferSensitivityRequest,
+  ): Observable<BufferSensitivityJobSubmission> {
+    return this.http
+      .post<BufferSensitivityJobAccepted>(`${API_BASE_URL}/buffer-sensitivity-jobs/`, request, {
+        observe: 'response',
+      })
+      .pipe(
+        map((response) => {
+          const validated = validateBufferSensitivityJobAccepted(response.body);
+          if (!validated.ok) {
+            throw validated.error;
+          }
+          return {
+            httpStatus: response.status,
+            body: validated.body,
+          };
+        }),
+        catchError(catchHttpOrApiError),
+      );
+  }
+
+  getBufferSensitivityJob(jobId: string): Observable<BufferSensitivityJobStatus> {
+    return this.http
+      .get<BufferSensitivityJobStatus>(
+        `${API_BASE_URL}/buffer-sensitivity-jobs/${encodeURIComponent(jobId)}/`,
+      )
+      .pipe(
+        map((job) => {
+          const validated = validateBufferSensitivityJobStatus(job);
+          if (!validated.ok) {
+            throw validated.error;
+          }
+          return validated.body;
+        }),
+        catchError(catchHttpOrApiError),
+      );
+  }
 }
+
+export { isValidOriginJobId, validateBufferSensitivityResult };
+
+function catchHttpOrApiError(error: unknown): Observable<never> {
+  if (!(error instanceof HttpErrorResponse) && isApiError(error)) {
+    return throwError(() => error);
+  }
+  return toApiError(error as HttpErrorResponse);
+}
+
+function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    typeof (error as ApiError).code === 'string' &&
+    typeof (error as ApiError).status === 'number' &&
+    typeof (error as ApiError).message === 'string'
+  );
+}
+
+/** Build a batch request from a succeeded single-job result, omitting buffer_months. */
+export function bufferSensitivityRequestFromResult(
+  result:
+    | OptimizationRequest
+    | {
+        profile: string;
+        horizon_years: number;
+        expense_income_ratio: number;
+        rebalance_frequency: string;
+        conversion_cost: number;
+      },
+): BufferSensitivityRequest {
+  return {
+    profile: result.profile,
+    horizon_years: result.horizon_years,
+    expense_income_ratio: result.expense_income_ratio,
+    rebalance_frequency: result.rebalance_frequency,
+    conversion_cost: result.conversion_cost,
+  };
+}
+
+export type { BufferSensitivityResult };
 
 const CODE_BY_STATUS: Record<number, string> = {
   0: 'network_error',

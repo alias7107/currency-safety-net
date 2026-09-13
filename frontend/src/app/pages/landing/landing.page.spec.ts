@@ -14,11 +14,7 @@ import { ResearchPage } from '../research/research.page';
 describe('Product experience routes', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [
-        provideRouter(routes),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });
 
@@ -31,10 +27,20 @@ describe('Product experience routes', () => {
     http.expectOne('/api/v1/model/options/').flush({
       profiles: [],
       horizons_years: [1, 3, 5],
-      expense_income_ratio: { min: 0.8, max: 1.05, default: 0.95, documented_values: [0.8, 0.95, 1.05] },
+      expense_income_ratio: {
+        min: 0.8,
+        max: 1.05,
+        default: 0.95,
+        documented_values: [0.8, 0.95, 1.05],
+      },
       buffer_months: { min: 1, max: 12, default: 1, documented_values: [1, 3, 6, 12] },
       rebalance_frequencies: ['monthly', 'quarterly', 'none'],
-      conversion_cost: { min: 0, max: 0.01, default: 0, documented_values: [0, 0.0025, 0.005, 0.01] },
+      conversion_cost: {
+        min: 0,
+        max: 0.01,
+        default: 0,
+        documented_values: [0, 0.0025, 0.005, 0.01],
+      },
       currencies: ['KZT', 'USD', 'EUR'],
     });
     http.verify();
@@ -54,6 +60,34 @@ describe('Product experience routes', () => {
     http.expectOne('/api/v1/model/metadata/').flush(MODEL_METADATA);
     http.verify();
     expect(harness.routeNativeElement?.textContent).toContain(EN_STRINGS.research.title);
+  });
+
+  it('lazy-loads the buffer sensitivity explorer route', async () => {
+    expect(
+      routes.some((route) => route.path === 'buffer-sensitivity/:jobId' && !!route.loadComponent),
+    ).toBe(true);
+    const harness = await RouterTestingHarness.create();
+    const { BufferSensitivityPage } = await import('../buffer-sensitivity/buffer-sensitivity.page');
+    const page = await harness.navigateByUrl(
+      '/buffer-sensitivity/c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44',
+      BufferSensitivityPage,
+    );
+    expect(page).toBeTruthy();
+    const http = TestBed.inject(HttpTestingController);
+    const pending = http.match(
+      '/api/v1/buffer-sensitivity-jobs/c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44/',
+    );
+    for (const request of pending) {
+      request.flush({
+        job_id: 'c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44',
+        status: 'queued',
+        created_at: '2026-09-12T12:00:00Z',
+        started_at: null,
+        contract_version: 'buffer_sensitivity_batch_v1',
+        tested_buffers: [1, 3, 6, 12],
+      });
+    }
+    http.verify();
   });
 
   it('redirects /methodology to /research', async () => {
@@ -94,7 +128,9 @@ describe('LandingPage product experience', () => {
 
     const primary = fixture.debugElement.query(By.css('[data-testid="landing-primary-cta"]'));
     const secondary = fixture.debugElement.query(By.css('[data-testid="landing-secondary-cta"]'));
-    expect(primary.attributes['ng-reflect-router-link'] ?? primary.nativeElement.getAttribute('href')).toBeTruthy();
+    expect(
+      primary.attributes['ng-reflect-router-link'] ?? primary.nativeElement.getAttribute('href'),
+    ).toBeTruthy();
     expect(primary.nativeElement.getAttribute('href') || '').toContain('/assessment');
     expect(secondary.nativeElement.getAttribute('href') || '').toContain('/research');
   });
@@ -117,10 +153,12 @@ describe('LandingPage product experience', () => {
 
   it('shows unavailable metadata state without a hard-coded date', async () => {
     fixture.detectChanges();
-    http.expectOne('/api/v1/model/metadata/').flush(
-      { error: { code: 'unavailable', message: 'down' } },
-      { status: 503, statusText: 'Service Unavailable' },
-    );
+    http
+      .expectOne('/api/v1/model/metadata/')
+      .flush(
+        { error: { code: 'unavailable', message: 'down' } },
+        { status: 503, statusText: 'Service Unavailable' },
+      );
     fixture.detectChanges();
     await fixture.whenStable();
 
