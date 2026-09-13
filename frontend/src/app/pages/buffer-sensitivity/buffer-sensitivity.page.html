@@ -1,0 +1,278 @@
+<section class="section section--tight">
+  <app-page-container>
+    <p class="visually-hidden" aria-live="polite" data-testid="buffer-sensitivity-live">
+      {{ liveMessage() }}
+    </p>
+
+    @if (!jobId()) {
+      <div class="stack stack--4">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.bufferSensitivity.missingJobTitle"
+          [body]="strings.bufferSensitivity.missingJobBody"
+        />
+        <div>
+          <a class="button button--primary" routerLink="/assessment">{{
+            strings.nav.primaryAction
+          }}</a>
+        </div>
+      </div>
+    } @else if (error(); as apiError) {
+      <div class="stack stack--4">
+        <app-section-heading [level]="1" [heading]="strings.bufferSensitivity.title" />
+        <app-error-panel [error]="apiError" (retry)="retry()">
+          <a class="button button--primary" [routerLink]="resultsLink()">{{
+            strings.bufferSensitivity.actionBackResults
+          }}</a>
+        </app-error-panel>
+      </div>
+    } @else if (failure(); as jobFailure) {
+      <div class="stack stack--4">
+        <app-section-heading
+          [level]="1"
+          [heading]="strings.bufferSensitivity.failedTitle"
+          [body]="strings.bufferSensitivity.failedBody"
+        />
+        <app-info-callout tone="warning">
+          <p data-testid="batch-failure-message">
+            {{ jobFailure.message ?? strings.errors.serverBody }}
+          </p>
+        </app-info-callout>
+        <div class="results__actions">
+          <a class="button button--primary" [routerLink]="resultsLink()">{{
+            strings.bufferSensitivity.actionBackResults
+          }}</a>
+          <button type="button" class="button button--ghost" (click)="runAnother()">
+            {{ strings.bufferSensitivity.actionRunAnother }}
+          </button>
+        </div>
+      </div>
+    } @else if (isProcessing()) {
+      <div class="stack stack--5" data-testid="batch-processing">
+        <div class="results__status-row">
+          <app-section-heading
+            [level]="1"
+            [heading]="strings.bufferSensitivity.processingTitle"
+            [body]="strings.bufferSensitivity.processingBody"
+          />
+          <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+        </div>
+        <app-loading-indicator
+          [label]="strings.bufferSensitivity.processingTitle"
+          [hideLabel]="true"
+        />
+        <div class="results__skeletons">
+          <app-skeleton-card [lines]="4" />
+          <app-skeleton-card [lines]="3" />
+          <app-skeleton-card [lines]="3" />
+        </div>
+        <p class="field__help">{{ strings.bufferSensitivity.processingHint }}</p>
+      </div>
+    } @else if (result(); as batchResult) {
+      <div class="stack stack--6" data-testid="batch-result">
+        <div class="results__status-row">
+          <app-section-heading
+            [level]="1"
+            [eyebrow]="strings.app.name"
+            [heading]="strings.bufferSensitivity.title"
+            [body]="strings.bufferSensitivity.scopeBody"
+          />
+          <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+        </div>
+
+        <app-info-callout tone="accent" data-testid="tested-only-notice">
+          <p>{{ strings.bufferSensitivity.testedOnlyNotice }}</p>
+        </app-info-callout>
+
+        <section aria-labelledby="batch-scenario-title" class="panel">
+          <app-section-heading
+            headingId="batch-scenario-title"
+            [heading]="strings.bufferSensitivity.scenarioHeading"
+            [body]="strings.bufferSensitivity.scenarioBody"
+          />
+          <dl class="detail-grid">
+            @for (row of scenarioRows(); track row.key) {
+              <div class="detail-grid__row" [attr.data-batch-scenario]="row.key">
+                <dt class="detail-grid__term">{{ row.label }}</dt>
+                <dd class="detail-grid__value">{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section aria-labelledby="batch-provenance-title" class="panel">
+          <app-section-heading
+            headingId="batch-provenance-title"
+            [heading]="strings.bufferSensitivity.provenanceHeading"
+          />
+          <dl class="detail-grid">
+            @for (row of provenanceRows(); track row.key) {
+              <div class="detail-grid__row" [attr.data-batch-provenance]="row.key">
+                <dt class="detail-grid__term">{{ row.label }}</dt>
+                <dd class="detail-grid__value">{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section aria-labelledby="batch-chart-title" class="panel">
+          <app-section-heading
+            headingId="batch-chart-title"
+            [heading]="strings.bufferSensitivity.chartHeading"
+            [body]="strings.bufferSensitivity.chartBody"
+          />
+          <app-discrete-buffer-chart [result]="batchResult" />
+        </section>
+
+        <section aria-labelledby="batch-table-title" class="panel">
+          <app-section-heading
+            headingId="batch-table-title"
+            [heading]="strings.bufferSensitivity.tableHeading"
+            [body]="strings.bufferSensitivity.tableBody"
+          />
+
+          <div class="buffer-table-scroll" data-testid="buffer-table-desktop">
+            <table class="buffer-table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ strings.bufferSensitivity.colBuffer }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colKzt }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colUsd }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colEur }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colShortfall }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colCvar }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colVar }}</th>
+                  <th scope="col">{{ strings.bufferSensitivity.colIdentification }}</th>
+                  <th scope="col">
+                    {{ strings.bufferSensitivity.colDepletion }}
+                    <span class="buffer-table__note">
+                      ({{ strings.bufferSensitivity.depletionImplNote }})
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of tableRows(); track row.bufferMonths) {
+                  <tr>
+                    <th scope="row">{{ row.bufferLabel }}</th>
+                    <td>{{ row.weights[0] }}</td>
+                    <td>{{ row.weights[1] }}</td>
+                    <td>{{ row.weights[2] }}</td>
+                    <td>{{ row.shortfall }}</td>
+                    <td>{{ row.cvar }}</td>
+                    <td>{{ row.var95 }}</td>
+                    <td>{{ row.identification }}</td>
+                    <td>{{ row.depletion }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            class="buffer-cards"
+            data-testid="buffer-table-mobile"
+            [attr.aria-label]="strings.bufferSensitivity.cardsHeading"
+          >
+            @for (row of tableRows(); track row.bufferMonths) {
+              <article class="buffer-card" [attr.data-buffer]="row.bufferMonths">
+                <h3 class="buffer-card__title">{{ row.bufferLabel }}</h3>
+                <dl class="detail-grid detail-grid--compact">
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colKzt }}</dt>
+                    <dd class="detail-grid__value">{{ row.weights[0] }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colUsd }}</dt>
+                    <dd class="detail-grid__value">{{ row.weights[1] }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colEur }}</dt>
+                    <dd class="detail-grid__value">{{ row.weights[2] }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colShortfall }}</dt>
+                    <dd class="detail-grid__value">{{ row.shortfall }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colCvar }}</dt>
+                    <dd class="detail-grid__value">{{ row.cvar }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">{{ strings.bufferSensitivity.colVar }}</dt>
+                    <dd class="detail-grid__value">{{ row.var95 }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">
+                      {{ strings.bufferSensitivity.colIdentification }}
+                    </dt>
+                    <dd class="detail-grid__value">{{ row.identification }}</dd>
+                  </div>
+                  <div class="detail-grid__row">
+                    <dt class="detail-grid__term">
+                      {{ strings.bufferSensitivity.colDepletion }}
+                      ({{ strings.bufferSensitivity.depletionImplNote }})
+                    </dt>
+                    <dd class="detail-grid__value">{{ row.depletion }}</dd>
+                  </div>
+                </dl>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section aria-labelledby="batch-allocation-title" class="panel">
+          <app-section-heading
+            headingId="batch-allocation-title"
+            [heading]="strings.bufferSensitivity.allocationHeading"
+            [body]="strings.bufferSensitivity.allocationBody"
+          />
+          <ul class="list" data-testid="batch-allocation-list">
+            @for (row of tableRows(); track row.bufferMonths) {
+              <li>
+                {{ row.bufferLabel }} — {{ currencies[0] }} {{ row.weights[0] }},
+                {{ currencies[1] }} {{ row.weights[1] }}, {{ currencies[2] }} {{ row.weights[2] }}
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section aria-labelledby="batch-target-title" class="panel">
+          <app-section-heading
+            headingId="batch-target-title"
+            [heading]="strings.bufferSensitivity.targetHeading"
+            [body]="strings.bufferSensitivity.targetBody"
+          />
+          <app-target-finder [result]="batchResult" />
+        </section>
+
+        <app-info-callout tone="warning" [heading]="strings.bufferSensitivity.limitationsHeading">
+          <ul class="list">
+            @for (point of strings.bufferSensitivity.limitationsPoints; track point) {
+              <li>{{ point }}</li>
+            }
+          </ul>
+          <p>
+            <a routerLink="/research" data-testid="batch-research-link">{{
+              strings.bufferSensitivity.researchLink
+            }}</a>
+          </p>
+        </app-info-callout>
+
+        <div class="results__actions">
+          <a class="button button--primary" [routerLink]="resultsLink()" data-testid="batch-back">
+            {{ strings.bufferSensitivity.actionBackResults }}
+          </a>
+          <button
+            type="button"
+            class="button button--secondary"
+            data-testid="batch-run-another"
+            (click)="runAnother()"
+          >
+            {{ strings.bufferSensitivity.actionRunAnother }}
+          </button>
+        </div>
+      </div>
+    }
+  </app-page-container>
+</section>

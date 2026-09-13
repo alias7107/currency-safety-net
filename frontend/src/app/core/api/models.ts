@@ -155,3 +155,99 @@ export interface ApiError {
   message: string;
   details?: unknown;
 }
+
+/** POST /api/v1/buffer-sensitivity-jobs/ request — never includes buffer_months. */
+export interface BufferSensitivityRequest {
+  profile: ProfileId | string;
+  horizon_years: number;
+  expense_income_ratio: number;
+  rebalance_frequency: RebalanceFrequency;
+  conversion_cost: number;
+}
+
+export interface BufferSensitivityUnits {
+  cumulative_shortfall: string;
+}
+
+export interface BufferSensitivityProvenance {
+  model_version: string;
+  data_as_of: string;
+  dataset_sha256: string;
+  simulation_paths: number;
+  simulation_seed: number;
+  canonical_optimization_specification: string;
+  fx_path_policy: string;
+}
+
+export interface BufferSensitivityScenario {
+  profile: string;
+  horizon_years: number;
+  expense_income_ratio: number;
+  rebalance_frequency: RebalanceFrequency;
+  conversion_cost: number;
+}
+
+export interface BufferSensitivityImplementationOnly {
+  mean_cumulative_shortfall: number;
+  wealth_depletion_probability: number;
+  mean_terminal_wealth: number;
+  median_terminal_wealth: number;
+  p05_terminal_wealth: number;
+  p95_terminal_wealth: number;
+}
+
+/** One tested-buffer row inside buffer_sensitivity_batch_v1. */
+export interface BufferSensitivityResultRow {
+  buffer_months: number;
+  /** Ordered [KZT, USD, EUR]; sums to 1. */
+  weights: number[];
+  shortfall_probability: number;
+  cvar95_cumulative_shortfall: number;
+  var95_cumulative_shortfall: number;
+  identification_class: IdentificationClass;
+  near_optimal_1pct_frac: number;
+  near_optimal_1pct_count: number;
+  n_coarse: number;
+  n_refined: number;
+  n_surface: number;
+  implementation_only: BufferSensitivityImplementationOnly;
+}
+
+/** Complete succeeded batch payload (contract buffer_sensitivity_batch_v1). */
+export interface BufferSensitivityResult {
+  contract_version: string;
+  presentation_version: string;
+  tested_buffers: number[];
+  units: BufferSensitivityUnits;
+  provenance: BufferSensitivityProvenance;
+  scenario: BufferSensitivityScenario;
+  results: BufferSensitivityResultRow[];
+}
+
+/** POST /api/v1/buffer-sensitivity-jobs/ response (202 queued, or 200 when cached). */
+export interface BufferSensitivityJobAccepted {
+  job_id: string;
+  status: JobStatus;
+  cached: boolean;
+  status_url: string;
+  contract_version: string;
+  tested_buffers: number[];
+  result?: BufferSensitivityResult;
+  error?: ApiErrorBody;
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
+/** GET /api/v1/buffer-sensitivity-jobs/{jobId}/ response. */
+export interface BufferSensitivityJobStatus {
+  job_id: string;
+  status: JobStatus;
+  created_at: string;
+  started_at: string | null;
+  completed_at?: string | null;
+  contract_version: string;
+  tested_buffers: number[];
+  result?: BufferSensitivityResult;
+  error_code?: string | null;
+  error_message?: string | null;
+}

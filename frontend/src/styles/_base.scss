@@ -99,6 +99,14 @@ svg {
   border: 0;
 }
 
+/* Rich content (tables) must not expand document width via nowrap/min-content. */
+.visually-hidden--rich {
+  white-space: normal;
+  max-width: 1px;
+  max-height: 1px;
+  overflow: hidden;
+}
+
 .skip-link {
   position: absolute;
   top: var(--space-2);

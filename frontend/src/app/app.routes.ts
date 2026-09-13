@@ -30,6 +30,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/report/report.page').then((m) => m.ReportPage),
   },
   {
+    path: 'buffer-sensitivity/:jobId',
+    title: `${EN_STRINGS.bufferSensitivity.documentTitle} — ${EN_STRINGS.app.name}`,
+    loadComponent: () =>
+      import('./pages/buffer-sensitivity/buffer-sensitivity.page').then(
+        (m) => m.BufferSensitivityPage,
+      ),
+  },
+  {
     path: 'compare',
     title: `${EN_STRINGS.compare.documentTitle} — ${EN_STRINGS.app.name}`,
     loadComponent: () => import('./pages/compare/compare.page').then((m) => m.ComparePage),

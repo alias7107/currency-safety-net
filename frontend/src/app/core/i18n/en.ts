@@ -159,24 +159,16 @@ export const EN_STRINGS = {
       'The assessment reports modelled results for the scenario you select — guidance for understanding the model, not a personal recommendation.',
     outputs: [
       {
+        title: 'Transparent resilience profile',
+        body: 'Separate views of tail severity, shortfall frequency, end-of-horizon depletion, and allocation identification — without collapsing them into a single score.',
+      },
+      {
+        title: 'Tested buffer sensitivity',
+        body: 'A side-by-side look at the four documented buffer sizes the model evaluates, using only returned values — never interpolated advice.',
+      },
+      {
         title: 'Modelled currency allocation',
         body: 'A KZT / USD / EUR mix selected by the research model for your inputs.',
-      },
-      {
-        title: 'Probability of any shortfall',
-        body: 'How often the modelled household failed to cover expenses across simulated paths.',
-      },
-      {
-        title: 'CVaR95 shortfall severity',
-        body: 'Average shortfall in the worst 5% of simulated paths (conditional value at risk at 95%).',
-      },
-      {
-        title: 'Buffer depletion probability',
-        body: 'The share of simulated paths whose buffer wealth was at or below the model’s depletion tolerance at the end of the horizon.',
-      },
-      {
-        title: 'Identification / stability information',
-        body: 'How clearly the reported allocation separates from nearby alternatives within the searched model grid.',
       },
       {
         title: 'Assumptions and reproducibility metadata',
@@ -348,9 +340,15 @@ export const EN_STRINGS = {
     identificationHeading: 'Result stability',
     identificationWellIdentified: 'Well identified within the evaluated model specification',
     identificationWellIdentifiedBody:
-      'Within the grid that was searched, the reported allocation is clearly separated from the alternatives. This describes the model, not the future.',
+      'Identification describes how clearly the reported allocation separates from nearby alternatives on the evaluated optimization surface. It is not a measure of household safety, not a forecast, and not a guarantee.',
+    identificationWeaklyIdentified: 'Weakly identified within the evaluated model specification',
+    identificationWeaklyIdentifiedBody:
+      'Identification describes how clearly the reported allocation separates from nearby alternatives on the evaluated optimization surface. It is not a measure of household safety, not a forecast, and not a guarantee.',
+    identificationNotIdentified: 'Not identified within the evaluated model specification',
+    identificationNotIdentifiedBody:
+      'Identification describes how clearly the reported allocation separates from nearby alternatives on the evaluated optimization surface. It is not a measure of household safety, not a forecast, and not a guarantee.',
     identificationOtherBody:
-      'The optimiser reported this identification class for the searched grid. It describes how clearly the reported allocation separates from nearby allocations.',
+      'A human-readable identification summary is not available for this result. Identification describes separation on the evaluated optimization surface — not household safety, a forecast, or a guarantee.',
     identificationClassLabel: 'Identification class',
 
     detailsHeading: 'Model details',
@@ -476,6 +474,12 @@ export const EN_STRINGS = {
       nextOpenResearch: 'Open the research page',
       nextOpenCompare: 'Open comparison',
       nextAddCompare: 'Add this result to comparison',
+      exploreBuffers: 'Explore tested buffer levels',
+      exploreBuffersBusy: 'Starting buffer sensitivity…',
+      exploreBuffersError:
+        'The buffer sensitivity job could not be started. You can stay on this result and try again shortly.',
+      exploreBuffersHint:
+        'Compares the four documented buffer sizes for this scenario’s other assumptions. One server job — not four separate runs.',
 
       limitationsHeading: 'Limitations',
       limitationsPoints: [
@@ -603,6 +607,18 @@ export const EN_STRINGS = {
       placeholder: 'Publication link will be added here.',
       linkLabel: 'Read the published paper',
     },
+    productNotes: {
+      heading: 'How the product uses this research',
+      noScoreTitle: 'Why there is no scalar resilience score',
+      noScoreBody:
+        'Shortfall frequency and tail severity are different quantities with different units. The published model does not define a weighting rule that would turn them into one 0–100 score, so the product keeps them separate in a resilience profile.',
+      noRecommendedBufferTitle: 'Why the model does not recommend a buffer',
+      noRecommendedBufferBody:
+        'The research optimises currency allocation for a fixed buffer. It does not price the cost of holding cash, so it cannot identify an “optimal” or “recommended” emergency-fund size.',
+      testedBuffersTitle: 'Why the explorer uses only {1, 3, 6, 12}',
+      testedBuffersBody:
+        'Those are the documented buffer months evaluated by the research specification. The Buffer Sensitivity Explorer shows only the four values returned by the batch API and does not estimate values between them.',
+    },
     reproducibility: {
       heading: 'Reproducibility',
       body: 'Path count and random seed are fixed by the research specification and cannot be changed by the client. Identical scenario inputs return the same cached modelled result. Live parameter values above come from the model metadata endpoint.',
@@ -610,6 +626,156 @@ export const EN_STRINGS = {
     metadataUnavailableTitle: 'Model details temporarily unavailable',
     metadataUnavailableBody:
       'Live model metadata could not be loaded. The methodology above remains available, and you can try again.',
+  },
+
+  resilienceProfile: {
+    heading: 'Resilience profile',
+    body: 'A transparent multi-metric view of this scenario. CVaR95 is the only optimisation objective; other figures are diagnostics.',
+    notScoreNote:
+      'This profile is not a single score, risk grade, or good/bad band. Metrics are shown separately because the research does not combine them.',
+    units: {
+      monthsOfIncome: 'months of income',
+    },
+    objective: {
+      badge: 'Primary optimisation objective',
+      title: 'Worst-tail severity (CVaR95)',
+      definition:
+        'Average cumulative shortfall among the worst 5% of simulated paths, expressed in months of initial monthly income.',
+      howToRead:
+        'The allocator searches for the currency mix that minimises this measure for the selected scenario. Lower values mean lower modelled tail shortfall under that objective.',
+      notAdvice:
+        'This value is a modelled shortfall measure for the selected scenario. It is not a personal financial recommendation.',
+    },
+    frequency: {
+      badge: 'Diagnostic — frequency, not severity',
+      title: 'Shortfall frequency',
+      definition:
+        'Share of simulated paths where expenses could not be fully covered at some point during the horizon.',
+      howToRead:
+        'Frequency answers how often shortfall occurred. Severity (CVaR95) answers how large losses were in the worst tail. They are not interchangeable.',
+    },
+    depletion: {
+      badge: 'Implementation-only diagnostic',
+      title: 'End-of-horizon depletion',
+      definition:
+        'Share of simulated paths whose buffer wealth was at or below the model’s depletion tolerance at the end of the selected horizon.',
+      howToRead:
+        'This describes terminal wealth at the end of the horizon. It is not an anytime-during-the-path measure and was not jointly optimised with CVaR95.',
+      horizonNote:
+        'Labeled implementation-only because it is present in the shipped model outputs but is not part of the published methodology presentation.',
+    },
+    additional: {
+      heading: 'Additional diagnostics',
+      body: 'Reported alongside the objective. They were not jointly optimised with CVaR95.',
+      badge: 'Diagnostic',
+      var95: {
+        title: 'VaR95 cumulative shortfall',
+        definition: 'Cumulative shortfall level that is not exceeded on 95% of simulated paths.',
+        howToRead:
+          'A percentile summary of the shortfall distribution. Zero VaR95 does not imply an absence of tail losses when CVaR95 or other diagnostics are positive.',
+      },
+      meanShortfall: {
+        title: 'Mean cumulative shortfall',
+        definition:
+          'Mean cumulative shortfall across every simulated path, including paths with no shortfall.',
+        howToRead:
+          'This average mixes paths with and without shortfall. It describes the simulated distribution; it was not jointly optimised with CVaR95.',
+      },
+    },
+    identification: {
+      heading: 'Allocation identification',
+      surfaceNote:
+        'Identification describes how clearly the reported allocation separates from nearby alternatives on the evaluated optimization surface. It is not a measure of household safety, not a forecast, and not a guarantee.',
+      unavailableBody: 'A human-readable identification summary is not available for this result.',
+      nearOptimalCount: 'Near-optimal allocations (within 1%)',
+      nearOptimalFraction: 'Near-optimal share of evaluated surface',
+    },
+  },
+
+  bufferSensitivity: {
+    title: 'Buffer sensitivity',
+    documentTitle: 'Buffer sensitivity',
+    scopeBody:
+      'This explorer compares modelled outcomes across the tested buffer levels returned by the server for one scenario. It does not recommend a buffer size and does not provide individualized financial advice.',
+    testedOnlyNotice:
+      'Tested values only. Charts and tables show the four returned buffer levels. Values between them are not estimated.',
+    missingJobTitle: 'No buffer sensitivity job selected',
+    missingJobBody: 'Start from a completed scenario result to explore tested buffer levels.',
+    processingTitle: 'Evaluating tested buffer levels',
+    processingBody:
+      'Four tested buffer levels are being evaluated for this scenario. This can take several minutes. Results arrive together when the job finishes — there is no per-buffer progress.',
+    processingLive: 'Buffer sensitivity status: {status}. Still running.',
+    processingHint: 'You can leave this page and reopen the same link later.',
+    statusQueued: 'Queued',
+    statusRunning: 'Running',
+    statusSucceeded: 'Complete',
+    statusFailed: 'Failed',
+    failedTitle: 'Buffer sensitivity could not be completed',
+    failedBody:
+      'The batch job did not finish. You can return to the original scenario result and try again later.',
+    scenarioHeading: 'Scenario assumptions',
+    scenarioBody:
+      'Buffer size is varied by the server across tested levels; it is not listed here.',
+    provenanceHeading: 'Provenance',
+    chartHeading: 'Discrete comparison',
+    chartBody:
+      'One metric at a time. Bars mark tested buffer months only — no connecting line between them.',
+    metricShortfall: 'Shortfall probability',
+    metricCvar: 'CVaR95 cumulative shortfall',
+    chartAria: 'Discrete chart of {metric} across tested buffer months',
+    tableHeading: 'Results by tested buffer',
+    tableBody: 'Every scientific value below comes from the batch API response.',
+    cardsHeading: 'Results by tested buffer',
+    colBuffer: 'Tested buffer (months)',
+    colKzt: 'KZT weight',
+    colUsd: 'USD weight',
+    colEur: 'EUR weight',
+    colShortfall: 'Shortfall probability',
+    colCvar: 'CVaR95',
+    colVar: 'VaR95',
+    colIdentification: 'Identification',
+    colDepletion: 'End-of-horizon depletion',
+    depletionImplNote: 'implementation-only',
+    allocationHeading: 'Allocation across tested buffers',
+    allocationBody: 'Model-returned KZT / USD / EUR weights at each tested buffer.',
+    targetHeading: 'Diagnostic target finder',
+    targetBody:
+      'Enter a threshold for one diagnostic metric. The finder reports the smallest tested buffer whose returned value meets that threshold. It does not interpolate between tested values.',
+    targetMetricLabel: 'Diagnostic metric',
+    targetThresholdLabelProbability: 'Maximum shortfall probability (%)',
+    targetThresholdLabelCvar: 'Maximum CVaR95 (months of income)',
+    targetApply: 'Find tested buffer',
+    targetClear: 'Clear',
+    targetResultFound:
+      'The minimum tested buffer meeting your selected diagnostic threshold is {buffer} months.',
+    targetResultNone: 'None of the tested buffer levels met your selected diagnostic threshold.',
+    targetResultDisclaimer:
+      'This compares only the tested values returned by the model. It does not estimate values between them and does not provide individualized financial advice.',
+    targetInvalid:
+      'Enter a valid non-negative threshold. For probability, use a percentage from 0 to 100.',
+    limitationsHeading: 'Limitations',
+    limitationsPoints: [
+      'Only server-returned tested buffers are shown.',
+      'CVaR95 remains the sole optimisation objective at each buffer; other metrics are diagnostics.',
+      'Changing the diagnostic threshold does not re-run the model.',
+      'Outputs are informational model results, not financial advice.',
+    ],
+    researchLink: 'Read why the product avoids scores and recommended buffers',
+    actionBackResults: 'Back to scenario result',
+    actionRunAnother: 'Run another assessment',
+    detailLabels: {
+      profile: 'Household profile',
+      horizon: 'Horizon',
+      ratio: 'Spending share of income',
+      rebalance: 'Rebalancing',
+      conversionCost: 'Conversion cost',
+      modelVersion: 'Model version',
+      dataAsOf: 'FX data as of',
+      simulationPaths: 'Simulated paths',
+      simulationSeed: 'Random seed',
+      contractVersion: 'Contract version',
+      datasetSha: 'Dataset SHA-256',
+    },
   },
 
   compare: {

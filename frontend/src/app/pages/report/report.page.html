@@ -116,63 +116,7 @@
             <app-result-narrative [result]="modelResult" />
           </section>
 
-          <section
-            aria-labelledby="report-objective-title"
-            class="panel panel--objective stack stack--3"
-            data-testid="report-objective"
-          >
-            <h2 id="report-objective-title" class="section-heading__title">
-              {{ strings.results.phase2b.objectiveHeading }}
-            </h2>
-            <p>{{ strings.results.phase2b.objectiveBody }}</p>
-            <p class="objective__value" data-testid="report-objective-value">
-              <span class="objective__label">{{
-                strings.results.phase2b.objectiveValueLabel
-              }}</span>
-              <span class="objective__number">
-                {{ cvar95Value() }}
-                <span class="objective__unit">{{ strings.results.phase2b.objectiveUnit }}</span>
-              </span>
-            </p>
-            <p class="normalization-note">
-              <strong>{{ strings.results.normalizationLabel }}.</strong>
-              {{ strings.results.normalizationNote }}
-            </p>
-            <p>{{ strings.results.phase2b.objectiveNotAdvice }}</p>
-          </section>
-
-          <section aria-labelledby="report-diagnostics-title" class="stack stack--4">
-            <h2 id="report-diagnostics-title" class="section-heading__title">
-              {{ strings.results.phase2b.diagnosticsHeading }}
-            </h2>
-            <p>{{ strings.results.phase2b.diagnosticsBody }}</p>
-            <div class="metric-explanation-grid">
-              @for (metric of diagnostics(); track metric.key) {
-                <app-metric-explanation
-                  [metricKey]="metric.key"
-                  [label]="metric.label"
-                  [value]="metric.value"
-                  [unit]="metric.unit"
-                  [definition]="metric.definition"
-                  [howToRead]="metric.howToRead"
-                  [note]="metric.note"
-                  [alwaysExpanded]="true"
-                />
-              }
-            </div>
-          </section>
-
-          @if (identification(); as identity) {
-            <section aria-labelledby="report-identification-title" class="stack stack--3">
-              <h2 id="report-identification-title" class="section-heading__title">
-                {{ strings.results.identificationHeading }}
-              </h2>
-              <p class="identification__value" data-testid="report-identification">
-                {{ identity.label }}
-              </p>
-              <p class="identification__body">{{ identity.body }}</p>
-            </section>
-          }
+          <app-resilience-profile [result]="modelResult" [alwaysExpanded]="true" />
 
           <section aria-labelledby="report-provenance-title" class="stack stack--3">
             <h2 id="report-provenance-title" class="section-heading__title">

@@ -93,70 +93,7 @@
 
         <app-result-narrative [result]="modelResult" />
 
-        <section
-          aria-labelledby="objective-title"
-          class="panel panel--objective"
-          data-testid="primary-objective"
-        >
-          <app-section-heading
-            headingId="objective-title"
-            [heading]="strings.results.phase2b.objectiveHeading"
-            [body]="strings.results.phase2b.objectiveBody"
-          />
-          <p class="objective__value" data-testid="objective-value">
-            <span class="objective__label">{{ strings.results.phase2b.objectiveValueLabel }}</span>
-            <span class="objective__number">
-              {{ cvar95Value() }}
-              <span class="objective__unit">{{ strings.results.phase2b.objectiveUnit }}</span>
-            </span>
-          </p>
-          <p class="normalization-note" data-testid="normalization-note">
-            <strong>{{ strings.results.normalizationLabel }}.</strong>
-            {{ strings.results.normalizationNote }}
-          </p>
-          <p>{{ strings.results.phase2b.objectiveNotAdvice }}</p>
-          <div>
-            <a
-              class="button button--secondary"
-              routerLink="/research"
-              data-testid="objective-research-link"
-            >
-              {{ strings.results.phase2b.objectiveResearchLink }}
-            </a>
-          </div>
-        </section>
-
-        <section aria-labelledby="diagnostics-title" class="panel" data-testid="diagnostics">
-          <app-section-heading
-            headingId="diagnostics-title"
-            [heading]="strings.results.phase2b.diagnosticsHeading"
-            [body]="strings.results.phase2b.diagnosticsBody"
-          />
-          <div class="metric-explanation-grid">
-            @for (metric of diagnostics(); track metric.key) {
-              <app-metric-explanation
-                [metricKey]="metric.key"
-                [label]="metric.label"
-                [value]="metric.value"
-                [unit]="metric.unit"
-                [definition]="metric.definition"
-                [howToRead]="metric.howToRead"
-                [note]="metric.note"
-              />
-            }
-          </div>
-        </section>
-
-        @if (identification(); as identity) {
-          <section aria-labelledby="identification-title" class="panel">
-            <app-section-heading
-              headingId="identification-title"
-              [heading]="strings.results.identificationHeading"
-            />
-            <p class="identification__value" data-testid="identification">{{ identity.label }}</p>
-            <p class="identification__body">{{ identity.body }}</p>
-          </section>
-        }
+        <app-resilience-profile [result]="modelResult" />
 
         <app-info-callout
           tone="warning"
@@ -169,6 +106,33 @@
             }
           </ul>
         </app-info-callout>
+
+        <section aria-labelledby="explore-title" class="panel" data-testid="explore-buffers">
+          <app-section-heading
+            headingId="explore-title"
+            [heading]="strings.results.phase2b.exploreBuffers"
+            [body]="strings.results.phase2b.exploreBuffersHint"
+          />
+          @if (exploreError(); as exploreMessage) {
+            <app-info-callout tone="warning">
+              <p data-testid="explore-error">{{ exploreMessage }}</p>
+            </app-info-callout>
+          }
+          <button
+            type="button"
+            class="button button--secondary"
+            data-testid="explore-buffers-cta"
+            [disabled]="explorePending()"
+            [attr.aria-busy]="explorePending()"
+            (click)="exploreBuffers()"
+          >
+            {{
+              explorePending()
+                ? strings.results.phase2b.exploreBuffersBusy
+                : strings.results.phase2b.exploreBuffers
+            }}
+          </button>
+        </section>
 
         <section aria-labelledby="next-title" class="panel" data-testid="what-next">
           <app-section-heading

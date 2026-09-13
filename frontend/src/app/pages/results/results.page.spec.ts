@@ -6,9 +6,10 @@ import { BehaviorSubject } from 'rxjs';
 
 import { EN_STRINGS } from '../../core/i18n/en';
 import { ScenarioComparisonStore } from '../../core/state/scenario-comparison.store';
+import { CACHED_BATCH_JOB } from '../../testing/buffer-sensitivity.fixtures';
 import { OPTIMIZATION_RESULT, TEST_JOB_ID, errorBody, jobStatus } from '../../testing/fixtures';
 import { POLL_INTERVAL_MS, ResultsPage } from './results.page';
-
+import { vi } from 'vitest';
 const JOB_URL = `/api/v1/optimization-jobs/${TEST_JOB_ID}/`;
 
 describe('ResultsPage', () => {
@@ -231,18 +232,20 @@ describe('ResultsPage', () => {
 
     // Scenario 18 (rendered side): metrics come from the payload
     it('renders every metric from the API payload', () => {
-      expect(host().querySelector('[data-testid="objective-value"]')?.textContent).toContain(
-        '0.86',
-      );
+      expect(
+        host().querySelector('[data-testid="resilience-objective-value"]')?.textContent,
+      ).toContain('0.86');
 
       const values = Array.from(
         host().querySelectorAll<HTMLElement>('[data-testid="metric-explanation-value"]'),
       ).map((node) => node.textContent!.replace(/\s+/g, ' ').trim());
 
-      expect(values[0]).toContain('7.34%');
-      expect(values[1]).toContain('0.42');
-      expect(values[2]).toContain('0.05');
-      expect(values[3]).toContain('1.25%');
+      expect(values.some((value) => value.includes('7.34%'))).toBe(true);
+      expect(values.some((value) => value.includes('0.42'))).toBe(true);
+      expect(values.some((value) => value.includes('0.05'))).toBe(true);
+      expect(
+        host().querySelector('[data-testid="resilience-depletion-value"]')?.textContent,
+      ).toContain('1.25%');
     });
 
     // Scenario 19 (rendered side): the allocation legend matches the payload
@@ -260,7 +263,9 @@ describe('ResultsPage', () => {
     });
 
     it('describes A_WELL_IDENTIFIED in specification-bounded language', () => {
-      const identification = host().querySelector('[data-testid="identification"]');
+      const identification = host().querySelector(
+        '[data-testid="resilience-identification-label"]',
+      );
       expect(identification?.textContent?.trim()).toBe(
         'Well identified within the evaluated model specification',
       );
@@ -335,19 +340,22 @@ describe('ResultsPage', () => {
     it('presents Phase 2B interpretation without invented advice', () => {
       expect(host().querySelector('[data-testid="scenario-overview"]')).toBeTruthy();
       expect(host().querySelector('[data-testid="result-narrative"]')).toBeTruthy();
-      expect(host().querySelector('[data-testid="primary-objective"]')).toBeTruthy();
-      expect(host().querySelector('[data-testid="diagnostics"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="resilience-profile"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="resilience-objective"]')).toBeTruthy();
+      expect(host().querySelector('[data-testid="explore-buffers"]')).toBeTruthy();
       expect(host().querySelector('[data-testid="what-next"]')).toBeTruthy();
       expect(host().querySelector('[data-testid="result-limitations"]')).toBeTruthy();
 
-      expect(text()).toContain(EN_STRINGS.results.phase2b.objectiveHeading);
-      expect(text()).toContain(EN_STRINGS.results.phase2b.objectiveBody);
-      expect(text()).toContain(EN_STRINGS.results.phase2b.diagnosticsBody);
+      expect(text()).toContain(EN_STRINGS.resilienceProfile.heading);
+      expect(text()).toContain(EN_STRINGS.resilienceProfile.objective.title);
+      expect(text()).toContain(EN_STRINGS.resilienceProfile.notScoreNote);
       expect(text()).toContain(EN_STRINGS.profiles.P2.title);
       expect(text()).not.toContain('P2_foreign_income_mismatch');
 
+      expect(text()).toContain(EN_STRINGS.resilienceProfile.notScoreNote);
+      expect(host().querySelector('[data-testid="resilience-not-score"]')).toBeTruthy();
       const lowered = text().toLowerCase();
-      expect(lowered).not.toContain('resilience score');
+      expect(lowered).not.toMatch(/\byour resilience score\b/);
       expect(lowered).not.toContain('low risk');
       expect(lowered).not.toContain('high risk');
       expect(lowered).not.toContain('buy currency');
@@ -355,12 +363,12 @@ describe('ResultsPage', () => {
     });
 
     it('describes wealth depletion as an end-of-horizon terminal measure', () => {
-      const depletion = host().querySelector('[data-metric="wealth_depletion_probability"]');
+      const depletion = host().querySelector('[data-testid="resilience-depletion"]');
       const copy = (depletion?.textContent ?? '').replace(/\s+/g, ' ');
-      expect(copy).toContain(EN_STRINGS.results.phase2b.diagnostics.depletion.definition);
-      expect(copy.toLowerCase()).toContain('end of the horizon');
+      expect(copy).toContain(EN_STRINGS.resilienceProfile.depletion.definition);
+      expect(copy.toLowerCase()).toContain('end of the selected horizon');
+      expect(copy.toLowerCase()).toContain('implementation-only');
       expect(copy.toLowerCase()).not.toContain('before the horizon ended');
-      expect(copy.toLowerCase()).not.toContain('at some point');
     });
   });
 
@@ -408,5 +416,99 @@ describe('ResultsPage', () => {
     expect(text().toLowerCase()).not.toMatch(/\bwithout risk\b|\bno risk at all\b/);
     expect(text()).not.toContain('P1_local_control');
     http.verify();
+  });
+
+  describe('explore tested buffer levels CTA', () => {
+    beforeEach(async () => {
+      create();
+      await tick(0);
+      http.expectOne(JOB_URL).flush(jobStatus('succeeded', { result: OPTIMIZATION_RESULT }));
+      fixture.detectChanges();
+    });
+
+    afterEach(() => {
+      http.verify();
+    });
+
+    it('sends exactly one POST without buffer_months and ignores a second click while pending', () => {
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true as never);
+      const button = host().querySelector<HTMLButtonElement>(
+        '[data-testid="explore-buffers-cta"]',
+      )!;
+      button.click();
+      fixture.detectChanges();
+      button.click();
+      fixture.detectChanges();
+
+      const requests = http.match('/api/v1/buffer-sensitivity-jobs/');
+      expect(requests.length).toBe(1);
+      const body = requests[0]!.request.body as Record<string, unknown>;
+      expect(body['buffer_months']).toBeUndefined();
+      expect(Object.keys(body).sort()).toEqual([
+        'conversion_cost',
+        'expense_income_ratio',
+        'horizon_years',
+        'profile',
+        'rebalance_frequency',
+      ]);
+      requests[0]!.flush(
+        {
+          job_id: 'c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44',
+          status: 'queued',
+          cached: false,
+          status_url: '/api/v1/buffer-sensitivity-jobs/c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44/',
+          contract_version: 'buffer_sensitivity_batch_v1',
+          tested_buffers: [1, 3, 6, 12],
+        },
+        { status: 202, statusText: 'Accepted' },
+      );
+      expect(navigateSpy).toHaveBeenCalledWith(
+        ['/buffer-sensitivity', 'c3a91e2b-4d55-4f10-9a77-1e8c0b2d6f44'],
+        expect.objectContaining({
+          queryParams: { origin: TEST_JOB_ID },
+        }),
+      );
+    });
+
+    it('navigates with validated cached result on HTTP 200', () => {
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true as never);
+      host().querySelector<HTMLButtonElement>('[data-testid="explore-buffers-cta"]')!.click();
+      http.expectOne('/api/v1/buffer-sensitivity-jobs/').flush(CACHED_BATCH_JOB, {
+        status: 200,
+        statusText: 'OK',
+      });
+      expect(navigateSpy).toHaveBeenCalledWith(
+        ['/buffer-sensitivity', CACHED_BATCH_JOB.job_id],
+        expect.objectContaining({
+          queryParams: { origin: TEST_JOB_ID },
+          state: expect.objectContaining({
+            result: CACHED_BATCH_JOB.result,
+            originJobId: TEST_JOB_ID,
+          }),
+        }),
+      );
+    });
+
+    it('restores the button and shows safe copy on API failure without transport text', () => {
+      host().querySelector<HTMLButtonElement>('[data-testid="explore-buffers-cta"]')!.click();
+      http
+        .expectOne('/api/v1/buffer-sensitivity-jobs/')
+        .flush(
+          errorBody(
+            'queue_unavailable',
+            'Http failure response for /api/v1/buffer-sensitivity-jobs/: 503',
+          ),
+          { status: 503, statusText: 'Service Unavailable' },
+        );
+      fixture.detectChanges();
+      const button = host().querySelector<HTMLButtonElement>(
+        '[data-testid="explore-buffers-cta"]',
+      )!;
+      expect(button.disabled).toBe(false);
+      const error = host().querySelector('[data-testid="explore-error"]')?.textContent ?? '';
+      expect(error.toLowerCase()).not.toContain('/api/');
+      expect(error.toLowerCase()).not.toContain('http failure');
+      expect(error).toContain(EN_STRINGS.results.phase2b.exploreBuffersError);
+    });
   });
 });

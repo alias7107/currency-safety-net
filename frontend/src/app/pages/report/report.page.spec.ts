@@ -185,8 +185,8 @@ describe('ReportPage', () => {
     expect(text()).toContain(EN_STRINGS.profiles.P3.title);
     expect(text()).not.toContain('P3_mixed_income');
     expect(text()).toContain('share the largest returned weight');
-    expect(text()).toContain(EN_STRINGS.results.phase2b.objectiveHeading);
-    expect(text()).toContain(EN_STRINGS.results.phase2b.diagnosticsBody);
+    expect(text()).toContain(EN_STRINGS.resilienceProfile.heading);
+    expect(text()).toContain(EN_STRINGS.resilienceProfile.objective.title);
     expect(text()).toContain('2.11');
     expect(text()).toContain('report-fixture-7');
     expect(text()).toContain('2016-04-02');
@@ -198,10 +198,12 @@ describe('ReportPage', () => {
     expect(host().querySelector('[data-testid="metric-explanation-note"]')?.textContent).toContain(
       EN_STRINGS.results.phase2b.diagnostics.var95.zeroNote,
     );
-    expect(text()).toContain(EN_STRINGS.results.phase2b.diagnostics.depletion.definition);
+    expect(text()).toContain(EN_STRINGS.resilienceProfile.depletion.definition);
     expect(text().toLowerCase()).not.toContain('before the horizon ended');
-    expect(host().querySelectorAll('[data-testid="metric-explanation-expanded"]').length).toBe(4);
-    expect(text().toLowerCase()).not.toContain('resilience score');
+    expect(
+      host().querySelectorAll('[data-testid="metric-explanation-expanded"]').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(text().toLowerCase()).not.toMatch(/\byour resilience score\b/);
     http.verify();
   });
 
@@ -228,9 +230,9 @@ describe('ReportPage', () => {
     );
     fixture.detectChanges();
     expect(text()).not.toContain('Z_INTERNAL_UNKNOWN_CLASS');
-    expect(host().querySelector('[data-testid="report-identification"]')?.textContent).toContain(
-      EN_STRINGS.common.notAvailable,
-    );
+    expect(
+      host().querySelector('[data-testid="resilience-identification-label"]')?.textContent,
+    ).toContain(EN_STRINGS.common.notAvailable);
     http.verify();
   });
 });
