@@ -30,23 +30,43 @@ FORBIDDEN_CLIENT_FIELDS = {
     "simulation_seed",
 }
 
+BATCH_FORBIDDEN_CLIENT_FIELDS = FORBIDDEN_CLIENT_FIELDS | {
+    "buffer_months",
+    "buffers",
+    "buffer_set",
+    "tested_buffers",
+    "target",
+    "target_metric",
+    "target_value",
+    "risk_target",
+    "n_coarse",
+    "n_refined",
+    "n_surface",
+    "grid",
+    "optimizer",
+    "weights",
+}
+
 
 class StrictSerializer(serializers.Serializer):
     """Reject unknown fields so clients cannot smuggle engine controls."""
+
+    forbidden_fields = FORBIDDEN_CLIENT_FIELDS
 
     def to_internal_value(self, data):
         if not isinstance(data, dict):
             raise serializers.ValidationError(
                 {"non_field_errors": ["Request body must be a JSON object."]}
             )
+        forbidden_set = set(self.forbidden_fields)
         unknown = sorted(set(data.keys()) - set(self.fields.keys()))
-        forbidden = sorted(set(data.keys()) & FORBIDDEN_CLIENT_FIELDS)
+        forbidden = sorted(set(data.keys()) & forbidden_set)
         errors = {}
         if forbidden:
             errors["forbidden_fields"] = [
                 f"Field '{name}' is not allowed." for name in forbidden
             ]
-        remaining_unknown = [name for name in unknown if name not in FORBIDDEN_CLIENT_FIELDS]
+        remaining_unknown = [name for name in unknown if name not in forbidden_set]
         if remaining_unknown:
             errors["unknown_fields"] = [
                 f"Unknown field '{name}'." for name in remaining_unknown
@@ -93,6 +113,59 @@ class OptimizationJobCreateSerializer(StrictSerializer):
             raise serializers.ValidationError(
                 "buffer_months must be between "
                 f"{BUFFER_MONTHS_MIN} and {BUFFER_MONTHS_MAX}."
+            )
+        return float(value)
+
+    def validate_rebalance_frequency(self, value: str) -> str:
+        freq = value.lower().strip()
+        if freq not in SUPPORTED_REBALANCE_FREQUENCIES:
+            raise serializers.ValidationError(
+                "rebalance_frequency must be one of "
+                f"{list(SUPPORTED_REBALANCE_FREQUENCIES)}."
+            )
+        return freq
+
+    def validate_conversion_cost(self, value: float) -> float:
+        if value < CONVERSION_COST_MIN or value > CONVERSION_COST_MAX:
+            raise serializers.ValidationError(
+                "conversion_cost must be between "
+                f"{CONVERSION_COST_MIN} and {CONVERSION_COST_MAX}."
+            )
+        return float(value)
+
+
+class BufferSensitivityJobCreateSerializer(StrictSerializer):
+    """Batch create serializer — server owns buffers; never accepts buffer_months."""
+
+    forbidden_fields = BATCH_FORBIDDEN_CLIENT_FIELDS
+
+    profile = serializers.CharField(max_length=64)
+    horizon_years = serializers.IntegerField()
+    expense_income_ratio = serializers.FloatField(required=False, default=0.95)
+    rebalance_frequency = serializers.CharField(required=False, default="monthly")
+    conversion_cost = serializers.FloatField(required=False, default=0.0)
+
+    def validate_profile(self, value: str) -> str:
+        raw = value.strip()
+        name = PROFILE_ALIASES.get(raw.upper(), raw)
+        if name not in {p.name for p in PRIMARY_PROFILES} and raw.upper() not in PROFILE_ALIASES:
+            raise serializers.ValidationError(
+                f"Unknown profile. Choose one of: {', '.join(sorted(PROFILE_ALIASES))}."
+            )
+        return raw
+
+    def validate_horizon_years(self, value: int) -> int:
+        if value not in SUPPORTED_HORIZON_YEARS:
+            raise serializers.ValidationError(
+                f"horizon_years must be one of {list(SUPPORTED_HORIZON_YEARS)}."
+            )
+        return value
+
+    def validate_expense_income_ratio(self, value: float) -> float:
+        if value < EXPENSE_INCOME_RATIO_MIN or value > EXPENSE_INCOME_RATIO_MAX:
+            raise serializers.ValidationError(
+                "expense_income_ratio must be between "
+                f"{EXPENSE_INCOME_RATIO_MIN} and {EXPENSE_INCOME_RATIO_MAX}."
             )
         return float(value)
 

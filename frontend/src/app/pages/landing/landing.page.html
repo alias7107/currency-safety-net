@@ -2,20 +2,25 @@
   <app-page-container>
     <div class="hero__grid">
       <div class="hero__copy stack stack--5">
-        <p class="hero__eyebrow">{{ strings.landing.eyebrow }}</p>
         <h1 id="hero-title" class="hero__title">{{ strings.landing.heroTitle }}</h1>
         <p class="hero__body">{{ strings.landing.heroBody }}</p>
 
         <div class="hero__actions">
-          <a class="button button--primary" routerLink="/calculator">{{
-            strings.landing.heroCta
-          }}</a>
-          <a class="button button--ghost" routerLink="/methodology">{{
-            strings.landing.heroSecondaryCta
-          }}</a>
+          <a
+            class="button button--primary"
+            routerLink="/assessment"
+            data-testid="landing-primary-cta"
+            >{{ strings.landing.heroCta }}</a
+          >
+          <a
+            class="button button--ghost"
+            routerLink="/research"
+            data-testid="landing-secondary-cta"
+            >{{ strings.landing.heroSecondaryCta }}</a
+          >
         </div>
 
-        <p class="hero__note">{{ strings.landing.heroNote }}</p>
+        <p class="hero__note" data-testid="landing-trust-line">{{ strings.landing.trustLine }}</p>
       </div>
 
       <div class="hero__art">
@@ -34,7 +39,6 @@
 
           <rect x="0" y="0" width="420" height="320" rx="20" fill="url(#hero-sky)" />
 
-          <!-- Protective arc over the household buffer -->
           <path
             d="M60 196c0-82 67-149 150-149s150 67 150 149"
             fill="none"
@@ -53,7 +57,6 @@
             opacity="0.28"
           />
 
-          <!-- Household buffer, held across three currencies -->
           <g>
             <rect
               x="96"
@@ -64,8 +67,16 @@
               fill="var(--color-kzt)"
               opacity="0.16"
             />
-            <rect x="96" y="146" width="66" height="106" rx="12" fill="none"
-              stroke="var(--color-kzt)" stroke-width="2.5" />
+            <rect
+              x="96"
+              y="146"
+              width="66"
+              height="106"
+              rx="12"
+              fill="none"
+              stroke="var(--color-kzt)"
+              stroke-width="2.5"
+            />
             <text x="129" y="206" text-anchor="middle" class="hero__illustration-label">KZT</text>
 
             <rect
@@ -77,8 +88,16 @@
               fill="var(--color-usd)"
               opacity="0.14"
             />
-            <rect x="177" y="122" width="66" height="130" rx="12" fill="none"
-              stroke="var(--color-usd)" stroke-width="2.5" />
+            <rect
+              x="177"
+              y="122"
+              width="66"
+              height="130"
+              rx="12"
+              fill="none"
+              stroke="var(--color-usd)"
+              stroke-width="2.5"
+            />
             <text x="210" y="194" text-anchor="middle" class="hero__illustration-label">USD</text>
 
             <rect
@@ -90,12 +109,19 @@
               fill="var(--color-eur)"
               opacity="0.16"
             />
-            <rect x="258" y="160" width="66" height="92" rx="12" fill="none"
-              stroke="var(--color-eur)" stroke-width="2.5" />
+            <rect
+              x="258"
+              y="160"
+              width="66"
+              height="92"
+              rx="12"
+              fill="none"
+              stroke="var(--color-eur)"
+              stroke-width="2.5"
+            />
             <text x="291" y="212" text-anchor="middle" class="hero__illustration-label">EUR</text>
           </g>
 
-          <!-- Ground line: the household's monthly expenses -->
           <line
             x1="72"
             y1="252"
@@ -114,7 +140,25 @@
   </app-page-container>
 </section>
 
-<section class="section section--surface" aria-labelledby="workflow-title">
+<section class="section section--surface" id="who-it-helps" aria-labelledby="who-title">
+  <app-page-container>
+    <app-section-heading
+      headingId="who-title"
+      [heading]="strings.landing.whoHeading"
+      [body]="strings.landing.whoBody"
+    />
+    <ul class="audience-grid">
+      @for (item of strings.landing.whoAudiences; track item.title) {
+        <li class="audience-grid__item">
+          <h3 class="audience-grid__title">{{ item.title }}</h3>
+          <p class="audience-grid__body">{{ item.body }}</p>
+        </li>
+      }
+    </ul>
+  </app-page-container>
+</section>
+
+<section class="section" id="how-it-works" aria-labelledby="workflow-title">
   <app-page-container>
     <app-section-heading
       headingId="workflow-title"
@@ -133,66 +177,63 @@
   </app-page-container>
 </section>
 
-<section class="section" aria-labelledby="currencies-title">
+<section class="section section--surface" aria-labelledby="outputs-title">
   <app-page-container>
     <app-section-heading
-      headingId="currencies-title"
-      [heading]="strings.landing.currenciesHeading"
-      [body]="strings.landing.currenciesBody"
-    />
-    <ul class="currency-list">
-      @for (code of currencyCodes; track code) {
-        <li class="currency-list__item" [attr.data-currency]="code">
-          <span class="currency-list__swatch" [attr.data-currency]="code" aria-hidden="true"></span>
-          <span class="currency-list__code">{{ currency(code).code }}</span>
-          <span class="currency-list__name">{{ currency(code).label }}</span>
-        </li>
-      }
-    </ul>
-  </app-page-container>
-</section>
-
-<section class="section section--surface" aria-labelledby="methodology-title">
-  <app-page-container>
-    <app-section-heading
-      headingId="methodology-title"
-      [heading]="strings.landing.methodologyHeading"
-      [body]="strings.landing.methodologyBody"
+      headingId="outputs-title"
+      [heading]="strings.landing.outputsHeading"
+      [body]="strings.landing.outputsBody"
     />
     <ul class="feature-grid">
-      @for (point of strings.landing.methodologyPoints; track point.title) {
+      @for (item of strings.landing.outputs; track item.title) {
         <li class="feature-grid__item">
-          <h3 class="feature-grid__title">{{ point.title }}</h3>
-          <p class="feature-grid__body">{{ point.body }}</p>
+          <h3 class="feature-grid__title">{{ item.title }}</h3>
+          <p class="feature-grid__body">{{ item.body }}</p>
         </li>
       }
     </ul>
-    <p class="section__footnote">
-      <a routerLink="/methodology">{{ strings.landing.heroSecondaryCta }}</a>
-    </p>
   </app-page-container>
 </section>
 
-<section class="section" aria-labelledby="data-title">
+<section class="section" aria-labelledby="privacy-title">
   <app-page-container size="narrow">
-    <app-section-heading headingId="data-title" [heading]="strings.landing.dataHeading" />
-    <div class="data-panel">
+    <app-section-heading headingId="privacy-title" [heading]="strings.landing.privacyHeading" />
+    <ul class="limitations">
+      @for (item of strings.landing.privacyPoints; track item) {
+        <li>{{ item }}</li>
+      }
+    </ul>
+  </app-page-container>
+</section>
+
+<section class="section section--surface" aria-labelledby="research-evidence-title">
+  <app-page-container size="narrow">
+    <app-section-heading
+      headingId="research-evidence-title"
+      [heading]="strings.landing.researchHeading"
+      [body]="strings.landing.researchBody"
+    />
+    <div class="data-panel" data-testid="landing-research-panel">
       <div class="data-panel__row">
-        <span class="data-panel__label">{{ strings.landing.dataAsOfLabel }}</span>
+        <span class="data-panel__label">{{ strings.landing.researchDataLabel }}</span>
         <span class="data-panel__value" data-testid="data-as-of">{{ dataAsOf() }}</span>
       </div>
       @if (modelVersion(); as version) {
         <div class="data-panel__row">
-          <span class="data-panel__label">{{ strings.methodology.parameterLabels.modelVersion }}</span>
-          <span class="data-panel__value">{{ version }}</span>
+          <span class="data-panel__label">{{ strings.landing.researchVersionLabel }}</span>
+          <span class="data-panel__value" data-testid="model-version">{{ version }}</span>
         </div>
       }
       @if (simulationPaths(); as paths) {
         <div class="data-panel__row">
-          <span class="data-panel__label">{{
-            strings.methodology.parameterLabels.simulationPaths
-          }}</span>
-          <span class="data-panel__value">{{ paths }}</span>
+          <span class="data-panel__label">{{ strings.landing.researchPathsLabel }}</span>
+          <span class="data-panel__value" data-testid="simulation-paths">{{ paths }}</span>
+        </div>
+      }
+      @if (simulationMethod(); as method) {
+        <div class="data-panel__row">
+          <span class="data-panel__label">{{ strings.landing.researchMethodLabel }}</span>
+          <span class="data-panel__value" data-testid="simulation-method">{{ method }}</span>
         </div>
       }
     </div>
@@ -200,13 +241,16 @@
       <p class="data-panel__note" data-testid="metadata-unavailable-note">
         {{ strings.landing.metadataUnavailableNote }}
       </p>
-    } @else {
-      <p class="data-panel__note">{{ strings.landing.dataBody }}</p>
     }
+    <p class="section__footnote">
+      <a routerLink="/research" data-testid="landing-research-link">{{
+        strings.landing.researchCta
+      }}</a>
+    </p>
   </app-page-container>
 </section>
 
-<section class="section section--surface" aria-labelledby="limitations-title">
+<section class="section" aria-labelledby="limitations-title">
   <app-page-container size="narrow">
     <app-section-heading
       headingId="limitations-title"
@@ -222,13 +266,13 @@
   </app-page-container>
 </section>
 
-<section class="section" aria-labelledby="cta-title">
+<section class="section section--surface" aria-labelledby="cta-title">
   <app-page-container size="narrow">
     <div class="cta-panel stack stack--4">
       <h2 id="cta-title" class="cta-panel__title">{{ strings.landing.ctaHeading }}</h2>
       <p>{{ strings.landing.ctaBody }}</p>
       <div>
-        <a class="button button--primary" routerLink="/calculator">{{
+        <a class="button button--primary" routerLink="/assessment" data-testid="landing-bottom-cta">{{
           strings.landing.ctaButton
         }}</a>
       </div>

@@ -3,12 +3,16 @@ import {
   Component,
   ElementRef,
   HostListener,
+  computed,
+  inject,
   viewChild,
   signal,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { EN_STRINGS } from '../../../core/i18n/en';
+import { ScenarioComparisonStore } from '../../../core/state/scenario-comparison.store';
+import { interpolate } from '../../../core/util/format.util';
 import { PageContainer } from '../page-container/page-container';
 
 @Component({
@@ -19,7 +23,7 @@ import { PageContainer } from '../page-container/page-container';
     <header class="app-header">
       <app-page-container>
         <div class="app-header__inner">
-          <a class="app-header__brand" routerLink="/">
+          <a class="app-header__brand" routerLink="/" data-testid="header-logo">
             <svg class="app-header__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
               <path
                 d="M16 2.5 27 6.6v9.2c0 6.6-4.4 12.2-11 13.7-6.6-1.5-11-7.1-11-13.7V6.6z"
@@ -73,21 +77,40 @@ import { PageContainer } from '../page-container/page-container';
           >
             <a
               class="app-header__link"
-              routerLink="/calculator"
-              routerLinkActive="is-active"
+              routerLink="/"
+              fragment="how-it-works"
+              data-testid="nav-how-it-works"
               (click)="closeMenu()"
-              >{{ strings.nav.calculator }}</a
+              >{{ strings.nav.howItWorks }}</a
             >
             <a
               class="app-header__link"
-              routerLink="/methodology"
-              routerLinkActive="is-active"
+              routerLink="/"
+              fragment="who-it-helps"
+              data-testid="nav-who-it-helps"
               (click)="closeMenu()"
-              >{{ strings.nav.methodology }}</a
+              >{{ strings.nav.whoItHelps }}</a
+            >
+            <a
+              class="app-header__link"
+              routerLink="/research"
+              routerLinkActive="is-active"
+              data-testid="nav-research"
+              (click)="closeMenu()"
+              >{{ strings.nav.research }}</a
+            >
+            <a
+              class="app-header__link"
+              routerLink="/compare"
+              routerLinkActive="is-active"
+              data-testid="nav-compare"
+              (click)="closeMenu()"
+              >{{ compareNavLabel() }}</a
             >
             <a
               class="button button--primary app-header__cta"
-              routerLink="/calculator"
+              routerLink="/assessment"
+              data-testid="nav-primary-cta"
               (click)="closeMenu()"
               >{{ strings.nav.primaryAction }}</a
             >
@@ -99,9 +122,17 @@ import { PageContainer } from '../page-container/page-container';
 })
 export class AppHeader {
   private readonly menuToggle = viewChild<ElementRef<HTMLButtonElement>>('menuToggle');
+  private readonly comparison = inject(ScenarioComparisonStore);
 
   protected readonly strings = EN_STRINGS;
   protected readonly menuOpen = signal(false);
+
+  protected readonly compareNavLabel = computed(() => {
+    const count = this.comparison.count();
+    return count > 0
+      ? interpolate(EN_STRINGS.nav.compareWithCount, { count })
+      : EN_STRINGS.nav.compare;
+  });
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);
