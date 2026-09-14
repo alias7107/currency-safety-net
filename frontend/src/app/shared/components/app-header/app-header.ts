@@ -109,7 +109,7 @@ import { PageContainer } from '../page-container/page-container';
             >
             <a
               class="button button--primary app-header__cta"
-              routerLink="/assessment"
+              routerLink="/research/calculator"
               data-testid="nav-primary-cta"
               (click)="closeMenu()"
               >{{ strings.nav.primaryAction }}</a

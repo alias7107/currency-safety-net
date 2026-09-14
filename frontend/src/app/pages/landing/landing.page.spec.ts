@@ -18,9 +18,9 @@ describe('Product experience routes', () => {
     }).compileComponents();
   });
 
-  it('loads the existing calculator at /assessment', async () => {
+  it('loads the existing calculator at /research/calculator', async () => {
     const harness = await RouterTestingHarness.create();
-    const page = await harness.navigateByUrl('/assessment', CalculatorPage);
+    const page = await harness.navigateByUrl('/research/calculator', CalculatorPage);
     expect(page).toBeTruthy();
 
     const http = TestBed.inject(HttpTestingController);
@@ -46,11 +46,11 @@ describe('Product experience routes', () => {
     http.verify();
   });
 
-  it('redirects /calculator to /assessment', async () => {
+  it('redirects /calculator to /research/calculator', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/calculator');
     const router = TestBed.inject(Router);
-    expect(router.url).toBe('/assessment');
+    expect(router.url).toBe('/research/calculator');
   });
 
   it('loads the research page at /research', async () => {
@@ -121,7 +121,7 @@ describe('LandingPage product experience', () => {
     return ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/g, ' ');
   }
 
-  it('routes primary and secondary hero CTAs to assessment and research', async () => {
+  it('routes primary and secondary hero CTAs to research calculator and research', async () => {
     fixture.detectChanges();
     http.expectOne('/api/v1/model/metadata/').flush(MODEL_METADATA);
     fixture.detectChanges();
@@ -131,7 +131,7 @@ describe('LandingPage product experience', () => {
     expect(
       primary.attributes['ng-reflect-router-link'] ?? primary.nativeElement.getAttribute('href'),
     ).toBeTruthy();
-    expect(primary.nativeElement.getAttribute('href') || '').toContain('/assessment');
+    expect(primary.nativeElement.getAttribute('href') || '').toContain('/research/calculator');
     expect(secondary.nativeElement.getAttribute('href') || '').toContain('/research');
   });
 
@@ -192,5 +192,7 @@ describe('LandingPage product experience', () => {
       expect(copy).not.toContain(forbidden);
     }
     expect(copy).toContain('four predefined profiles evaluated in the research');
+    expect(copy).toContain('explore the research model');
+    expect(copy).not.toContain('check my resilience');
   });
 });

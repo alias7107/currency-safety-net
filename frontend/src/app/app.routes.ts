@@ -10,13 +10,18 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/landing/landing.page').then((m) => m.LandingPage),
   },
   {
-    path: 'assessment',
+    path: 'research/calculator',
     title: `${EN_STRINGS.calculator.title} — ${EN_STRINGS.app.name}`,
     loadComponent: () => import('./pages/calculator/calculator.page').then((m) => m.CalculatorPage),
   },
   {
+    path: 'assessment',
+    redirectTo: 'research/calculator',
+    pathMatch: 'full',
+  },
+  {
     path: 'calculator',
-    redirectTo: 'assessment',
+    redirectTo: 'research/calculator',
     pathMatch: 'full',
   },
   {

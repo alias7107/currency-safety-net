@@ -12,16 +12,33 @@ from pathlib import Path
 import environ
 from django.core.exceptions import ImproperlyConfigured
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from project.runtime_config import (
+    DEV_SECRET_FALLBACK,
+    build_caches,
+    build_databases,
+    validate_allowed_hosts,
+    validate_production_redis,
+    validate_retention_days,
+    validate_secret_configuration,
+)
 
-DEV_SECRET_FALLBACK = "dev-only-not-for-production-change-me"
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
     DEBUG=(bool, True),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:4200"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
     CELERY_TASK_ALWAYS_EAGER=(bool, False),
     BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=(bool, True),
+    OPTIMIZATION_SUBMISSIONS_ENABLED=(bool, True),
+    ADMIN_ENABLED=(bool, True),
+    SECURE_SSL_REDIRECT=(bool, False),
+    SECURE_HSTS_SECONDS=(int, 0),
+    SECURE_PROXY_SSL_HEADER_ENABLED=(bool, False),
+    JOB_RETENTION_DAYS=(int, 7),
+    DATABASE_CONN_MAX_AGE=(int, 60),
+    DATA_UPLOAD_MAX_MEMORY_SIZE=(int, 65536),
 )
 
 environ.Env.read_env(BASE_DIR.parent / ".env")
@@ -31,19 +48,16 @@ environ.Env.read_env(BASE_DIR.parent / ".env")
 SECRET_KEY = env("DJANGO_SECRET_KEY", default=DEV_SECRET_FALLBACK)
 DEBUG = env("DEBUG")
 
-
-def validate_secret_configuration(*, debug: bool, secret_key: str) -> None:
-    if not debug and secret_key == DEV_SECRET_FALLBACK:
-        raise ImproperlyConfigured(
-            "DJANGO_SECRET_KEY must be set to a non-development value when DEBUG=False."
-        )
-
-
 validate_secret_configuration(debug=DEBUG, secret_key=SECRET_KEY)
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 if DEBUG and "testserver" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS = list(ALLOWED_HOSTS) + ["testserver", "localhost", "127.0.0.1"]
+validate_allowed_hosts(debug=DEBUG, allowed_hosts=list(ALLOWED_HOSTS))
+
+# Admin is enabled in development by default; production defaults to disabled
+# unless ADMIN_ENABLED=True is explicitly set with DEBUG=False.
+ADMIN_ENABLED = env("ADMIN_ENABLED") if DEBUG else env.bool("ADMIN_ENABLED", default=False)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -59,6 +73,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "project.admin_gate.AdminGateMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -88,12 +103,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "project.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": env("SQLITE_PATH", default=str(BASE_DIR / "db.sqlite3")),
-    }
-}
+DATABASE_URL = env("DATABASE_URL", default="")
+DATABASES = build_databases(
+    debug=DEBUG,
+    sqlite_path=env("SQLITE_PATH", default=str(BASE_DIR / "db.sqlite3")),
+    database_url=DATABASE_URL or None,
+    conn_max_age=env("DATABASE_CONN_MAX_AGE"),
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -108,11 +124,15 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
-# In-memory DRF throttling is development-only. Production should use Redis.
+# Same-origin production typically leaves CORS empty or unused. Development
+# keeps localhost:4200. DRF throttling is abuse reduction, not a complete
+# security boundary (see DRF throttling documentation).
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
@@ -135,6 +155,17 @@ REST_FRAMEWORK = {
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/1")
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default="")
+
+validate_production_redis(
+    debug=DEBUG,
+    broker_url=CELERY_BROKER_URL,
+    result_backend=CELERY_RESULT_BACKEND,
+    cache_url=REDIS_CACHE_URL,
+)
+
+CACHES = build_caches(debug=DEBUG, cache_url=REDIS_CACHE_URL)
+
 CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER")
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TASK_ACKS_LATE = True
@@ -168,6 +199,7 @@ OPTIMIZATION_TASK_TIME_LIMIT = int(env("OPTIMIZATION_TASK_TIME_LIMIT", default=2
 OPTIMIZATION_MAX_ATTEMPTS = int(env("OPTIMIZATION_MAX_ATTEMPTS", default=2))
 OPTIMIZATION_LEASE_SECONDS = int(env("OPTIMIZATION_LEASE_SECONDS", default=300))
 OPTIMIZATION_LEASE_SAFETY_MARGIN_SECONDS = 60
+OPTIMIZATION_SUBMISSIONS_ENABLED = env("OPTIMIZATION_SUBMISSIONS_ENABLED")
 
 # Buffer sensitivity batch task limits.
 BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT = int(
@@ -182,6 +214,8 @@ BUFFER_SENSITIVITY_LEASE_SECONDS = int(
 BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS = 120
 BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED = env("BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED")
 BUFFER_SENSITIVITY_QUEUE = "buffer_sensitivity"
+
+JOB_RETENTION_DAYS = validate_retention_days(env("JOB_RETENTION_DAYS"))
 
 CELERY_TASK_ANNOTATIONS = {
     "calculations.run_optimization_job": {
@@ -261,22 +295,70 @@ validate_task_time_limits(
     label="buffer sensitivity job",
 )
 
+# --- HTTP security (environment-driven; development remains usable) ---
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT") if not DEBUG else False
+SECURE_HSTS_SECONDS = 0 if DEBUG else env("SECURE_HSTS_SECONDS")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = bool(SECURE_HSTS_SECONDS)
+SECURE_HSTS_PRELOAD = False
+if env("SECURE_PROXY_SSL_HEADER_ENABLED") and not DEBUG:
+    # Only enable when the reverse proxy strips client-supplied values and sets
+    # X-Forwarded-Proto correctly (Django deployment checklist).
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+else:
+    SECURE_PROXY_SSL_HEADER = None
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = env("DATA_UPLOAD_MAX_MEMORY_SIZE")
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 100
+FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "structured": {
+            "format": (
+                "%(asctime)s level=%(levelname)s service=%(name)s "
+                "%(message)s"
+            ),
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "structured",
         },
     },
     "loggers": {
         "calculations": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
         },
         "celery": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
         },
     },
 }
+
+# Re-export for existing tests that import from project.settings.
+__all__ = [
+    "DEV_SECRET_FALLBACK",
+    "validate_lease_configuration",
+    "validate_secret_configuration",
+    "validate_task_time_limits",
+]

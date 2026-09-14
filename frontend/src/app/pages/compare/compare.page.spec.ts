@@ -59,7 +59,7 @@ describe('ComparePage', () => {
     expect(host().querySelector('[data-testid="compare-empty"]')).toBeTruthy();
     expect(text()).toContain(EN_STRINGS.compare.emptyBody);
     const cta = host().querySelector<HTMLAnchorElement>('[data-testid="compare-empty-cta"]');
-    expect(cta?.getAttribute('href')).toContain('/assessment');
+    expect(cta?.getAttribute('href')).toContain('/research/calculator');
     expect(text()).toContain(EN_STRINGS.compare.scopeCallout);
   });
 

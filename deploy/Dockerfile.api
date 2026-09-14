@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.6
+
+FROM python:3.9.6-slim-bookworm AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DJANGO_SETTINGS_MODULE=project.settings
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system csn \
+    && useradd --system --gid csn --create-home --home-dir /app csn
+
+WORKDIR /app
+
+COPY backend/requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r /app/requirements.txt
+
+COPY backend/ /app/
+
+USER csn
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8000/api/v1/health/ || exit 1
+
+CMD ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "2", "--timeout", "60"]

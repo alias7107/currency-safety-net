@@ -322,11 +322,11 @@ export class BufferSensitivityPage {
 
   protected resultsLink(): string[] {
     const origin = this.originJobId();
-    return origin && isValidOriginJobId(origin) ? ['/results', origin] : ['/assessment'];
+    return origin && isValidOriginJobId(origin) ? ['/results', origin] : ['/research/calculator'];
   }
 
   protected runAnother(): void {
     this.store.setStep(0);
-    void this.router.navigate(['/assessment']);
+    void this.router.navigate(['/research/calculator']);
   }
 }

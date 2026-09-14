@@ -1,0 +1,12 @@
+# Research pilot robots policy.
+# Landing and research information may be indexed.
+# Capability URLs that expose job results must not be indexed.
+
+User-agent: *
+Allow: /
+Allow: /research
+Allow: /research/calculator
+Disallow: /results/
+Disallow: /report/
+Disallow: /compare
+Disallow: /buffer-sensitivity/

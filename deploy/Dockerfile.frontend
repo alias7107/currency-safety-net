@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1.6
+
+FROM node:24.21.0-bookworm AS build
+WORKDIR /src
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+FROM caddy:2.8.4-alpine AS runtime
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /src/dist/currency-safety-net-ui/browser /srv
