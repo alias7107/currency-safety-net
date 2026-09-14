@@ -27,7 +27,13 @@ from .serializers import (
     BufferSensitivityJobCreateSerializer,
     OptimizationJobCreateSerializer,
 )
-from .services import QUEUE_UNAVAILABLE_MESSAGE, QueueUnavailableError, submit_optimization_job
+from .services import (
+    QUEUE_UNAVAILABLE_MESSAGE,
+    SUBMISSIONS_DISABLED_MESSAGE as OPTIMIZATION_SUBMISSIONS_DISABLED_MESSAGE,
+    QueueUnavailableError,
+    submit_optimization_job,
+    submissions_enabled as optimization_submissions_enabled,
+)
 from .throttles import (
     BufferSensitivitySubmitThrottle,
     JobPollThrottle,
@@ -43,12 +49,50 @@ def _iso(dt) -> str | None:
 
 
 class HealthView(APIView):
+    """Liveness only — does not check database or Redis."""
+
     authentication_classes: list = []
     permission_classes: list = []
 
     def get(self, request: Request) -> Response:
         return Response({"status": "ok"})
 
+
+class ReadyView(APIView):
+    """Readiness: bounded database and Redis checks. Never runs the optimizer."""
+
+    authentication_classes: list = []
+    permission_classes: list = []
+
+    def get(self, request: Request) -> Response:
+        from django.core.cache import cache
+        from django.db import connection
+
+        try:
+            connection.ensure_connection()
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+        except Exception:
+            return Response(
+                {"status": "not_ready", "checks": {"database": "unavailable"}},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            cache.set("csn:ready:ping", "1", timeout=5)
+            if cache.get("csn:ready:ping") != "1":
+                raise RuntimeError("cache round-trip failed")
+        except Exception:
+            return Response(
+                {"status": "not_ready", "checks": {"cache": "unavailable"}},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        return Response(
+            {"status": "ready", "checks": {"database": "ok", "cache": "ok"}},
+            status=status.HTTP_200_OK,
+        )
 
 class ModelMetadataView(APIView):
     authentication_classes: list = []
@@ -74,6 +118,17 @@ class OptimizationJobCreateView(APIView):
     throttle_classes = [OptimizationSubmitThrottle]
 
     def post(self, request: Request) -> Response:
+        if not optimization_submissions_enabled():
+            return Response(
+                {
+                    "error": {
+                        "code": "submissions_disabled",
+                        "message": OPTIMIZATION_SUBMISSIONS_DISABLED_MESSAGE,
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         serializer = OptimizationJobCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:

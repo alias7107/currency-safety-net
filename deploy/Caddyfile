@@ -1,0 +1,28 @@
+{
+  email {$CADDY_ACME_EMAIL}
+}
+
+{$CADDY_SITE_ADDRESS} {
+  encode gzip
+
+  # Capability / private exploration surfaces — do not index.
+  @noindex path /results/* /report/* /compare /compare/* /buffer-sensitivity/*
+  header @noindex X-Robots-Tag "noindex, nofollow"
+
+  handle /api/* {
+    reverse_proxy api:8000
+  }
+
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+
+  header {
+    # Baseline browser protections; HSTS is controlled by Django when enabled.
+    X-Content-Type-Options nosniff
+    Referrer-Policy same-origin
+    X-Frame-Options DENY
+  }
+}

@@ -199,10 +199,14 @@ Routes:
 
 | Path | Page |
 |---|---|
-| `/` | Landing |
-| `/calculator` | Guided scenario calculator |
-| `/results/:jobId` | Processing / completed scenario result |
-| `/methodology` | Methodology and limitations |
+| `/` | Landing (research pilot) |
+| `/research` | Research and methodology |
+| `/research/calculator` | Guided research scenario calculator (P1–P4) |
+| `/assessment`, `/calculator` | Redirect to `/research/calculator` |
+| `/results/:jobId` | Processing / completed scenario result (noindex) |
+| `/report/:jobId` | Printable report (noindex) |
+| `/buffer-sensitivity/:jobId` | Buffer sensitivity explorer (noindex) |
+| `/compare` | Scenario comparison (noindex) |
 
 Local full-stack startup order:
 
@@ -249,26 +253,52 @@ npm test -- --watch=false
 Environment
 -----------
 
-See `.env.example`. Important variables:
+See `.env.example` (local), `deploy/.env.production.example` (full ≈8 GB profile),
+and `deploy/.env.pilot.example` (low-resource ≈4 GB profile).
+
+Important variables:
 
 - `DJANGO_SECRET_KEY` — development fallback is marked development-only; startup
   fails if `DEBUG=False` still uses that fallback
-- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — Redis URLs on localhost
-- `CORS_ALLOWED_ORIGINS` — defaults to `http://localhost:4200`
+- `DATABASE_URL` — required PostgreSQL URL when `DEBUG=False`; empty keeps SQLite locally
+- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — Redis broker `/0` and results `/1`
+- `REDIS_CACHE_URL` — required when `DEBUG=False`; distinct Redis DB (e.g. `/2`) for shared DRF throttles
+- `CORS_ALLOWED_ORIGINS` — defaults to `http://localhost:4200`; same-origin production may leave empty
+- `CSRF_TRUSTED_ORIGINS` — HTTPS origins when needed for admin/session POSTs
+- `ADMIN_ENABLED` — defaults off when `DEBUG=False` (admin returns 404)
 - `CELERY_TASK_ALWAYS_EAGER` — set `True` in tests only
 - `DRF_OPTIMIZATION_SUBMIT_THROTTLE` — default `3/hour` (memory-heavy POSTs)
 - `DRF_BUFFER_SENSITIVITY_SUBMIT_THROTTLE` — default `2/hour` (separate from optimization)
 - `DRF_JOB_POLL_THROTTLE` — default `120/min` (shared poll scope; does not consume submit quotas)
 - `DRF_MODEL_METADATA_THROTTLE` — default `60/min`
 - `OPTIMIZATION_MAX_ATTEMPTS` — default `2`
+- `OPTIMIZATION_SUBMISSIONS_ENABLED` — freeze ordinary POSTs without removing GET
 - `OPTIMIZATION_TASK_SOFT_TIME_LIMIT` / `OPTIMIZATION_TASK_TIME_LIMIT` — defaults `180` / `240`
 - `OPTIMIZATION_LEASE_SECONDS` — default `300` (≥ hard + 60s margin)
 - `BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT` / `BUFFER_SENSITIVITY_TASK_TIME_LIMIT` — defaults `600` / `720`
 - `BUFFER_SENSITIVITY_LEASE_SECONDS` — default `840` (≥ hard + 120s margin)
-- `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` — default `True` in development; set `False` in
-  production to freeze new batch submissions without removing GET access
+- `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` — freeze batch POSTs without removing GET
+- `JOB_RETENTION_DAYS` — default `7`; terminal jobs older than this may be deleted
+- `SECURE_SSL_REDIRECT` / `SECURE_HSTS_SECONDS` / `SECURE_PROXY_SSL_HEADER_ENABLED` — HTTPS hardening
 - Global `CELERY_TASK_SOFT_TIME_LIMIT` / `CELERY_TASK_TIME_LIMIT` remain `120` / `180` for
   unrelated tasks; optimization and batch tasks use task-specific annotations
+
+Health endpoints: `GET /api/v1/health/` (liveness) and `GET /api/v1/ready/` (DB + cache readiness).
+
+Production packaging
+--------------------
+
+See `deploy/README.md` and `docs/deployment/`. Two Compose modes share one stack:
+
+- **Low-resource research pilot** (`--profile pilot` + `compose.low-resource.yaml`):
+  one combined Celery worker (`celery,buffer_sensitivity`), Gunicorn 1×2,
+  ≈4 GB candidate — see `docs/deployment/low-resource-pilot-profile.md`.
+- **Full profile** (`--profile full`): dedicated `worker_opt` + `worker_buffer`,
+  Gunicorn 2×2, ≈8 GB candidate.
+
+Never enable both worker profiles at once. Schedule daily retention cleanup via
+the `ops` profile (`cleanup_expired_jobs`). Do not increase Celery concurrency
+without a deployment-host benchmark. Personalized assessment is Phase 5.
 
 Job lifecycle notes
 -------------------
@@ -289,9 +319,12 @@ Job lifecycle notes
 Scope notes
 -----------
 
-- SQLite is for local development only.
+- SQLite is for local development and tests only; production uses PostgreSQL.
 - Authentication is not implemented yet.
-- DRF throttling is in-memory and **development-only**; production should use
-  Redis-backed throttling after deployment architecture is finalized.
+- DRF throttling is LocMem in development and Redis-backed when `DEBUG=False`
+  with `REDIS_CACHE_URL`. Throttling reduces abuse; it is not a complete
+  security boundary.
 - Scientific formulas, seeds, path counts, and optimization constraints in
   `research_engine` must not be altered to make products “easier”.
+- This release is a **research pilot** for profiles P1–P4, not a personalized
+  financial diagnostic.

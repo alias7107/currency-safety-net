@@ -24,7 +24,7 @@ import { PageContainer } from '../page-container/page-container';
                 <a routerLink="/">{{ strings.nav.home }}</a>
               </li>
               <li>
-                <a routerLink="/assessment">{{ strings.nav.assessment }}</a>
+                <a routerLink="/research/calculator">{{ strings.nav.assessment }}</a>
               </li>
               <li>
                 <a routerLink="/compare">{{ strings.nav.compare }}</a>
@@ -38,6 +38,12 @@ import { PageContainer } from '../page-container/page-container';
 
         <div class="app-footer__meta">
           <p>{{ strings.footer.rights }}</p>
+          <p class="app-footer__credit">
+            {{ strings.footer.developedBy }} · {{ strings.footer.contactLabel }}:
+            <a [href]="'mailto:' + strings.footer.contactEmail">{{
+              strings.footer.contactEmail
+            }}</a>
+          </p>
         </div>
       </app-page-container>
     </footer>

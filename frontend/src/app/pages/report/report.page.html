@@ -12,7 +12,7 @@
         <div>
           <a
             class="button button--primary"
-            routerLink="/assessment"
+            routerLink="/research/calculator"
             data-testid="report-assessment"
           >
             {{ strings.nav.primaryAction }}
@@ -32,7 +32,7 @@
       <div class="stack stack--4 no-print" data-testid="report-error">
         <app-section-heading [level]="1" [heading]="strings.report.documentTitle" />
         <app-error-panel [error]="apiError" (retry)="retry()">
-          <a class="button button--primary" routerLink="/assessment">{{
+          <a class="button button--primary" routerLink="/research/calculator">{{
             strings.nav.primaryAction
           }}</a>
         </app-error-panel>
@@ -50,7 +50,7 @@
           </p>
         </app-info-callout>
         <div>
-          <a class="button button--primary" routerLink="/assessment">{{
+          <a class="button button--primary" routerLink="/research/calculator">{{
             strings.nav.primaryAction
           }}</a>
         </div>

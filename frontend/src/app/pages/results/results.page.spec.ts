@@ -285,7 +285,9 @@ describe('ResultsPage', () => {
 
       expect(buttons.join(' ')).not.toContain('buy');
       expect(buttons.join(' ')).not.toContain('invest');
-      expect(buttons.some((label) => label.includes('assessment'))).toBe(true);
+      expect(buttons.some((label) => label.toLowerCase().includes('research calculator'))).toBe(
+        true,
+      );
     });
 
     it('shows Add to comparison only for succeeded jobs', () => {

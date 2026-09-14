@@ -29,6 +29,14 @@ QUEUE_UNAVAILABLE_MESSAGE = (
 MAX_ATTEMPTS_MESSAGE = (
     "The optimization job exceeded the maximum number of execution attempts."
 )
+SUBMISSIONS_DISABLED_MESSAGE = (
+    "Optimization submissions are temporarily disabled. "
+    "Existing job results remain available."
+)
+
+
+def submissions_enabled() -> bool:
+    return bool(getattr(settings, "OPTIMIZATION_SUBMISSIONS_ENABLED", True))
 
 MAX_ATTEMPTS = int(getattr(settings, "OPTIMIZATION_MAX_ATTEMPTS", 2))
 LEASE_SECONDS = int(getattr(settings, "OPTIMIZATION_LEASE_SECONDS", 300))

@@ -1,7 +1,9 @@
 """Request throttles for the calculations API.
 
-In-memory DRF throttling is development-only. Shared production throttling
-should use a Redis cache backend once deployment architecture is finalized.
+DRF throttles use Django's cache framework. Development may use LocMemCache.
+Production must configure Redis via REDIS_CACHE_URL so rates are shared across
+API processes. Throttling reduces abuse; it is not a complete security boundary
+(see Django REST framework throttling documentation).
 """
 
 from __future__ import annotations
