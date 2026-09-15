@@ -78,6 +78,8 @@ describe('App', () => {
     expect(copy).toContain(EN_STRINGS.nav.compare);
     expect(copy).toContain(EN_STRINGS.nav.research);
     expect(copy).toContain('No account, bank connection, or transactions');
+    expect(copy).toContain('Developed by Ali Ashkeyev');
+    expect(copy).toContain('ashkeyevli@gmail.com');
     expect(copy.toLowerCase()).not.toContain('no personal data stored');
   });
 });

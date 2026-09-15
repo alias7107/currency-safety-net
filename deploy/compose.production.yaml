@@ -1,0 +1,252 @@
+# Production-oriented single-VPS Compose stack (Phase 4B).
+# Modes (mutually exclusive worker profiles — never enable both full and pilot):
+#   --profile full   → worker_opt + worker_buffer (≈8 GiB candidate)
+#   --profile pilot  → worker_pilot combined queues (≈4 GiB low-resource candidate)
+#   --profile ops    → one-off migrate / cleanup
+#
+# Do not deploy with placeholder secrets. Do not expose Postgres/Redis publicly.
+
+name: currency-safety-net
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-csn}
+      POSTGRES_USER: ${POSTGRES_USER:-csn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-csn} -d ${POSTGRES_DB:-csn}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - internal
+
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes", "--bind", "0.0.0.0", "--protected-mode", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      ADMIN_ENABLED: "False"
+    # Defaults match Dockerfile full profile (2 workers × 2 threads).
+    # Low-resource override sets GUNICORN_WORKERS=1 via compose.low-resource.yaml.
+    command:
+      [
+        "gunicorn",
+        "project.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--workers",
+        "${GUNICORN_WORKERS:-2}",
+        "--threads",
+        "${GUNICORN_THREADS:-2}",
+        "--timeout",
+        "${GUNICORN_TIMEOUT:-60}",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/ready/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - internal
+
+  worker_opt:
+    profiles: ["full"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+      CELERY_TASK_ALWAYS_EAGER: "False"
+    command:
+      [
+        "celery",
+        "-A",
+        "project",
+        "worker",
+        "--loglevel=INFO",
+        "--hostname=opt@%h",
+        "--queues=celery",
+        "--concurrency=1",
+        "--prefetch-multiplier=1",
+        "--max-tasks-per-child=1",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+    mem_limit: 2g
+
+  worker_buffer:
+    profiles: ["full"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+      CELERY_TASK_ALWAYS_EAGER: "False"
+    command:
+      [
+        "celery",
+        "-A",
+        "project",
+        "worker",
+        "--loglevel=INFO",
+        "--hostname=buffer@%h",
+        "--queues=buffer_sensitivity",
+        "--concurrency=1",
+        "--prefetch-multiplier=1",
+        "--max-tasks-per-child=1",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+    mem_limit: 2g
+
+  # Low-resource research pilot: one process, both queues, sequential execution.
+  # Never enable profile "pilot" together with profile "full".
+  worker_pilot:
+    profiles: ["pilot"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+      CELERY_TASK_ALWAYS_EAGER: "False"
+    command:
+      [
+        "celery",
+        "-A",
+        "project",
+        "worker",
+        "--loglevel=INFO",
+        "--hostname=pilot@%h",
+        "--queues=celery,buffer_sensitivity",
+        "--concurrency=1",
+        "--prefetch-multiplier=1",
+        "--max-tasks-per-child=1",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+    # No mem_limit below measured ~1.2 GiB peak; omit hard cgroup cap on 4 GiB hosts.
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["ops"]
+
+  cleanup:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - ${CSN_ENV_FILE:-.env.production}
+    environment:
+      DEBUG: "False"
+    command: ["python", "manage.py", "cleanup_expired_jobs"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["ops"]
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    environment:
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:?set CADDY_SITE_ADDRESS}
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL:?set CADDY_ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+      - public
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    internal: true
+  public:

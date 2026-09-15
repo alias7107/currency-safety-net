@@ -1,0 +1,47 @@
+# Low-resource research pilot override (Phase 4B.1).
+# Use WITH compose.production.yaml and ONLY --profile pilot (never with --profile full).
+#
+# Example:
+#   docker compose --env-file deploy/.env.pilot \
+#     -f deploy/compose.production.yaml \
+#     -f deploy/compose.low-resource.yaml \
+#     --profile pilot config
+#
+# Sets Gunicorn to 1 worker × 2 threads for very low admissions-demo traffic.
+# Scientific Celery limits, queues, and validation are unchanged.
+
+name: currency-safety-net
+
+services:
+  api:
+    env_file:
+      - .env.pilot
+    environment:
+      GUNICORN_WORKERS: "1"
+      GUNICORN_THREADS: "2"
+      GUNICORN_TIMEOUT: "60"
+    command:
+      [
+        "gunicorn",
+        "project.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--workers",
+        "1",
+        "--threads",
+        "2",
+        "--timeout",
+        "60",
+      ]
+
+  worker_pilot:
+    env_file:
+      - .env.pilot
+
+  migrate:
+    env_file:
+      - .env.pilot
+
+  cleanup:
+    env_file:
+      - .env.pilot

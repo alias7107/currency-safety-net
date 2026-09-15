@@ -10,7 +10,7 @@
           [body]="strings.results.missingJobBody"
         />
         <div>
-          <a class="button button--primary" routerLink="/assessment">{{
+          <a class="button button--primary" routerLink="/research/calculator">{{
             strings.landing.heroCta
           }}</a>
         </div>
@@ -19,7 +19,7 @@
       <div class="stack stack--4">
         <app-section-heading [level]="1" [heading]="strings.results.title" />
         <app-error-panel [error]="apiError" (retry)="retry()">
-          <a class="button button--primary" routerLink="/assessment">{{
+          <a class="button button--primary" routerLink="/research/calculator">{{
             strings.results.actionRunAnother
           }}</a>
         </app-error-panel>
@@ -180,7 +180,7 @@
             >
               {{ strings.results.actionChangeAssumptions }}
             </button>
-            <a class="button button--ghost" routerLink="/assessment" data-testid="next-assessment">
+            <a class="button button--ghost" routerLink="/research/calculator" data-testid="next-assessment">
               {{ strings.results.phase2b.nextOpenAssessment }}
             </a>
             <a class="button button--ghost" routerLink="/research" data-testid="next-research">

@@ -23,10 +23,10 @@ export const EN_STRINGS = {
     howItWorks: 'How it works',
     whoItHelps: 'Who it helps',
     research: 'Research',
-    assessment: 'Assessment',
+    assessment: 'Research calculator',
     compare: 'Compare',
     compareWithCount: 'Compare ({count})',
-    primaryAction: 'Check my resilience',
+    primaryAction: 'Explore the research model',
   },
 
   footer: {
@@ -37,7 +37,7 @@ export const EN_STRINGS = {
       'Results are modelled outcomes for the scenario you entered. They are not exchange-rate forecasts, not investment advice, and not a statement about what any currency will do in future.',
     linksHeading: 'Sections',
     rights: 'Research demonstrator. No account, bank connection, or transactions.',
-    credit: 'Developed by Ali Ashkeyev',
+    developedBy: 'Developed by Ali Ashkeyev',
     contactLabel: 'Contact',
     contactEmail: 'ashkeyevli@gmail.com',
   },
@@ -109,18 +109,19 @@ export const EN_STRINGS = {
   },
 
   landing: {
-    heroTitle: 'Would your emergency fund still protect your household when exchange rates move?',
+    heroTitle: 'Explore how modelled currency buffers behave when exchange rates move',
     heroBody:
-      'Choose the household situation closest to yours and explore how different currency mixes and buffer sizes perform across thousands of simulated exchange-rate scenarios.',
-    heroCta: 'Check my resilience',
+      'This research pilot lets you explore the four predefined household profiles evaluated in the published research — not a personalized financial diagnostic.',
+    heroCta: 'Explore the research model',
     heroSecondaryCta: 'View the published research',
-    trustLine: 'No account · No bank connection · Research-based model · Not financial advice',
+    trustLine:
+      'Research pilot · No account · No bank connection · Not financial advice · Analytics disabled',
     illustrationAlt:
       'Diagram of a household savings buffer held in tenge, dollars and euros, sheltered under a protective arc representing modelled shortfall coverage.',
 
-    whoHeading: 'Who it helps',
+    whoHeading: 'Who the research profiles describe',
     whoBody:
-      'The assessment is designed for households navigating more than one currency in everyday life. It may help explore modelled resilience — it does not claim measured impact on real outcomes.',
+      'The research model evaluates four published household currency situations. Use them to explore modelled shortfall risk — this pilot does not claim measured impact on real outcomes.',
     whoAudiences: [
       {
         title: 'Currency-mismatch households',
@@ -145,7 +146,7 @@ export const EN_STRINGS = {
     workflowSteps: [
       {
         title: 'Choose a household profile',
-        body: 'Select the researched profile closest to how you earn and spend across currencies.',
+        body: 'Select one of the four researched profiles closest to how households earn and spend across currencies.',
       },
       {
         title: 'Set modelling assumptions',
@@ -159,7 +160,7 @@ export const EN_STRINGS = {
 
     outputsHeading: 'What you receive',
     outputsBody:
-      'The assessment reports modelled results for the scenario you select — guidance for understanding the model, not a personal recommendation.',
+      'The research calculator reports modelled results for the scenario you select — guidance for understanding the model, not a personal recommendation.',
     outputs: [
       {
         title: 'Transparent resilience profile',
@@ -187,6 +188,8 @@ export const EN_STRINGS = {
       'An unfinished form is kept in your browser session only.',
       'Saved comparison scenarios stay in the current browser session only.',
       'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
+      'Terminal job payloads and results are retained for seven days in the research pilot.',
+      'Third-party analytics are disabled for the initial pilot.',
     ],
 
     researchHeading: 'Based on published research',
@@ -209,16 +212,16 @@ export const EN_STRINGS = {
       'This version uses four predefined profiles evaluated in the research — not fully custom income, expense, or savings distributions.',
     ],
 
-    ctaHeading: 'Ready to check a scenario?',
+    ctaHeading: 'Ready to explore a researched scenario?',
     ctaBody:
-      'Open the assessment, choose a researched household profile, and review the modelled result.',
-    ctaButton: 'Check my resilience',
+      'Open the research calculator, choose one of the four published household profiles, and review the modelled result.',
+    ctaButton: 'Explore the research model',
   },
 
   calculator: {
-    title: 'Scenario builder',
+    title: 'Research scenario calculator',
     intro:
-      'Three steps. Every value you can choose here is one that was evaluated in the research.',
+      'Three steps. Explore the four predefined household profiles evaluated in the research — every selectable value here is one that was documented in the research specification.',
     summaryHeading: 'Your scenario',
     summaryHint: 'Updated as you make changes.',
 
@@ -469,11 +472,11 @@ export const EN_STRINGS = {
       nextHeading: 'What you can do next',
       nextBody: 'These are product actions inside Currency Safety Net, not financial instructions.',
       nextCompare: 'Compare this result with another scenario',
-      nextChange: 'Change one assumption and run the assessment again',
+      nextChange: 'Change one assumption and run the research calculator again',
       nextAssumptions:
         'Review how expense-to-income ratio, buffer, horizon, rebalancing, and conversion cost define the scenario',
       nextResearch: 'Read the research methodology and limitations',
-      nextOpenAssessment: 'Open the assessment',
+      nextOpenAssessment: 'Open the research calculator',
       nextOpenResearch: 'Open the research page',
       nextOpenCompare: 'Open comparison',
       nextAddCompare: 'Add this result to comparison',
@@ -765,7 +768,7 @@ export const EN_STRINGS = {
     ],
     researchLink: 'Read why the product avoids scores and recommended buffers',
     actionBackResults: 'Back to scenario result',
-    actionRunAnother: 'Run another assessment',
+    actionRunAnother: 'Run another research scenario',
     detailLabels: {
       profile: 'Household profile',
       horizon: 'Horizon',
@@ -797,7 +800,7 @@ export const EN_STRINGS = {
     ],
     emptyBody:
       'Run a scenario and save its result to compare how different assumptions change the modelled allocation and shortfall-risk measures.',
-    emptyCta: 'Open the assessment',
+    emptyCta: 'Open the research calculator',
     oneHeading: 'One scenario saved',
     oneBody:
       'Save at least one more completed result to see a side-by-side comparison of modelled allocations and shortfall-risk measures.',
@@ -858,7 +861,7 @@ export const EN_STRINGS = {
     failedTitle: 'Scenario could not be completed',
     failedBody: 'The model run did not finish, so a printable report is not available.',
     missingJobTitle: 'No scenario selected',
-    missingJobBody: 'Open the assessment to run a scenario before generating a report.',
+    missingJobBody: 'Open the research calculator to run a scenario before generating a report.',
     scopeHeading: 'Report scope',
     scopeBody:
       'This document contains simulation-based results for the selected scenario. It is not individualized financial advice and not a guarantee.',

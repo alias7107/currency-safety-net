@@ -263,3 +263,7 @@
 .app-footer__credit a:focus-visible {
   color: var(--color-text);
 }
+
+.app-footer__credit {
+  margin-top: var(--space-2);
+}

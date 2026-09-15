@@ -317,11 +317,11 @@ export class ResultsPage {
 
   protected runAnother(): void {
     this.store.setStep(0);
-    void this.router.navigate(['/assessment']);
+    void this.router.navigate(['/research/calculator']);
   }
 
   protected changeAssumptions(): void {
     this.store.setStep(1);
-    void this.router.navigate(['/assessment']);
+    void this.router.navigate(['/research/calculator']);
   }
 }
