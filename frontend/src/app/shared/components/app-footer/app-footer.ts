@@ -38,6 +38,14 @@ import { PageContainer } from '../page-container/page-container';
 
         <div class="app-footer__meta">
           <p>{{ strings.footer.rights }}</p>
+          <p class="app-footer__credit">
+            {{ strings.footer.credit }}
+            <span aria-hidden="true"> · </span>
+            <span class="visually-hidden">{{ strings.footer.contactLabel }}: </span>
+            <a [href]="'mailto:' + strings.footer.contactEmail">{{
+              strings.footer.contactEmail
+            }}</a>
+          </p>
         </div>
       </app-page-container>
     </footer>

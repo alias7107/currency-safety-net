@@ -37,6 +37,9 @@ export const EN_STRINGS = {
       'Results are modelled outcomes for the scenario you entered. They are not exchange-rate forecasts, not investment advice, and not a statement about what any currency will do in future.',
     linksHeading: 'Sections',
     rights: 'Research demonstrator. No account, bank connection, or transactions.',
+    credit: 'Developed by Ali Ashkeyev',
+    contactLabel: 'Contact',
+    contactEmail: 'ashkeyevli@gmail.com',
   },
 
   common: {
