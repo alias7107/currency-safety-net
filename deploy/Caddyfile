@@ -2,6 +2,11 @@
   email {$CADDY_ACME_EMAIL}
 }
 
+www.{$CADDY_SITE_ADDRESS} {
+  redir https://{$CADDY_SITE_ADDRESS}{uri} permanent
+}
+
+
 {$CADDY_SITE_ADDRESS} {
   encode gzip
 

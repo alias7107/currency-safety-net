@@ -37,6 +37,13 @@ services:
   worker_pilot:
     env_file:
       - .env.pilot
+    healthcheck:
+      test: ["CMD-SHELL", 'celery -A project inspect ping --destination "pilot@$$(hostname)" --timeout=5 | grep -q pong']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 
   migrate:
     env_file:
