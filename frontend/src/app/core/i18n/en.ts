@@ -60,6 +60,7 @@ export const EN_STRINGS = {
     unavailable: 'Unavailable',
     show: 'Show',
     hide: 'Hide',
+    opensInNewTab: '(opens in a new tab)',
   },
 
   currencies: {
@@ -602,22 +603,63 @@ export const EN_STRINGS = {
   },
 
   research: {
-    title: 'Published research',
+    title: 'The research behind Currency Safety Net',
     intro:
-      'Currency Safety Net is based on published scientific research on household FX shortfall risk. This page summarises the model in plain language and technical detail, and shows live reproducibility metadata.',
+      'Currency Safety Net is an interactive way to explore scenarios from a simulation study of household savings and currency mismatch. The study is available as a research preprint; this page summarises what it examines, how the model works, and the live model details used by the calculator.',
     openAssessment: 'Open the research calculator',
+    ctaHeading: 'Explore the research scenarios',
+    ctaBody:
+      'The research calculator runs the same model for the four predefined household profiles evaluated in the study.',
+    /** Preprint metadata as supplied by the author. Not fetched from SSRN at runtime. */
     publication: {
-      heading: 'Publication',
-      paperTitle: 'Paper title will be listed here.',
-      authors: 'Author details will be listed here.',
-      placeholder: 'Publication link will be added here.',
-      linkLabel: 'Read the published paper',
+      badge: 'SSRN preprint',
+      paperTitle:
+        'Currency Allocation of Household Liquid Savings under Multi-Currency Cash Flows: A Simulation Study Using Kazakhstan Exchange-Rate Data',
+      author: 'Ali Ashkeyev',
+      affiliation: 'Kazakh-British Technical University',
+      details: [
+        { key: 'status', label: 'Publication status', value: 'Research preprint' },
+        { key: 'repository', label: 'Repository', value: 'SSRN' },
+        { key: 'written', label: 'Date written', value: 'September 3, 2026' },
+        { key: 'posted', label: 'Posted on SSRN', value: 'October 13, 2026' },
+        { key: 'abstract_id', label: 'SSRN abstract ID', value: '7591999' },
+      ],
+      note: 'A preprint is a research paper made publicly available by its author. Posting on SSRN does not mean the paper has been peer reviewed or endorsed by SSRN or any institution.',
+      placeholder: 'A link will be added when available.',
+      linkLabel: 'Read the preprint on SSRN',
+    },
+    summary: {
+      heading: 'What the research studies',
+      points: [
+        'Many households receive income, pay essential expenses, and hold savings in different currencies.',
+        'The study examines how this currency mismatch affects the ability of liquid savings to cover expenditure shortfalls.',
+        'It uses historical Kazakhstan exchange-rate data and synthetic household profiles. The profiles are research scenarios, not observed individual households.',
+        'The evaluated currencies are KZT, USD, and EUR, over horizons of one, three, and five years.',
+        'Savings allocations are chosen to minimise CVaR95 of cumulative expenditure shortfalls: the average cumulative shortfall in the worst 5% of simulated paths.',
+      ],
+      objectiveNote:
+        'CVaR95 is the sole optimisation objective. Other reported measures, such as shortfall probability, are diagnostics and are not jointly optimised. Figures labelled implementation-only in results keep that label.',
+      scopeNote:
+        'Simulation results describe modelled outcomes under resampled historical conditions. They are not exchange-rate forecasts or guarantees.',
+    },
+    /** Owner-supplied presentation record; edit here if details change. */
+    conference: {
+      badge: 'Conference presentation',
+      heading: 'Presented at ICOAEF XVII',
+      body: 'This research was presented by Ali Ashkeyev at the International Conference on Applied Economics and Finance (ICOAEF XVII).',
+      datesLabel: 'Conference dates',
+      dates: 'November 20–21, 2026',
+      linkLabel: 'Visit the conference website',
+    },
+    citation: {
+      heading: 'Cite this research',
+      text: 'Ashkeyev, Ali (2026). Currency Allocation of Household Liquid Savings under Multi-Currency Cash Flows: A Simulation Study Using Kazakhstan Exchange-Rate Data. SSRN preprint.',
     },
     productNotes: {
       heading: 'How the product uses this research',
       noScoreTitle: 'Why there is no scalar resilience score',
       noScoreBody:
-        'Shortfall frequency and tail severity are different quantities with different units. The published model does not define a weighting rule that would turn them into one 0–100 score, so the product keeps them separate in a resilience profile.',
+        'Shortfall frequency and tail severity are different quantities with different units. The research model does not define a weighting rule that would turn them into one 0–100 score, so the product keeps them separate in a resilience profile.',
       noRecommendedBufferTitle: 'Why the model does not recommend a buffer',
       noRecommendedBufferBody:
         'The research optimises currency allocation for a fixed buffer. It does not price the cost of holding cash, so it cannot identify an “optimal” or “recommended” emergency-fund size.',

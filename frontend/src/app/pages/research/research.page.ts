@@ -38,7 +38,8 @@ export class ResearchPage {
   private readonly api = inject(OptimizationApiService);
 
   protected readonly strings = EN_STRINGS;
-  protected readonly paperUrl = EXTERNAL_LINKS.publishedPaperUrl;
+  protected readonly preprintUrl = EXTERNAL_LINKS.ssrnPreprintUrl;
+  protected readonly conferenceUrl = EXTERNAL_LINKS.icoaefConferenceUrl;
 
   protected readonly metadata = signal<ModelMetadata | null>(null);
   protected readonly loading = signal(true);

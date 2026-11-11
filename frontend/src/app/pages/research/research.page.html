@@ -9,17 +9,66 @@
   </app-page-container>
 </section>
 
-<section class="section section--surface" aria-labelledby="publication-title">
+<section class="section section--tight" aria-labelledby="preprint-title">
   <app-page-container size="narrow">
-    <app-section-heading
-      headingId="publication-title"
-      [heading]="strings.research.publication.heading"
-    />
-    <div class="prose stack stack--4">
-      <p data-testid="paper-title">{{ strings.research.publication.paperTitle }}</p>
-      <p data-testid="paper-authors">{{ strings.research.publication.authors }}</p>
-      <app-publication-link [url]="paperUrl" />
+    <article class="publication-card stack stack--4" data-testid="preprint-card">
+      <p class="chip chip--accent" data-testid="preprint-badge">
+        {{ strings.research.publication.badge }}
+      </p>
+      <h2 id="preprint-title" class="publication-card__title" data-testid="paper-title">
+        {{ strings.research.publication.paperTitle }}
+      </h2>
+      <p class="publication-card__byline" data-testid="paper-authors">
+        <span class="publication-card__author">{{ strings.research.publication.author }}</span>
+        <span class="publication-card__affiliation">{{
+          strings.research.publication.affiliation
+        }}</span>
+      </p>
+      <dl class="publication-card__details" data-testid="preprint-details">
+        @for (item of strings.research.publication.details; track item.key) {
+          <div class="publication-card__detail" [attr.data-detail]="item.key">
+            <dt>{{ item.label }}</dt>
+            <dd>{{ item.value }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="publication-card__note">{{ strings.research.publication.note }}</p>
+      <app-publication-link [url]="preprintUrl" [label]="strings.research.publication.linkLabel" />
+    </article>
+  </app-page-container>
+</section>
+
+<section class="section" aria-labelledby="summary-title">
+  <app-page-container size="narrow">
+    <app-section-heading headingId="summary-title" [heading]="strings.research.summary.heading" />
+    <div class="prose__block stack stack--4" data-testid="research-summary">
+      <ul class="list">
+        @for (point of strings.research.summary.points; track point) {
+          <li>{{ point }}</li>
+        }
+      </ul>
+      <p class="prose__body">{{ strings.research.summary.objectiveNote }}</p>
+      <p class="prose__body">{{ strings.research.summary.scopeNote }}</p>
     </div>
+  </app-page-container>
+</section>
+
+<section class="section section--tight" aria-labelledby="conference-title">
+  <app-page-container size="narrow">
+    <article class="conference-card stack stack--3" data-testid="conference-card">
+      <p class="chip">{{ strings.research.conference.badge }}</p>
+      <h2 id="conference-title" class="conference-card__title">
+        {{ strings.research.conference.heading }}
+      </h2>
+      <p class="conference-card__body">{{ strings.research.conference.body }}</p>
+      <p class="conference-card__dates">
+        <span class="conference-card__dates-label">{{
+          strings.research.conference.datesLabel
+        }}</span>
+        {{ strings.research.conference.dates }}
+      </p>
+      <app-publication-link [url]="conferenceUrl" [label]="strings.research.conference.linkLabel" />
+    </article>
   </app-page-container>
 </section>
 
@@ -127,6 +176,30 @@
         }
       </ul>
     </app-info-callout>
+  </app-page-container>
+</section>
+
+<section class="section section--surface" aria-labelledby="citation-title">
+  <app-page-container size="narrow">
+    <app-section-heading headingId="citation-title" [heading]="strings.research.citation.heading" />
+    <p class="citation" data-testid="citation">
+      {{ strings.research.citation.text }}
+      @if (preprintUrl) {
+        <a class="citation__link" [href]="preprintUrl" data-testid="citation-link">{{
+          preprintUrl
+        }}</a>
+      }
+    </p>
+  </app-page-container>
+</section>
+
+<section class="section" aria-labelledby="research-cta-title">
+  <app-page-container size="narrow">
+    <app-section-heading
+      headingId="research-cta-title"
+      [heading]="strings.research.ctaHeading"
+      [body]="strings.research.ctaBody"
+    />
     <p class="section__footnote">
       <a
         class="button button--primary"

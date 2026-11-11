@@ -132,6 +132,12 @@
   color: #0b5c56;
 }
 
+.chip--accent {
+  border-color: rgb(15 118 110 / 35%);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+}
+
 /* Profile card */
 
 .profile-card {
@@ -538,7 +544,8 @@
 
 .allocation__swatch[data-currency='USD'] {
   background:
-    radial-gradient(#ffffff 1.1px, transparent 1.2px) 0 0 / 5px 5px, var(--color-usd);
+    radial-gradient(#ffffff 1.1px, transparent 1.2px) 0 0 / 5px 5px,
+    var(--color-usd);
 }
 
 .allocation__swatch[data-currency='EUR'] {
@@ -762,9 +769,17 @@
 .publication-link {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
   min-height: var(--tap-target);
   font-weight: 600;
   color: var(--color-accent);
+}
+
+.publication-link__icon {
+  display: inline-block;
+  font-size: 0.9em;
+  text-decoration: none;
 }
 
 .publication-link--pending {

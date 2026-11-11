@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { EN_STRINGS } from '../../../core/i18n/en';
 
 /**
- * Renders either a safe external paper link or a placeholder.
+ * Renders either a safe external link (new tab) or a placeholder.
  * Never emits a broken `<a href="">` when the URL is unset.
  */
 @Component({
@@ -17,7 +17,9 @@ import { EN_STRINGS } from '../../../core/i18n/en';
         [href]="href"
         target="_blank"
         rel="noopener noreferrer"
-        >{{ strings.research.publication.linkLabel }}</a
+        >{{ label() ?? strings.research.publication.linkLabel
+        }}<span class="publication-link__icon" aria-hidden="true">↗</span
+        ><span class="visually-hidden"> {{ strings.common.opensInNewTab }}</span></a
       >
     } @else {
       <p class="publication-link publication-link--pending" data-testid="publication-placeholder">
@@ -27,8 +29,10 @@ import { EN_STRINGS } from '../../../core/i18n/en';
   `,
 })
 export class PublicationLink {
-  /** Nullable HTTPS URL for the published paper. */
+  /** Nullable HTTPS URL for the external resource. */
   readonly url = input<string | null>(null);
+  /** Visible link text; defaults to the preprint link label. */
+  readonly label = input<string | null>(null);
 
   protected readonly strings = EN_STRINGS;
 

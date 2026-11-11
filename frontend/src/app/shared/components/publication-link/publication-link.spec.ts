@@ -11,7 +11,7 @@ describe('PublicationLink', () => {
     fixture = TestBed.createComponent(PublicationLink);
   });
 
-  it('shows a placeholder when the paper URL is null', () => {
+  it('shows a placeholder when the URL is null', () => {
     fixture.componentRef.setInput('url', null);
     fixture.detectChanges();
 
@@ -34,6 +34,33 @@ describe('PublicationLink', () => {
     expect(anchor.getAttribute('target')).toBe('_blank');
     expect(anchor.getAttribute('rel')).toBe('noopener noreferrer');
     expect(anchor.textContent).toContain(EN_STRINGS.research.publication.linkLabel);
+  });
+
+  it('announces that the link opens in a new tab', () => {
+    fixture.componentRef.setInput('url', 'https://example.org/paper');
+    fixture.detectChanges();
+
+    const anchor = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="publication-link"]',
+    ) as HTMLAnchorElement;
+    expect(anchor.querySelector('.visually-hidden')?.textContent).toContain(
+      EN_STRINGS.common.opensInNewTab,
+    );
+    expect(anchor.querySelector('.publication-link__icon')?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
+  });
+
+  it('uses a custom label when provided', () => {
+    fixture.componentRef.setInput('url', 'https://example.org/event');
+    fixture.componentRef.setInput('label', 'Visit the event website');
+    fixture.detectChanges();
+
+    const anchor = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="publication-link"]',
+    ) as HTMLAnchorElement;
+    expect(anchor.textContent).toContain('Visit the event website');
+    expect(anchor.textContent).not.toContain(EN_STRINGS.research.publication.linkLabel);
   });
 
   it('rejects non-HTTPS URLs and shows the placeholder instead', () => {
