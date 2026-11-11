@@ -46,6 +46,26 @@ describe('Product experience routes', () => {
     http.verify();
   });
 
+  it('lazy-loads the personal household assessment at /assessment', async () => {
+    expect(routes.some((route) => route.path === 'assessment' && !!route.loadComponent)).toBe(true);
+    const { AssessmentPage } = await import('../assessment/assessment.page');
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/assessment', AssessmentPage);
+    expect(page).toBeTruthy();
+    expect(TestBed.inject(Router).url).toBe('/assessment');
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/model/options/').flush({
+      profiles: [],
+      horizons_years: [1, 3, 5],
+      expense_income_ratio: { min: 0.8, max: 1.05, default: 0.95, documented_values: [0.8] },
+      buffer_months: { min: 1, max: 12, default: 1, documented_values: [1] },
+      rebalance_frequencies: ['monthly'],
+      conversion_cost: { min: 0, max: 0.01, default: 0, documented_values: [0] },
+      currencies: ['KZT', 'USD', 'EUR'],
+    });
+    http.verify();
+  });
+
   it('redirects /calculator to /research/calculator', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/calculator');
@@ -121,18 +141,18 @@ describe('LandingPage product experience', () => {
     return ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/g, ' ');
   }
 
-  it('routes primary and secondary hero CTAs to research calculator and research', async () => {
+  it('routes the main CTA to the assessment and keeps research links', async () => {
     fixture.detectChanges();
     http.expectOne('/api/v1/model/metadata/').flush(MODEL_METADATA);
     fixture.detectChanges();
 
     const primary = fixture.debugElement.query(By.css('[data-testid="landing-primary-cta"]'));
     const secondary = fixture.debugElement.query(By.css('[data-testid="landing-secondary-cta"]'));
-    expect(
-      primary.attributes['ng-reflect-router-link'] ?? primary.nativeElement.getAttribute('href'),
-    ).toBeTruthy();
-    expect(primary.nativeElement.getAttribute('href') || '').toContain('/research/calculator');
+    const bottom = fixture.debugElement.query(By.css('[data-testid="landing-bottom-cta"]'));
+    expect(primary.nativeElement.getAttribute('href')).toBe('/assessment');
+    expect(primary.nativeElement.textContent).toContain('Check my resilience');
     expect(secondary.nativeElement.getAttribute('href') || '').toContain('/research');
+    expect(bottom.nativeElement.getAttribute('href')).toBe('/research/calculator');
   });
 
   it('shows live research metadata and never hard-codes data-as-of', async () => {
@@ -193,6 +213,7 @@ describe('LandingPage product experience', () => {
     }
     expect(copy).toContain('four predefined profiles evaluated in the research');
     expect(copy).toContain('explore the research model');
-    expect(copy).not.toContain('check my resilience');
+    expect(copy).toContain('check my resilience');
+    expect(copy).toContain('personalized simulation results are not available yet');
   });
 });

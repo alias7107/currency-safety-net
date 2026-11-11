@@ -16,8 +16,8 @@ export const routes: Routes = [
   },
   {
     path: 'assessment',
-    redirectTo: 'research/calculator',
-    pathMatch: 'full',
+    title: `${EN_STRINGS.assessment.documentTitle} — ${EN_STRINGS.app.name}`,
+    loadComponent: () => import('./pages/assessment/assessment.page').then((m) => m.AssessmentPage),
   },
   {
     path: 'calculator',

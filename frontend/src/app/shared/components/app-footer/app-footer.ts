@@ -24,7 +24,10 @@ import { PageContainer } from '../page-container/page-container';
                 <a routerLink="/">{{ strings.nav.home }}</a>
               </li>
               <li>
-                <a routerLink="/research/calculator">{{ strings.nav.assessment }}</a>
+                <a routerLink="/assessment">{{ strings.nav.householdAssessment }}</a>
+              </li>
+              <li>
+                <a routerLink="/research/calculator">{{ strings.nav.researchCalculator }}</a>
               </li>
               <li>
                 <a routerLink="/compare">{{ strings.nav.compare }}</a>

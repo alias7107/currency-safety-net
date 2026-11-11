@@ -1049,6 +1049,321 @@
   }
 }
 
+/* Household assessment (Phase 5A) */
+
+.assessment__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.assessment__notes {
+  margin-block: var(--space-5);
+  max-width: 72ch;
+}
+
+.assessment__step-heading {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xl);
+}
+
+/* Headings receive programmatic focus on step changes; they are not interactive. */
+.assessment__step-heading:focus,
+#assessment-title:focus {
+  outline: none;
+}
+
+/* Headings receive programmatic focus on step changes; they are not interactive. */
+.assessment__step-heading:focus,
+#assessment-title:focus {
+  outline: none;
+}
+
+.assessment__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.assessment__group .fieldset__legend {
+  margin-bottom: 0;
+}
+
+.assessment__legend {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.assessment__selects {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-control {
+  width: 100%;
+  max-width: 22rem;
+  min-height: var(--tap-target);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.form-control:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.form-control[aria-invalid='true'] {
+  border-color: var(--color-error);
+  border-width: 2px;
+}
+
+.assessment__date {
+  max-width: 14rem;
+}
+
+.amount-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 22rem;
+}
+
+.amount-input .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.amount-input__unit {
+  flex: none;
+  min-width: 3rem;
+  color: var(--color-text-secondary);
+  font-weight: 650;
+}
+
+.choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.choice-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  padding-inline: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.choice-chip:hover {
+  border-color: var(--color-accent);
+}
+
+.choice-chip.is-selected {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.choice-chip.is-selected .choice-chip__code::before {
+  content: '✓ ';
+}
+
+.choice-chip.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.choice-chip:has(.choice-chip__input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.choice-chip__input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.choice-chip__code {
+  font-weight: 700;
+}
+
+.choice-chip__name {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.choice-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-target);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.assessment__computed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.assessment__figure-heading {
+  font-size: var(--text-base);
+}
+
+.assessment__lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assessment__line {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) minmax(0, 1fr) 4.5rem;
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--text-sm);
+}
+
+.assessment__line > span {
+  overflow-wrap: anywhere;
+}
+
+.assessment__line-code {
+  font-weight: 700;
+}
+
+.assessment__line-value {
+  color: var(--color-text-secondary);
+}
+
+.assessment__line-share {
+  font-weight: 650;
+  text-align: right;
+}
+
+.assessment__total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.assessment__total strong {
+  overflow-wrap: anywhere;
+}
+
+.assessment__no-reserve {
+  margin: 0;
+  font-weight: 650;
+}
+
+.assessment__rate {
+  display: block;
+}
+
+.assessment__value-with-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+}
+
+.assessment__panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.assessment__summary .summary__value {
+  overflow-wrap: anywhere;
+}
+
+.assessment__summary-compact {
+  display: none;
+  margin-bottom: var(--space-5);
+}
+
+.assessment__summary-toggle {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.assessment__research-link {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  align-items: flex-start;
+}
+
+@media (max-width: 1023px) {
+  .assessment__summary-desktop {
+    display: none;
+  }
+
+  .assessment__summary-compact {
+    display: flex;
+  }
+}
+
+@media (max-width: 767px) {
+  .assessment__selects {
+    grid-template-columns: 1fr;
+  }
+
+  .assessment__line {
+    grid-template-columns: 3rem minmax(0, 1fr) 4rem;
+  }
+
+  .assessment__line-value {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+  }
+
+  .assessment__computed {
+    padding: var(--space-4);
+  }
+}
+
 /* Research page — preprint, conference, citation */
 
 .publication-card {

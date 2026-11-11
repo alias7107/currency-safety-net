@@ -11,7 +11,7 @@
         />
         <div>
           <a class="button button--primary" routerLink="/research/calculator">{{
-            strings.landing.heroCta
+            strings.nav.researchAction
           }}</a>
         </div>
       </div>
@@ -180,7 +180,11 @@
             >
               {{ strings.results.actionChangeAssumptions }}
             </button>
-            <a class="button button--ghost" routerLink="/research/calculator" data-testid="next-assessment">
+            <a
+              class="button button--ghost"
+              routerLink="/research/calculator"
+              data-testid="next-assessment"
+            >
               {{ strings.results.phase2b.nextOpenAssessment }}
             </a>
             <a class="button button--ghost" routerLink="/research" data-testid="next-research">
