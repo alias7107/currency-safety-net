@@ -1,4 +1,3 @@
-"""Idempotent retention cleanup for terminal research-pilot jobs."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from django.utils import timezone
 
 from project.runtime_config import validate_retention_days
 
-from .models import BufferSensitivityJob, OptimizationJob
+from .models import BufferSensitivityJob, HouseholdAnalysisJob, OptimizationJob
 
 TERMINAL_STATUSES = (
     OptimizationJob.Status.SUCCEEDED,
@@ -23,10 +22,15 @@ TERMINAL_STATUSES = (
 class CleanupResult:
     optimization_count: int
     buffer_sensitivity_count: int
+    household_analysis_count: int = 0
 
     @property
     def total(self) -> int:
-        return self.optimization_count + self.buffer_sensitivity_count
+        return (
+            self.optimization_count
+            + self.buffer_sensitivity_count
+            + self.household_analysis_count
+        )
 
 
 def retention_cutoff(*, now=None):
@@ -50,12 +54,16 @@ def cleanup_expired_jobs(*, cutoff=None, dry_run: bool = False) -> CleanupResult
     cutoff = cutoff or retention_cutoff()
     opt_qs = _terminal_queryset(OptimizationJob, cutoff)
     buf_qs = _terminal_queryset(BufferSensitivityJob, cutoff)
+    household_qs = _terminal_queryset(HouseholdAnalysisJob, cutoff)
     opt_count = opt_qs.count()
     buf_count = buf_qs.count()
+    household_count = household_qs.count()
     if not dry_run:
         opt_qs.delete()
         buf_qs.delete()
+        household_qs.delete()
     return CleanupResult(
         optimization_count=opt_count,
         buffer_sensitivity_count=buf_count,
+        household_analysis_count=household_count,
     )

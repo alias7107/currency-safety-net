@@ -4,6 +4,8 @@ from .views import (
     BufferSensitivityJobCreateView,
     BufferSensitivityJobDetailView,
     HealthView,
+    HouseholdAnalysisJobCreateView,
+    HouseholdAnalysisJobDetailView,
     ModelMetadataView,
     ModelOptionsView,
     OptimizationJobCreateView,
@@ -35,5 +37,15 @@ urlpatterns = [
         "buffer-sensitivity-jobs/<uuid:job_id>/",
         BufferSensitivityJobDetailView.as_view(),
         name="buffer-sensitivity-job-detail",
+    ),
+    path(
+        "household-analysis-jobs/",
+        HouseholdAnalysisJobCreateView.as_view(),
+        name="household-analysis-job-create",
+    ),
+    path(
+        "household-analysis-jobs/<uuid:job_id>/",
+        HouseholdAnalysisJobDetailView.as_view(),
+        name="household-analysis-job-detail",
     ),
 ]

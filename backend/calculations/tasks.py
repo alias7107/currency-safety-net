@@ -23,7 +23,21 @@ from .batch_services import (
     store_buffer_sensitivity_failure,
     store_buffer_sensitivity_success,
 )
-from .models import BufferSensitivityJob, OptimizationJob
+from .household_contract import (
+    HouseholdProvenanceChangedError,
+    HouseholdResultValidationError,
+    ProvenanceUnavailableError,
+    assert_household_job_current,
+    live_provenance,
+    snapshot_from_job,
+    validate_household_result,
+)
+from .household_services import (
+    claim_household_analysis_job,
+    store_household_analysis_failure,
+    store_household_analysis_success,
+)
+from .models import BufferSensitivityJob, HouseholdAnalysisJob, OptimizationJob
 from .services import claim_job_for_execution, store_failure, store_success
 
 logger = logging.getLogger(__name__)
@@ -230,3 +244,89 @@ def run_buffer_sensitivity_job(self, job_id: str) -> dict:
             exc=exc,
         )
         return {"job_id": job_id, "status": BufferSensitivityJob.Status.FAILED.value}
+
+
+@shared_task(
+    bind=True,
+    name="calculations.run_household_analysis_job",
+    soft_time_limit=int(getattr(settings, "HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT", 180)),
+    time_limit=int(getattr(settings, "HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT", 240)),
+)
+def run_household_analysis_job(self, job_id: str) -> dict:
+    """Run ``research_engine.analyze_household`` for a claimed household job.
+
+    Provenance and the stored fingerprint are re-verified before any engine
+    call; success is stored only after the complete result validates.
+    Production must never pass ``_fx_bundle``.
+    """
+    request = getattr(self, "request", None)
+    celery_task_id = str(getattr(request, "id", None) or "eager")
+    redelivered = _is_redelivered(request)
+    job = claim_household_analysis_job(job_id, celery_task_id, redelivered=redelivered)
+    if job is None:
+        existing = HouseholdAnalysisJob.objects.filter(id=job_id).first()
+        status = existing.status if existing else "missing"
+        logger.info(
+            "Skipping household analysis job %s; status=%s task_id=%s redelivered=%s",
+            job_id,
+            status,
+            celery_task_id,
+            redelivered,
+        )
+        return {"job_id": job_id, "skipped": True, "status": status}
+
+    failed = HouseholdAnalysisJob.Status.FAILED.value
+    try:
+        assert_household_job_current(job)
+        snapshot = snapshot_from_job(job)
+        scenario = job.request_payload
+
+        from research_engine import analyze_household
+
+        result = analyze_household(
+            income_shares=scenario["income_shares"],
+            expense_shares=scenario["expense_shares"],
+            current_weights=scenario["current_reserve_weights"],
+            expense_income_ratio=scenario["expense_income_ratio"],
+            buffer_months=scenario["buffer_months"],
+            horizon_years=scenario["horizon_years"],
+            rebalance_frequency=scenario["rebalance_frequency"],
+            conversion_cost=scenario["conversion_cost"],
+        )
+        live = live_provenance()
+
+        def _validator(payload: dict) -> None:
+            validate_household_result(payload, request=scenario, snapshot=snapshot, live=live)
+
+        _validator(result)
+        stored = store_household_analysis_success(
+            job_id, celery_task_id, result, validator=_validator
+        )
+        if not stored:
+            logger.warning(
+                "Discarded stale household analysis success for job %s (task %s)",
+                job_id,
+                celery_task_id,
+            )
+            return {"job_id": job_id, "skipped": True, "status": "stale_result_rejected"}
+        return {"job_id": job_id, "status": HouseholdAnalysisJob.Status.SUCCEEDED.value}
+    except (HouseholdProvenanceChangedError, ProvenanceUnavailableError) as exc:
+        store_household_analysis_failure(
+            job_id, celery_task_id, error_code="provenance_changed", exc=exc
+        )
+        return {"job_id": job_id, "status": failed}
+    except HouseholdResultValidationError as exc:
+        store_household_analysis_failure(
+            job_id, celery_task_id, error_code="result_validation_failed", exc=exc
+        )
+        return {"job_id": job_id, "status": failed}
+    except SoftTimeLimitExceeded as exc:
+        store_household_analysis_failure(
+            job_id, celery_task_id, error_code="soft_time_limit", exc=exc
+        )
+        return {"job_id": job_id, "status": failed}
+    except Exception as exc:  # noqa: BLE001 - convert to safe job failure
+        store_household_analysis_failure(
+            job_id, celery_task_id, error_code="analysis_failed", exc=exc
+        )
+        return {"job_id": job_id, "status": failed}

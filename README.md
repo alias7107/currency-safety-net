@@ -278,7 +278,15 @@ Important variables:
 - `BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT` / `BUFFER_SENSITIVITY_TASK_TIME_LIMIT` — defaults `600` / `720`
 - `BUFFER_SENSITIVITY_LEASE_SECONDS` — default `840` (≥ hard + 120s margin)
 - `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` — freeze batch POSTs without removing GET
-- `JOB_RETENTION_DAYS` — default `7`; terminal jobs older than this may be deleted
+- `JOB_RETENTION_DAYS` — default `7`; terminal jobs older than this are deleted
+  only when `cleanup_expired_jobs` runs (a host schedule is required)
+- `HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED` — default `False` everywhere; enables
+  `POST /api/v1/household-analysis-jobs/` (GET polling always available). Keep
+  disabled in production until the VPS runtime gate passes
+- `DRF_HOUSEHOLD_ANALYSIS_SUBMIT_THROTTLE` — default `3/hour`
+- `HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT` / `HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT` /
+  `HOUSEHOLD_ANALYSIS_LEASE_SECONDS` — development candidates `180` / `240` / `300`
+  (lease ≥ hard + 60s); not certified for difficult custom cases on the VPS
 - `SECURE_SSL_REDIRECT` / `SECURE_HSTS_SECONDS` / `SECURE_PROXY_SSL_HEADER_ENABLED` — HTTPS hardening
 - Global `CELERY_TASK_SOFT_TIME_LIMIT` / `CELERY_TASK_TIME_LIMIT` remain `120` / `180` for
   unrelated tasks; optimization and batch tasks use task-specific annotations
