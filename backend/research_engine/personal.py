@@ -73,7 +73,10 @@ def canonical_number(value: Any, name: str) -> float:
     """Finite non-boolean int/float as ``float``; ``-0.0`` becomes ``0.0``."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise PersonalAnalysisValidationError(f"{name} must be a finite number")
-    number = float(value)
+    try:
+        number = float(value)
+    except OverflowError as exc:  # e.g. a JSON integer such as 10**400
+        raise PersonalAnalysisValidationError(f"{name} is too large") from exc
     if not math.isfinite(number):
         raise PersonalAnalysisValidationError(f"{name} must be finite")
     return 0.0 if number == 0.0 else number

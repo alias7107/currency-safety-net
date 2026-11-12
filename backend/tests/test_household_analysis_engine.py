@@ -124,6 +124,36 @@ def test_facade_rejects_invalid_inputs_before_any_paths(monkeypatch, overrides):
         analyze_household(**scenario(**overrides))
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"expense_income_ratio": 10**400},
+        {"buffer_months": 10**400},
+        {"conversion_cost": -(10**400)},
+        {"income_shares": [10**400, 0.0, 0.0]},
+        {"expense_shares": [0.0, 10**400, 0.0]},
+        {"current_weights": [0.0, 0.0, 10**400]},
+    ],
+)
+def test_facade_rejects_oversized_integers_with_validation_error(monkeypatch, overrides):
+    def forbidden(_bundle):
+        raise AssertionError("bundle must not be resolved for invalid input")
+
+    monkeypatch.setattr(personal, "_resolve_fx_bundle", forbidden)
+    with pytest.raises(personal.PersonalAnalysisValidationError):
+        validate_household_inputs(**scenario(**overrides))
+    with pytest.raises(personal.PersonalAnalysisValidationError):
+        analyze_household(**scenario(**overrides))
+
+
+def test_canonical_number_overflow_and_accepted_values():
+    with pytest.raises(personal.PersonalAnalysisValidationError):
+        personal.canonical_number(10**400, "x")
+    assert personal.canonical_number(3, "x") == 3.0
+    assert personal.canonical_number(10**300, "x") == float(10**300)
+    assert str(personal.canonical_number(-0.0, "x")) == "0.0"
+
+
 def test_facade_requires_every_argument():
     kwargs = scenario()
     kwargs.pop("conversion_cost")

@@ -290,14 +290,45 @@ def parse_household_request(data: Any) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+_PROVENANCE_TEXT_FIELDS = (
+    "model_version",
+    "data_as_of",
+    "dataset_sha256",
+    "canonical_optimization_specification",
+    "fx_path_policy",
+)
+_PROVENANCE_INT_FIELDS = ("simulation_paths", "simulation_seed")
+
+
+def provenance_type_error(provenance: dict[str, Any]) -> str | None:
+    """Return a reason if any provenance field has the wrong type, else ``None``.
+
+    Runs before equality checks: ``10000.0 == 10000`` would otherwise pass.
+    Nothing is coerced or repaired.
+    """
+    for field in _PROVENANCE_TEXT_FIELDS:
+        if field in provenance and (
+            not isinstance(provenance[field], str) or not provenance[field].strip()
+        ):
+            return f"provenance.{field} must be a non-empty string"
+    for field in _PROVENANCE_INT_FIELDS:
+        value = provenance.get(field)
+        if field in provenance and (isinstance(value, bool) or not isinstance(value, int)):
+            return f"provenance.{field} must be an integer"
+    return None
+
+
 def live_provenance() -> dict[str, Any]:
     """Authoritative provenance from the engine's strict reader (no fallback)."""
     try:
         provenance = engine_provenance()
     except PersonalAnalysisProvenanceError as exc:
         raise ProvenanceUnavailableError(str(exc)) from exc
-    if frozenset(provenance) != PROVENANCE_KEYS:
+    if not isinstance(provenance, dict) or frozenset(provenance) != PROVENANCE_KEYS:
         raise ProvenanceUnavailableError("engine provenance has unexpected fields")
+    reason = provenance_type_error(provenance)
+    if reason is not None:
+        raise ProvenanceUnavailableError(reason)
     return provenance
 
 
@@ -382,7 +413,10 @@ def _exact_keys(obj: Any, keys: frozenset[str], label: str) -> dict[str, Any]:
 def _finite(value: Any, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         _fail(f"{label} must be a non-boolean number")
-    number = float(value)
+    try:
+        number = float(value)
+    except OverflowError:
+        _fail(f"{label} is too large")
     if not math.isfinite(number):
         _fail(f"{label} must be finite")
     return number
@@ -470,6 +504,10 @@ def validate_household_result(
         _fail("successful results require current reserve weights")
 
     provenance = _exact_keys(result["provenance"], PROVENANCE_KEYS, "provenance")
+    for label, candidate in (("result", provenance), ("live", live), ("snapshot", snapshot)):
+        reason = provenance_type_error(candidate)
+        if reason is not None:
+            _fail(f"{label} {reason}")
     if provenance["fx_path_policy"] != FX_PATH_POLICY:
         _fail("fx_path_policy mismatch")
     if provenance != live:

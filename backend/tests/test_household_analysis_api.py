@@ -344,6 +344,44 @@ def test_non_object_and_non_finite_bodies_rejected(client):
         parse_household_request(valid_body(income_shares=[float("nan"), 0.5, 0.5]))
 
 
+HUGE = 10**400
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"expense_income_ratio": HUGE},
+        {"expense_income_ratio": -HUGE},
+        {"buffer_months": HUGE},
+        {"buffer_months": -HUGE},
+        {"conversion_cost": HUGE},
+        {"income_shares": [HUGE, 0.0, 0.0]},
+        {"income_shares": [0.0, -HUGE, 1.0]},
+        {"expense_shares": [1.0, HUGE, 0.0]},
+        {"current_reserve_weights": [0.0, 0.0, HUGE]},
+        {"buffer_months": 0, "current_reserve_weights": [HUGE, 0.0, 0.0]},
+    ],
+)
+def test_oversized_json_integers_return_400_without_side_effects(client, overrides):
+    raw = json.dumps(valid_body(**overrides))
+    assert str(HUGE) in raw  # sent as a genuine JSON integer literal
+    with patch(PUBLISH) as publish, patch(ENGINE) as engine:
+        response = client.post(URL, raw, content_type="application/json")
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert str(HUGE) not in json.dumps(body)
+    assert HouseholdAnalysisJob.objects.count() == 0
+    publish.assert_not_called()
+    engine.assert_not_called()
+
+
+def test_large_finite_integers_still_follow_normal_rules():
+    # 10**300 converts to a finite float, so it reaches eligibility (422), not 400.
+    with pytest.raises(UnsupportedScenarioError):
+        parse_household_request(valid_body(buffer_months=10**300))
+
+
 def test_sum_tolerance_matches_household_profile():
     ok = [0.5, 0.5 + 5e-13, 0.0]
     bad = [0.5, 0.5 + 2e-12, 0.0]
@@ -634,6 +672,11 @@ def _corrupt(mutator):
         lambda r: r["optimized_policy"]["identification"].update({"n_surface": True}),
         lambda r: r["units"].update({"terminal_wealth": "kzt"}),
         lambda r: r.update({"engine_interface_version": "other"}),
+        lambda r: r["provenance"].update({"simulation_paths": 10000.0}),
+        lambda r: r["provenance"].update({"simulation_seed": 42.0}),
+        lambda r: r["current_policy"]["objective"].update({"cvar95_cumulative_shortfall": 10**400}),
+        lambda r: r["comparison"].update({"cvar95_optimized_minus_current": 10**400}),
+        lambda r: r["optimized_policy"].update({"weights": [10**400, 0.0, 0.0]}),
     ],
 )
 def test_invalid_results_are_never_stored(client, django_capture_on_commit_callbacks, mutator):
@@ -664,6 +707,98 @@ def test_all_comparison_outcomes_validate(current_cvar, optimized_cvar, outcome)
     validate_household_result(
         result, request=request, snapshot=snapshot_from_provenance(live), live=live
     )
+
+
+def _validate_direct(result, request, live):
+    validate_household_result(
+        result, request=request, snapshot=snapshot_from_provenance(live), live=live
+    )
+
+
+@pytest.mark.parametrize(
+    "path,value",
+    [
+        (("current_policy", "objective", "cvar95_cumulative_shortfall"), 10**400),
+        (("current_policy", "diagnostics", "var95_cumulative_shortfall"), -(10**400)),
+        (("optimized_policy", "implementation_only", "mean_terminal_wealth"), 10**400),
+        (("optimized_policy", "identification", "near_optimal_1pct_frac"), 10**400),
+        (("comparison", "tie_absolute_tolerance"), 10**400),
+        (("comparison", "cvar95_optimized_minus_current"), 10**400),
+    ],
+)
+def test_result_validator_rejects_oversized_numbers_safely(path, value):
+    request = normalized()
+    live = live_provenance()
+    result = make_result(request, live)
+    target = result
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    with pytest.raises(HouseholdResultValidationError):
+        _validate_direct(result, request, live)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("simulation_paths", 10000.0),
+        ("simulation_seed", 42.0),
+        ("simulation_paths", True),
+        ("model_version", 1.0),
+        ("data_as_of", ""),
+    ],
+)
+def test_result_provenance_types_are_checked_before_equality(field, value):
+    request = normalized()
+    live = live_provenance()
+    result = make_result(request, live)
+    result["provenance"][field] = value
+    if isinstance(value, float) and field.startswith("simulation_"):
+        assert result["provenance"] == {**live, field: value}  # equal under ==
+        assert result["provenance"] == live
+    with pytest.raises(HouseholdResultValidationError):
+        _validate_direct(result, request, live)
+
+
+def test_valid_integer_provenance_passes():
+    request = normalized()
+    live = live_provenance()
+    assert type(live["simulation_paths"]) is int and type(live["simulation_seed"]) is int
+    _validate_direct(make_result(request, live), request, live)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("simulation_paths", 10000.0), ("simulation_seed", 42.0), ("dataset_sha256", None)],
+)
+def test_live_provenance_with_wrong_types_is_unavailable(client, field, value):
+    from research_engine.personal import engine_provenance as real_engine_provenance
+
+    bad = {**real_engine_provenance(), field: value}
+    with patch("calculations.household_contract.engine_provenance", return_value=bad), patch(
+        PUBLISH
+    ) as publish:
+        response = client.post(URL, valid_body(), format="json")
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "provenance_unavailable"
+    assert HouseholdAnalysisJob.objects.count() == 0
+    publish.assert_not_called()
+
+
+def test_live_float_provenance_fails_queued_job_before_engine(
+    client, django_capture_on_commit_callbacks
+):
+    job = _queued_job(client, django_capture_on_commit_callbacks)
+    from research_engine.personal import engine_provenance as real_engine_provenance
+
+    floaty = {**real_engine_provenance(), "simulation_paths": 10000.0}
+    with patch("calculations.household_contract.engine_provenance", return_value=floaty), patch(
+        ENGINE
+    ) as engine:
+        run_household_analysis_job(str(job.id))
+    engine.assert_not_called()
+    job.refresh_from_db()
+    assert job.error_code == "provenance_changed"
 
 
 def test_engine_exception_fails_safely(client, django_capture_on_commit_callbacks):
