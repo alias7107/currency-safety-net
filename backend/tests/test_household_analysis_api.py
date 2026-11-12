@@ -268,6 +268,19 @@ def test_submit_throttle_is_separate_scope(client, settings, django_capture_on_c
     assert codes == [202, 202, 429]
 
 
+def test_throttled_submit_keeps_retry_after_header(client, settings):
+    rates = {**settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"], "household_analysis_submit": "1/min"}
+    settings.REST_FRAMEWORK = {**settings.REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": rates}
+    AnonRateThrottle.THROTTLE_RATES = rates
+    cache.clear()
+    invalid = {"contract_version": "household_analysis_v1"}
+    assert client.post(URL, invalid, format="json").status_code == 400
+    response = client.post(URL, invalid, format="json")
+    assert response.status_code == 429
+    assert 0 < int(response["Retry-After"]) <= 60
+    assert response.json()["error"]["message"] == "The request could not be processed."
+
+
 # ---------------------------------------------------------------------------
 # Strict validation and the documented order
 # ---------------------------------------------------------------------------
