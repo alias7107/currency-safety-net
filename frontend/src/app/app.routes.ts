@@ -20,6 +20,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/assessment/assessment.page').then((m) => m.AssessmentPage),
   },
   {
+    path: 'assessment/results/:jobId',
+    title: `${EN_STRINGS.assessmentResults.documentTitle} — ${EN_STRINGS.app.name}`,
+    loadComponent: () =>
+      import('./pages/assessment-results/assessment-results.page').then(
+        (m) => m.AssessmentResultsPage,
+      ),
+  },
+  {
     path: 'calculator',
     redirectTo: 'research/calculator',
     pathMatch: 'full',

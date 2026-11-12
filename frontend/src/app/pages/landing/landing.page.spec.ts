@@ -66,6 +66,23 @@ describe('Product experience routes', () => {
     http.verify();
   });
 
+  it('lazy-loads personal results at /assessment/results/:jobId and fetches only that job', async () => {
+    const route = routes.find((r) => r.path === 'assessment/results/:jobId');
+    expect(route?.loadComponent).toBeTruthy();
+    const { AssessmentResultsPage } = await import('../assessment-results/assessment-results.page');
+    const jobId = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(`/assessment/results/${jobId}`, AssessmentResultsPage);
+    expect(page).toBeTruthy();
+    expect(TestBed.inject(Router).url).toBe(`/assessment/results/${jobId}`);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const http = TestBed.inject(HttpTestingController);
+    const req = http.expectOne(`/api/v1/household-analysis-jobs/${jobId}/`);
+    expect(req.request.method).toBe('GET');
+    http.expectNone((r) => r.url.includes('optimization-jobs') || r.method === 'POST');
+    harness.fixture.destroy();
+  });
+
   it('redirects /calculator to /research/calculator', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/calculator');
@@ -214,6 +231,6 @@ describe('LandingPage product experience', () => {
     expect(copy).toContain('four predefined profiles evaluated in the research');
     expect(copy).toContain('explore the research model');
     expect(copy).toContain('check my resilience');
-    expect(copy).toContain('personalized simulation results are not available yet');
+    expect(copy).toContain('runs only when you explicitly request it');
   });
 });

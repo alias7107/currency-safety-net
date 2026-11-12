@@ -7,13 +7,15 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   AMOUNT_MAX_DECIMALS,
@@ -38,6 +40,21 @@ import {
 } from '../../core/assessment/assessment.model';
 import type { ApiError, CurrencyCode, ModelOptions } from '../../core/api/models';
 import { OptimizationApiService } from '../../core/api/optimization-api.service';
+import { HouseholdAnalysisApiService } from '../../core/household/household-analysis-api.service';
+import {
+  SUPPORTED_BUFFER_MONTHS,
+  SUPPORTED_CONVERSION_COST,
+  SUPPORTED_EXPENSE_INCOME_RATIO,
+  type HouseholdApiError,
+} from '../../core/household/household-analysis.models';
+import {
+  STEP_SETTINGS,
+  evaluateSimulationEligibility,
+  stepForReasonField,
+  type SimulationEligibility,
+} from '../../core/household/household-analysis.request';
+import { HouseholdAnalysisStore } from '../../core/household/household-analysis.store';
+import { validateHouseholdResult } from '../../core/household/household-analysis.validation';
 import { EN_STRINGS } from '../../core/i18n/en';
 import { AssessmentStore } from '../../core/state/assessment.store';
 import {
@@ -185,12 +202,218 @@ export class AssessmentPage {
     errorsForStep(this.errors(), Math.min(this.step(), ASSESSMENT_STEP_COUNT - 1)),
   );
 
+  /* ---------- Personal simulation ---------- */
+
+  private readonly householdApi = inject(HouseholdAnalysisApiService);
+  private readonly householdStore = inject(HouseholdAnalysisStore);
+  private readonly router = inject(Router);
+  protected readonly simulationCopy = EN_STRINGS.assessment.simulation;
+
+  /** Settings must come from loaded model options before anything is submitted. */
+  protected readonly simulationEligibility = computed<SimulationEligibility>(() => {
+    const base = evaluateSimulationEligibility(this.evaluation());
+    if (this.options()) {
+      return base;
+    }
+    const reasons = this.optionsLoading()
+      ? base.reasons
+      : [...base.reasons, { code: 'model_settings_unavailable' as const, step: STEP_SETTINGS }];
+    return { eligible: false, reasons, request: null };
+  });
+
+  /** Every answer except the current step; any change resets the acknowledgement. */
+  private readonly answersKey = computed(() => {
+    const { step: _step, ...answers } = this.draft();
+    return JSON.stringify(answers);
+  });
+
+  /** Transient: never persisted or restored. */
+  protected readonly acknowledged = signal(false);
+  protected readonly submitting = signal(false);
+  protected readonly submitError = signal<HouseholdApiError | null>(null);
+  /** Set when the answers changed while a submission was pending. */
+  protected readonly staleSubmission = signal<{ jobId: string | null } | null>(null);
+  protected readonly retryAfterSeconds = signal<number | null>(null);
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly canRunSimulation = computed(
+    () =>
+      this.simulationEligibility().eligible &&
+      this.acknowledged() &&
+      !this.submitting() &&
+      this.retryAfterSeconds() === null,
+  );
+
   constructor() {
     if (this.draft().step === ASSESSMENT_OVERVIEW_STEP && !this.evaluation().complete) {
       this.store.setStep(Math.max(firstInvalidStep(this.errors()), 0));
     }
-    this.destroyRef.onDestroy(() => this.releaseBackground());
+    effect(() => {
+      this.answersKey();
+      untracked(() => {
+        this.acknowledged.set(false);
+        this.submitError.set(null);
+        this.staleSubmission.set(null);
+      });
+    });
+    this.destroyRef.onDestroy(() => {
+      this.releaseBackground();
+      this.clearRetryTimer();
+    });
     this.loadOptions();
+  }
+
+  protected setAcknowledged(value: boolean): void {
+    this.acknowledged.set(value);
+  }
+
+  /** Explicit user action only; never triggered by load, restore, or timers. */
+  protected runSimulation(): void {
+    const request = this.simulationEligibility().request;
+    if (!request || !this.canRunSimulation()) {
+      return;
+    }
+    const submittedKey = this.answersKey();
+    this.submitting.set(true);
+    this.submitError.set(null);
+    this.staleSubmission.set(null);
+    this.liveMessage.set(this.simulationCopy.submittingLive);
+    this.householdApi
+      .submit(request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ body }) => {
+          this.submitting.set(false);
+          let result = null;
+          if (body.result) {
+            const checked = validateHouseholdResult(body.result, request);
+            if (!checked.ok) {
+              this.showSubmitError(checked.error);
+              return;
+            }
+            result = checked.value;
+          }
+          this.householdStore.remember(body.job_id, request, result);
+          if (this.answersKey() !== submittedKey) {
+            this.staleSubmission.set({ jobId: body.job_id });
+            return;
+          }
+          this.acknowledged.set(false);
+          void this.router.navigate(['/assessment/results', body.job_id]);
+        },
+        error: (error: HouseholdApiError) => {
+          this.submitting.set(false);
+          if (this.answersKey() !== submittedKey) {
+            this.staleSubmission.set({ jobId: null });
+            return;
+          }
+          this.showSubmitError(error);
+        },
+      });
+  }
+
+  private showSubmitError(error: HouseholdApiError): void {
+    this.submitError.set(error);
+    this.clearRetryTimer();
+    const seconds = error.retryAfterSeconds;
+    if (seconds !== undefined && seconds > 0) {
+      this.retryAfterSeconds.set(seconds);
+      this.retryTimer = setTimeout(() => {
+        this.retryTimer = null;
+        this.retryAfterSeconds.set(null);
+      }, seconds * 1000);
+    }
+  }
+
+  private clearRetryTimer(): void {
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    this.retryAfterSeconds.set(null);
+  }
+
+  protected submitErrorCopy(error: HouseholdApiError): { title: string; body: string } {
+    const e = this.simulationCopy.errors;
+    if (error.code === 'malformed_response') {
+      return { title: e.malformedTitle, body: e.malformedBody };
+    }
+    if (error.status === 0) {
+      return { title: e.networkTitle, body: e.networkBody };
+    }
+    if (error.status === 429) {
+      return { title: e.rateLimitTitle, body: e.rateLimitBody };
+    }
+    switch (error.code) {
+      case 'submissions_disabled':
+        return { title: e.disabledTitle, body: e.disabledBody };
+      case 'provenance_unavailable':
+        return { title: e.provenanceTitle, body: e.provenanceBody };
+      case 'queue_unavailable':
+        return { title: e.queueTitle, body: e.queueBody };
+      case 'service_unavailable':
+        return { title: e.unavailableTitle, body: e.unavailableBody };
+      case 'unsupported_scenario':
+        return { title: e.unsupportedTitle, body: e.unsupportedBody };
+      case 'validation_error':
+        return { title: e.validationTitle, body: e.validationBody };
+      default:
+        return { title: e.genericTitle, body: e.genericBody };
+    }
+  }
+
+  /** Server 422 reasons, mapped to the questionnaire steps that hold them. */
+  protected serverReasons(error: HouseholdApiError): { text: string; step: number }[] {
+    return (error.reasons ?? []).map((reason) => ({
+      text: this.reasonText(reason.code, reason.supported),
+      step: stepForReasonField(reason.field),
+    }));
+  }
+
+  protected reasonText(code: string, supported?: { min: number; max: number }): string {
+    const reasons = this.simulationCopy.reasons;
+    const overview = this.overview();
+    switch (code) {
+      case 'expense_income_ratio_out_of_supported_range': {
+        const range = supported ?? SUPPORTED_EXPENSE_INCOME_RATIO;
+        return interpolate(reasons.expense_income_ratio_out_of_supported_range, {
+          value: formatPercent(overview.expenseIncomeRatio, 2),
+          min: formatPercent(range.min, 2),
+          max: formatPercent(range.max, 2),
+        });
+      }
+      case 'buffer_months_out_of_supported_range': {
+        const range = supported ?? SUPPORTED_BUFFER_MONTHS;
+        return interpolate(reasons.buffer_months_out_of_supported_range, {
+          value: formatMonthsOfIncome(overview.reserve?.coverageMonths, 2),
+          min: formatMonthsOfIncome(range.min, 0),
+          max: formatMonthsOfIncome(range.max, 0),
+        });
+      }
+      case 'conversion_cost_out_of_supported_range': {
+        const range = supported ?? SUPPORTED_CONVERSION_COST;
+        return interpolate(reasons.conversion_cost_out_of_supported_range, {
+          value: formatConversionCost(overview.conversionCost),
+          min: formatConversionCost(range.min),
+          max: formatConversionCost(range.max),
+        });
+      }
+      case 'answers_incomplete':
+      case 'share_vector_invalid':
+      case 'model_settings_unavailable':
+      case 'rebalance_frequency_not_selected':
+      case 'rebalance_frequency_unsupported':
+      case 'conversion_cost_not_selected':
+      case 'horizon_unsupported':
+      case 'no_current_reserve':
+        return reasons[code];
+      default:
+        return reasons.generic;
+    }
+  }
+
+  protected retryAfterText(): string {
+    return interpolate(this.simulationCopy.retryAfter, { seconds: this.retryAfterSeconds() ?? 0 });
   }
 
   /* ---------- Model options ---------- */

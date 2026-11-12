@@ -172,7 +172,10 @@ describe('AssessmentPage', () => {
     expect(el('overview-settings').textContent).toContain('Quarterly');
     expect(el('overview-settings').textContent).toContain('0.25%');
     expect(text()).toContain(copy.overview.notAssessmentNote);
-    expect(text().toLowerCase()).not.toMatch(/cvar|shortfall probability|resilience score/);
+    expect(text().toLowerCase()).not.toMatch(/shortfall probability|resilience score/);
+    // The overview describes the optional simulation but shows no simulated figures.
+    expect(host().querySelector('[data-testid="personal-results"]')).toBeNull();
+    expect(text()).not.toMatch(/CVaR95 \(sole objective\)|months of initial monthly income/);
   });
 
   it('never submits an optimization or buffer-sensitivity job', async () => {

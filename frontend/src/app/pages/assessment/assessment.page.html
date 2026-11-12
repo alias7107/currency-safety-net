@@ -615,9 +615,158 @@
           <p class="field__help">{{ copy.settings.body }}</p>
         </section>
 
-        <section class="panel stack stack--3" aria-labelledby="overview-next">
-          <h3 id="overview-next">{{ copy.overview.nextHeading }}</h3>
-          <p class="field__help">{{ copy.overview.nextBody }}</p>
+        <section
+          class="panel stack stack--4"
+          aria-labelledby="overview-simulation"
+          data-testid="assessment-simulation"
+        >
+          <h3 id="overview-simulation">{{ simulationCopy.heading }}</h3>
+          <p class="field__help">{{ simulationCopy.body }}</p>
+
+          @if (optionsLoading() && !options()) {
+            <app-loading-indicator [label]="copy.settings.optionsLoading" />
+          } @else if (!simulationEligibility().eligible) {
+            <div class="stack stack--3" data-testid="simulation-ineligible">
+              <p>{{ simulationCopy.ineligibleIntro }}</p>
+              <ul class="assessment__reasons">
+                @for (
+                  reason of simulationEligibility().reasons;
+                  track reason.code;
+                  let i = $index
+                ) {
+                  <li data-testid="simulation-reason" [attr.data-reason]="reason.code">
+                    <span [id]="'simulation-reason-' + i">{{ reasonText(reason.code) }}</span>
+                    <button
+                      type="button"
+                      class="button-link"
+                      [attr.data-testid]="'simulation-reason-edit-' + reason.code"
+                      [attr.aria-describedby]="'simulation-reason-' + i"
+                      (click)="editStep(reason.step)"
+                    >
+                      {{ simulationCopy.editReason }}
+                    </button>
+                  </li>
+                }
+              </ul>
+              <p class="field__help">{{ simulationCopy.ineligibleNote }}</p>
+            </div>
+          } @else {
+            <div class="stack stack--4" data-testid="simulation-eligible">
+              <section class="stack stack--2" aria-labelledby="simulation-assumptions">
+                <h4 id="simulation-assumptions">{{ simulationCopy.assumptionsHeading }}</h4>
+                <ul class="assessment__reasons">
+                  @for (item of simulationCopy.assumptions; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              </section>
+              <section
+                class="stack stack--2"
+                aria-labelledby="simulation-privacy"
+                data-testid="simulation-privacy"
+              >
+                <h4 id="simulation-privacy">{{ simulationCopy.privacyHeading }}</h4>
+                <ul class="assessment__reasons">
+                  @for (item of simulationCopy.privacyPoints; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              </section>
+              <div class="stack stack--2">
+                <label class="choice-check" for="simulation-ack">
+                  <input
+                    id="simulation-ack"
+                    type="checkbox"
+                    data-testid="simulation-ack"
+                    aria-describedby="simulation-ack-help"
+                    [checked]="acknowledged()"
+                    [disabled]="submitting()"
+                    (change)="setAcknowledged(checked($event))"
+                  />
+                  <span>{{ simulationCopy.acknowledgement }}</span>
+                </label>
+                <p id="simulation-ack-help" class="field__help">
+                  {{ simulationCopy.acknowledgementHelp }}
+                </p>
+              </div>
+
+              @if (submitError(); as error) {
+                <div
+                  class="stack stack--3"
+                  data-testid="simulation-error"
+                  [attr.data-code]="error.code"
+                >
+                  <app-error-panel
+                    [error]="error"
+                    [title]="submitErrorCopy(error).title"
+                    [body]="submitErrorCopy(error).body"
+                    [showRetry]="false"
+                  />
+                  @if (serverReasons(error).length) {
+                    <ul class="assessment__reasons" data-testid="simulation-server-reasons">
+                      @for (reason of serverReasons(error); track $index; let i = $index) {
+                        <li>
+                          <span [id]="'simulation-server-reason-' + i">{{ reason.text }}</span>
+                          <button
+                            type="button"
+                            class="button-link"
+                            [attr.aria-describedby]="'simulation-server-reason-' + i"
+                            (click)="editStep(reason.step)"
+                          >
+                            {{ simulationCopy.editReason }}
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  @if (error.failedJobId) {
+                    <p class="field__help" data-testid="simulation-failed-job">
+                      {{ simulationCopy.errors.queueJobNote }}
+                      <a [routerLink]="['/assessment/results', error.failedJobId]">{{
+                        simulationCopy.errors.viewFailedJob
+                      }}</a>
+                    </p>
+                  }
+                </div>
+              }
+
+              @if (staleSubmission(); as stale) {
+                <div class="stack stack--2" role="status" data-testid="simulation-stale">
+                  <p>{{ simulationCopy.changedWhilePending }}</p>
+                  @if (stale.jobId) {
+                    <a [routerLink]="['/assessment/results', stale.jobId]">{{
+                      simulationCopy.viewSubmitted
+                    }}</a>
+                  }
+                </div>
+              }
+
+              <div class="calculator__run stack stack--2">
+                <button
+                  type="button"
+                  class="button button--primary button--large"
+                  data-testid="run-simulation"
+                  [disabled]="!canRunSimulation()"
+                  [attr.aria-describedby]="acknowledged() ? null : 'simulation-ack-required'"
+                  [attr.aria-busy]="submitting() ? 'true' : null"
+                  (click)="runSimulation()"
+                >
+                  {{ submitting() ? simulationCopy.submitting : simulationCopy.run }}
+                </button>
+                @if (!acknowledged() && !submitting()) {
+                  <p id="simulation-ack-required" class="field__help">
+                    {{ simulationCopy.ackRequired }}
+                  </p>
+                }
+                @if (retryAfterSeconds() !== null) {
+                  <p class="field__help" data-testid="simulation-retry-after">
+                    {{ retryAfterText() }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+
           <div class="results__actions">
             <button
               type="button"
