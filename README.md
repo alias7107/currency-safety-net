@@ -1,5 +1,6 @@
 
 Currency Safety Net
+------------
 
 Research-based currency allocation scenario engine exposed through an
 asynchronous Django API. Household FX shortfall risk is evaluated with the
