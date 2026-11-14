@@ -38,7 +38,9 @@ import {
   type CurrencyLine,
   type ForeignCurrency,
   type RawAmounts,
+  emptyAssessmentDraft,
 } from '../../core/assessment/assessment.model';
+import { AnalyticsService } from '../../core/analytics/analytics.service';
 import type { ApiError, CurrencyCode, ModelOptions } from '../../core/api/models';
 import { OptimizationApiService } from '../../core/api/optimization-api.service';
 import { HouseholdAnalysisApiService } from '../../core/household/household-analysis-api.service';
@@ -94,6 +96,13 @@ type AmountGroup = 'income' | 'expenses' | 'reserves';
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function answersKeyOf(draft: AssessmentDraft): string {
+  const { step: _step, ...answers } = draft;
+  return JSON.stringify(answers);
+}
+
+const EMPTY_ANSWERS_KEY = answersKeyOf(emptyAssessmentDraft());
 
 /** Error key prefix used by the normalization utilities for each amount group. */
 const ERROR_PREFIX: Record<AmountGroup, string> = {
@@ -211,8 +220,9 @@ export class AssessmentPage {
     errorsForStep(this.errors(), Math.min(this.step(), ASSESSMENT_STEP_COUNT - 1)),
   );
 
-  /* ---------- Personal simulation ---------- */
+  /* Personal simulation */
 
+  private readonly analytics = inject(AnalyticsService);
   private readonly householdApi = inject(HouseholdAnalysisApiService);
   private readonly householdStore = inject(HouseholdAnalysisStore);
   private readonly router = inject(Router);
@@ -231,10 +241,7 @@ export class AssessmentPage {
   });
 
   /** Every answer except the current step; used to detect edits during a pending submission. */
-  private readonly answersKey = computed(() => {
-    const { step: _step, ...answers } = this.draft();
-    return JSON.stringify(answers);
-  });
+  private readonly answersKey = computed(() => answersKeyOf(this.draft()));
 
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<HouseholdApiError | null>(null);
@@ -266,7 +273,7 @@ export class AssessmentPage {
     return this.runUnavailableText() ? 'simulation-run-status' : null;
   });
 
-  /* ---------- Inline simulation feedback ---------- */
+  /* Inline simulation feedback */
 
   /** True while an amount or rate field is being typed in; feedback settles when it is left. */
   private readonly editingField = signal(false);
@@ -322,6 +329,22 @@ export class AssessmentPage {
         this.staleSubmission.set(null);
       });
     });
+    let previousAnswersKey: string | null = null;
+    effect(() => {
+      const key = this.answersKey();
+      if (previousAnswersKey === EMPTY_ANSWERS_KEY && key !== EMPTY_ANSWERS_KEY) {
+        untracked(() => this.analytics.track('assessment_started'));
+      }
+      previousAnswersKey = key;
+    });
+    let overviewShown = false;
+    effect(() => {
+      const onOverview = this.step() === ASSESSMENT_OVERVIEW_STEP;
+      if (onOverview && !overviewShown) {
+        untracked(() => this.analytics.track('assessment_overview_viewed'));
+      }
+      overviewShown = onOverview;
+    });
     this.destroyRef.onDestroy(() => {
       this.releaseBackground();
       this.clearRetryTimer();
@@ -346,6 +369,7 @@ export class AssessmentPage {
       .subscribe({
         next: ({ body }) => {
           this.submitting.set(false);
+          this.analytics.track('personal_simulation_submitted');
           let result = null;
           if (body.result) {
             const checked = validateHouseholdResult(body.result, request);
@@ -485,7 +509,7 @@ export class AssessmentPage {
     return interpolate(this.simulationCopy.retryAfter, { seconds: this.retryAfterSeconds() ?? 0 });
   }
 
-  /* ---------- Model options ---------- */
+  /* Model options */
 
   protected loadOptions(): void {
     this.optionsLoading.set(true);
@@ -524,7 +548,7 @@ export class AssessmentPage {
     }
   }
 
-  /* ---------- Answer updates ---------- */
+  /* Answer updates */
 
   protected isSelected(list: CurrencyListKey, code: CurrencyCode): boolean {
     return this.draft()[list].includes(code);
@@ -593,7 +617,7 @@ export class AssessmentPage {
     return (event.target as HTMLInputElement).checked;
   }
 
-  /* ---------- Errors ---------- */
+  /* Errors */
 
   protected markTouched(key: string): void {
     if (this.touchedFields().has(key)) {
@@ -650,7 +674,7 @@ export class AssessmentPage {
     );
   }
 
-  /* ---------- Navigation ---------- */
+  /* Navigation */
 
   protected next(): void {
     const current = this.step();
@@ -659,6 +683,7 @@ export class AssessmentPage {
       this.focusFirstError(current);
       return;
     }
+    this.analytics.track('assessment_step_completed');
     this.goToStep(current + 1);
   }
 
@@ -683,6 +708,9 @@ export class AssessmentPage {
       return;
     }
     this.editingField.set(false);
+    if (this.step() < ASSESSMENT_OVERVIEW_STEP) {
+      this.analytics.track('assessment_step_completed');
+    }
     this.store.setStep(ASSESSMENT_OVERVIEW_STEP);
     this.liveMessage.set(this.copy.live.overview);
     this.focusAfterRender('assessment-step-heading');
@@ -769,7 +797,7 @@ export class AssessmentPage {
     return `#${key.replace('.', '-')}`;
   }
 
-  /* ---------- Clear dialog ---------- */
+  /* Clear dialog */
 
   protected openClearDialog(event: Event): void {
     this.clearOpener = event.currentTarget as HTMLElement;
@@ -883,7 +911,7 @@ export class AssessmentPage {
     this.inertedElements = [];
   }
 
-  /* ---------- Display helpers ---------- */
+  /* Display helpers */
 
   protected currencyName(code: CurrencyCode): string {
     return EN_STRINGS.currencies[code].label;

@@ -339,7 +339,7 @@ describe('ResultsPage', () => {
       expect(open?.getAttribute('href')).toContain('/compare');
     });
 
-    it('presents Phase 2B interpretation without invented advice', () => {
+    it('presents result interpretation without invented advice', () => {
       expect(host().querySelector('[data-testid="scenario-overview"]')).toBeTruthy();
       expect(host().querySelector('[data-testid="result-narrative"]')).toBeTruthy();
       expect(host().querySelector('[data-testid="resilience-profile"]')).toBeTruthy();

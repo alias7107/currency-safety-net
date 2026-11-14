@@ -167,7 +167,7 @@ describe('LandingPage product experience', () => {
     const secondary = fixture.debugElement.query(By.css('[data-testid="landing-secondary-cta"]'));
     const bottom = fixture.debugElement.query(By.css('[data-testid="landing-bottom-cta"]'));
     expect(primary.nativeElement.getAttribute('href')).toBe('/assessment');
-    expect(primary.nativeElement.textContent).toContain('Check my resilience');
+    expect(primary.nativeElement.textContent).toContain(EN_STRINGS.landing.heroCta);
     expect(secondary.nativeElement.getAttribute('href') || '').toContain('/research');
     expect(bottom.nativeElement.getAttribute('href')).toBe('/research/calculator');
   });
@@ -230,7 +230,7 @@ describe('LandingPage product experience', () => {
     }
     expect(copy).toContain('four predefined profiles evaluated in the research');
     expect(copy).toContain('explore the research model');
-    expect(copy).toContain('check my resilience');
+    expect(copy).toContain(EN_STRINGS.landing.heroCta.toLowerCase());
     expect(copy).toContain('only when you explicitly request it');
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('.hero__body p').length).toBe(2);
   });

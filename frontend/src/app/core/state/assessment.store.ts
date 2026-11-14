@@ -7,7 +7,7 @@ import {
   emptyAssessmentDraft,
 } from '../assessment/assessment.model';
 
-/** Versioned sessionStorage key for the Phase 5A household assessment draft. */
+/** Session storage key for the household assessment draft. */
 export const ASSESSMENT_DRAFT_STORAGE_KEY = 'csn.assessment-draft.v1';
 
 /**

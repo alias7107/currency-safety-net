@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, exhaustMap, takeUntil, timer } from 'rxjs';
 
+import { AnalyticsService } from '../../core/analytics/analytics.service';
 import { ALLOCATION_CURRENCY_ORDER } from '../../core/api/allocation-currencies';
 import { isValidOriginJobId } from '../../core/api/buffer-sensitivity.validation';
 import type { JobStatus } from '../../core/api/models';
@@ -74,6 +75,7 @@ interface MetricRow {
 })
 export class AssessmentResultsPage {
   private readonly api = inject(HouseholdAnalysisApiService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly store = inject(HouseholdAnalysisStore);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -123,7 +125,7 @@ export class AssessmentResultsPage {
 
     const cached = this.store.get(rawId)?.result ?? null;
     if (cached) {
-      this.result.set(cached);
+      this.showResult(rawId, cached);
       this.status.set('succeeded');
       return;
     }
@@ -167,7 +169,7 @@ export class AssessmentResultsPage {
         return;
       }
       this.store.recordResult(jobId, checked.value);
-      this.result.set(checked.value);
+      this.showResult(jobId, checked.value);
       return;
     }
     if (job.status === 'failed') {
@@ -175,6 +177,12 @@ export class AssessmentResultsPage {
       this.failed.set(true);
       this.failureCode.set(job.error_code ?? null);
     }
+  }
+
+  /** The job id only deduplicates the event; it is never sent. */
+  private showResult(jobId: string, result: HouseholdAnalysisResult): void {
+    this.result.set(result);
+    this.analytics.track('personal_simulation_result_viewed', jobId);
   }
 
   /** Re-fetches the same job; never resubmits. */
@@ -207,7 +215,7 @@ export class AssessmentResultsPage {
     this.retryAfterSeconds.set(null);
   }
 
-  /* ---------- Presentation ---------- */
+  /* Presentation */
 
   protected readonly isProcessing = computed(
     () =>

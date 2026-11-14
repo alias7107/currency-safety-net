@@ -9,6 +9,7 @@ import { ViewportScroller } from '@angular/common';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 
 import { routes } from './app.routes';
+import { AnalyticsService } from './core/analytics/analytics.service';
 import { IndexingMetaService } from './core/util/indexing-meta.service';
 
 /** Sticky header is ~64px; leave breathing room below it for fragment targets. */
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(ViewportScroller).setOffset([0, ANCHOR_SCROLL_OFFSET_PX]);
       inject(IndexingMetaService).start();
+      inject(AnalyticsService).init();
     }),
   ],
 };

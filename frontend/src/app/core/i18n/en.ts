@@ -44,6 +44,13 @@ export const EN_STRINGS = {
     contactEmail: 'ashkeyevli@gmail.com',
   },
 
+  analytics: {
+    privacyLinkLabel: 'Microsoft Privacy Statement',
+    footerHeading: 'Analytics',
+    footerNotice:
+      'This site uses Microsoft Clarity for usage analytics and session recordings. Text entered in form fields is masked by default.',
+  },
+
   common: {
     loading: 'Loading',
     loadingOptions: 'Loading model options',
@@ -196,7 +203,7 @@ export const EN_STRINGS = {
       'Saved comparison scenarios stay in the current browser session only.',
       'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
       'Terminal job payloads and results are retained for seven days in the research pilot.',
-      'Third-party analytics are disabled for the initial pilot.',
+      'This site uses Microsoft Clarity for usage analytics and session recordings, including clicks, scrolling and visited page addresses (such as result links). Text entered in form fields is masked by default. Clarity loads automatically on the public site.',
     ],
 
     researchHeading: 'Based on published research',

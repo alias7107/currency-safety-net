@@ -171,7 +171,7 @@ describe('AssessmentPage', () => {
     expect(el('overview-settings').textContent).toContain('3 years');
     expect(el('overview-settings').textContent).toContain('Quarterly');
     expect(el('overview-settings').textContent).toContain('0.25%');
-    expect(text()).toContain(copy.overview.notAssessmentNote);
+    expect(el('assessment-overview').textContent).toContain(copy.overview.body);
     expect(text().toLowerCase()).not.toMatch(/shortfall probability|resilience score/);
     // The overview describes the optional simulation but shows no simulated figures.
     expect(host().querySelector('[data-testid="personal-results"]')).toBeNull();

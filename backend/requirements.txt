@@ -1,5 +1,4 @@
-# Pinned to the verified research runtime (Python 3.9.6).
-# Numerical stack must remain unchanged.
+# Numerical dependencies are pinned for reproducible calculations.
 numpy==2.0.2
 pandas==2.3.3
 scipy==1.13.1

@@ -275,7 +275,7 @@ describe('validateBufferSensitivityResult', () => {
     expect(validateBufferSensitivityResult(badProbability).ok).toBe(false);
   });
 
-  it('rejects newly enforced Phase 3C contract invariants', () => {
+  it('rejects invalid buffer contract fields', () => {
     expect(
       validateBufferSensitivityResult({
         ...BUFFER_SENSITIVITY_RESULT,

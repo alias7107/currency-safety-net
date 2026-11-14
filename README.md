@@ -1,338 +1,83 @@
-"""
-Currency Safety Net
-===================
+# Currency Safety Net
 
-Research-based currency allocation scenario engine exposed through an
-asynchronous Django API. Household FX shortfall risk is evaluated with the
-verified Monte Carlo / CVaR optimizer copied from the academic research
-project into `backend/research_engine`.
+Currency Safety Net helps households understand how their income, essential
+expenses and savings interact across KZT, USD and EUR. It combines a personal
+financial overview with simulations of currency-related shortfalls.
 
-This repository currently ships:
+[Website](https://currencysafety.com) ·
+[Research preprint](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7591999)
 
-- `backend/research_engine` — verified calculation package
-- `backend/calculations` — Django REST API + Celery job orchestration
-- `frontend/` — Angular 22 client (scenario calculator MVP)
-- `.node-version` — Node.js 24 pin for the frontend toolchain
+## Features
 
-Outputs are **research-based scenario results**. They are **not** real-time
-exchange-rate forecasts and **not** individualized financial advice.
+- **Household assessment:** income, expenses and reserves by currency, with an
+  overview of spending and initial reserve coverage.
+- **Personal simulations:** compare the current reserve mix with the allocation
+  selected by the model for the same scenario. Availability is controlled by
+  the server configuration.
+- **Research calculator:** explore the four household profiles from the study.
+- **Buffer sensitivity:** compare reserves covering 1, 3, 6 and 12 months of
+  initial essential expenses, and find the first tested level meeting a chosen target.
+- **Research results:** compare saved scenarios and create printable reports.
 
-Architecture
-------------
+The model minimizes CVaR95: the average cumulative unpaid expenses in the worst
+5% of simulated paths. It does not maximize investment returns or forecast
+exchange rates. Other risk and reserve metrics help explain the result.
 
-```
-Angular (localhost:4200)  →  Django API  →  Redis broker  →  Celery worker
-                                      ↘ SQLite (local only)
-Celery worker calls: from research_engine import optimize_allocation
-```
+## Architecture
 
-The HTTP process never runs the optimizer. Jobs are queued, executed by a
-single memory-aware worker, and polled by job id.
-
-Model assumptions (verified)
-----------------------------
-
-| Item | Value |
-|---|---|
-| Data as-of | 2025-12-31 |
-| Baseline FX window | 2015-08-20 → 2025-12-31 |
-| Simulation paths | 10,000 |
-| Random seed | 42 |
-| Primary DGP | Joint stationary bootstrap SB20 |
-| Peak worker memory (approx.) | ~900 MB for path generation + optimize |
-
-Local setup
------------
-
-Python 3.9.6 is required to match the verified research stack.
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp ../.env.example ../.env
+```mermaid
+flowchart LR
+    Browser[Angular application] --> Proxy[Caddy]
+    Proxy --> Static[Static frontend]
+    Proxy --> API[Django REST API]
+    API --> DB[(PostgreSQL)]
+    API --> Redis[(Redis: broker and cache)]
+    Redis --> Worker[Celery worker]
+    Worker --> Engine[Research engine]
+    Worker --> DB
 ```
 
-Start Redis (compose file contains Redis only; bound to `127.0.0.1`):
+The API validates submissions, stores a job and queues the calculation after
+the database transaction commits. Celery runs the numerical model and saves
+the result. The browser polls the job endpoint until it finishes. Equivalent
+requests can reuse an existing result.
 
-```bash
-# from repository root
-docker compose up -d redis
-```
+The production stack uses PostgreSQL, Redis and Caddy. Local development can
+use SQLite and Angular's API proxy. The pilot deployment runs both task queues
+on one worker; the full deployment separates ordinary and buffer-sensitivity
+tasks. Worker concurrency is one in either configuration.
 
-If Docker is unavailable on macOS:
+| Directory                  | Responsibility                                                |
+| -------------------------- | ------------------------------------------------------------- |
+| `frontend/src/app/`        | Angular pages, components, form state and API clients         |
+| `backend/calculations/`    | REST endpoints, job persistence, validation and tasks         |
+| `backend/research_engine/` | Cash flows, FX simulation, allocation search and risk metrics |
+| `backend/project/`         | Django, Celery and environment configuration                  |
+| `deploy/`                  | Container images, Compose profiles and Caddy configuration    |
+| `scripts/`                 | Reusable verification and performance tools                   |
+| `docs/`                    | Development, model, API and operations documentation          |
 
-```bash
-brew install redis
-brew services start redis
-```
+The frontend uses Angular and TypeScript. The backend uses Django REST
+Framework and Celery; numerical calculations use NumPy, pandas, SciPy and
+statsmodels. Exact dependencies are recorded in the package lockfile and
+`backend/requirements.txt`.
 
-Local multi-process verification
---------------------------------
+## Model scope
 
-The local async path has been verified end-to-end with:
+Simulations use historical FX data, 10,000 paths and a fixed seed. The research
+calculator retains the study's four profiles; custom households are direct
+model evaluations rather than additional published validation cases.
 
-- Django HTTP process
-- Redis broker (`PONG`)
-- Separate Celery worker (one node online)
-- `CELERY_TASK_ALWAYS_EAGER=False`
+Income remaining after entered essential expenses stays in simulated savings.
+Planned contributions and unentered spending are not modeled. Results describe
+the selected assumptions, not a guarantee or an instruction to trade currencies.
 
-Observed behavior: initial POST returned `202` with `queued` and
-`cached=false`; the worker completed the job; a repeated identical POST
-returned `succeeded` with `cached=true`. The completed P2 / 3-year result
-matched the canonical regression values (`weights = [1.0, 0.0, 0.0]`,
-`CVaR95 = 1.1871802686857733`, `P(shortfall) = 0.0491`, surface
-`1326 / 199 / 1473`).
+## Documentation
 
-Unit tests still mock the broker; they are not a substitute for this check.
-If Redis is unavailable locally, install it before repeating the flow.
-
-Apply migrations:
-
-```bash
-cd backend
-source .venv/bin/activate
-python manage.py migrate
-```
-
-Run the API:
-
-```bash
-python manage.py runserver
-```
-
-Run Celery workers (required for real optimizations):
-
-Ordinary optimization queue (default):
-
-```bash
-celery -A project worker --loglevel=INFO --hostname=opt@%h \
-  --queues=celery --concurrency=1 --prefetch-multiplier=1 --max-tasks-per-child=1
-```
-
-Dedicated buffer-sensitivity queue (production design):
-
-```bash
-celery -A project worker --loglevel=INFO --hostname=buffer@%h \
-  --queues=buffer_sensitivity --concurrency=1 --prefetch-multiplier=1 --max-tasks-per-child=1
-```
-
-Allow **≥ 2 GiB RAM** for the batch worker. Running both workers on one host
-needs roughly **4 GiB or more** free for simultaneous peaks plus system
-overhead. Local development may temporarily consume both queues on one worker
-only as an explicit convenience:
-
-```bash
-celery -A project worker --loglevel=INFO --concurrency=1 \
-  --prefetch-multiplier=1 --max-tasks-per-child=1 \
-  --queues=celery,buffer_sensitivity
-```
-
-Production documentation and operations must keep queue separation.
-
-API endpoints
--------------
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/health/` | Liveness (does not load FX data) |
-| GET | `/api/v1/model/metadata/` | Safe model metadata |
-| GET | `/api/v1/model/options/` | Documented request choices |
-| POST | `/api/v1/optimization-jobs/` | Queue or reuse an optimization job |
-| GET | `/api/v1/optimization-jobs/<uuid>/` | Poll job status / result |
-| POST | `/api/v1/buffer-sensitivity-jobs/` | Queue or reuse a four-buffer batch job |
-| GET | `/api/v1/buffer-sensitivity-jobs/<uuid>/` | Poll batch status / result |
-
-Example (single optimization):
-
-```bash
-curl -s -X POST http://127.0.0.1:8000/api/v1/optimization-jobs/ \
-  -H 'Content-Type: application/json' \
-  -d '{"profile":"P2","horizon_years":3,"expense_income_ratio":0.95,"buffer_months":1,"rebalance_frequency":"monthly","conversion_cost":0.0}'
-```
-
-Example (buffer sensitivity batch — server always evaluates `[1,3,6,12]`):
-
-```bash
-curl -s -X POST http://127.0.0.1:8000/api/v1/buffer-sensitivity-jobs/ \
-  -H 'Content-Type: application/json' \
-  -d '{"profile":"P2","horizon_years":3,"expense_income_ratio":0.95,"rebalance_frequency":"monthly","conversion_cost":0.0}'
-```
-
-Clients must not send `n_paths`, `seed`, `_fx_bundle`, `model_version`, or
-dataset paths. Those values are fixed by the verified model. Batch POSTs must
-not send `buffer_months`, buffer lists, or diagnostic targets.
-`BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False` disables new batch POSTs while
-keeping GET of existing jobs available.
-
-Frontend (Angular MVP)
-----------------------
-
-Requirements:
-
-- Node.js **24** (see root `.node-version`; Angular 22 supports
-  `^22.22.3 || ^24.15.0 || ^26.0.0`)
-- npm (bundled with Node)
-- Angular 22 standalone application in `frontend/`
-
-Install and start the development server (API calls are proxied):
-
-```bash
-cd frontend
-npm install
-npm start
-# equivalent: npx ng serve --proxy-config proxy.conf.json
-```
-
-`frontend/proxy.conf.json` forwards `/api` to `http://127.0.0.1:8000`.
-The UI always calls relative URLs under `/api/v1` — never hard-code a
-production hostname in components.
-
-| Command | Purpose |
-|---|---|
-| `npm start` | Dev server on `http://localhost:4200` with API proxy |
-| `npm test -- --watch=false` | Unit tests (Vitest; HTTP mocked) |
-| `npm run build` | Production build to `frontend/dist/` |
-
-Routes:
-
-| Path | Page |
-|---|---|
-| `/` | Landing (research pilot) |
-| `/research` | Research and methodology |
-| `/research/calculator` | Guided research scenario calculator (P1–P4) |
-| `/assessment`, `/calculator` | Redirect to `/research/calculator` |
-| `/results/:jobId` | Processing / completed scenario result (noindex) |
-| `/report/:jobId` | Printable report (noindex) |
-| `/buffer-sensitivity/:jobId` | Buffer sensitivity explorer (noindex) |
-| `/compare` | Scenario comparison (noindex) |
-
-Local full-stack startup order:
-
-1. Start Redis (`docker compose up -d redis` or `brew services start redis`)
-2. Apply migrations and run Django (`python manage.py runserver`)
-3. Start the Celery worker (`celery -A project worker ...`)
-4. Start Angular (`cd frontend && npm start`)
-5. Open `http://localhost:4200`
-
-Design and accessibility notes:
-
-- Calm consumer-finance visual system using CSS custom properties in
-  `frontend/src/styles/_tokens.scss` (no remote fonts or stock images)
-- English copy is centralised in `frontend/src/app/core/i18n/en.ts` for
-  later RU/KK localization
-- Results language describes **model allocations** and **modeled shortfall
-  risk** — never forecasts, advice, or guaranteed outcomes
-- Keyboard navigation, visible focus, 44 px targets, `aria-live` for
-  processing/errors, and `prefers-reduced-motion` are required behaviours
-
-Tests
------
-
-Backend:
-
-```bash
-cd backend
-source .venv/bin/activate
-
-# Fast API + unit suite (no full 10k-path optimization)
-CELERY_TASK_ALWAYS_EAGER=True pytest -m "not slow"
-
-# Including verified P2/P4 engine regression gates (~30+ seconds)
-CELERY_TASK_ALWAYS_EAGER=True pytest
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm test -- --watch=false
-```
-
-Environment
------------
-
-See `.env.example` (local), `deploy/.env.production.example` (full ≈8 GB profile),
-and `deploy/.env.pilot.example` (low-resource ≈4 GB profile).
-
-Important variables:
-
-- `DJANGO_SECRET_KEY` — development fallback is marked development-only; startup
-  fails if `DEBUG=False` still uses that fallback
-- `DATABASE_URL` — required PostgreSQL URL when `DEBUG=False`; empty keeps SQLite locally
-- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — Redis broker `/0` and results `/1`
-- `REDIS_CACHE_URL` — required when `DEBUG=False`; distinct Redis DB (e.g. `/2`) for shared DRF throttles
-- `CORS_ALLOWED_ORIGINS` — defaults to `http://localhost:4200`; same-origin production may leave empty
-- `CSRF_TRUSTED_ORIGINS` — HTTPS origins when needed for admin/session POSTs
-- `ADMIN_ENABLED` — defaults off when `DEBUG=False` (admin returns 404)
-- `CELERY_TASK_ALWAYS_EAGER` — set `True` in tests only
-- `DRF_OPTIMIZATION_SUBMIT_THROTTLE` — default `3/hour` (memory-heavy POSTs)
-- `DRF_BUFFER_SENSITIVITY_SUBMIT_THROTTLE` — default `2/hour` (separate from optimization)
-- `DRF_JOB_POLL_THROTTLE` — default `120/min` (shared poll scope; does not consume submit quotas)
-- `DRF_MODEL_METADATA_THROTTLE` — default `60/min`
-- `OPTIMIZATION_MAX_ATTEMPTS` — default `2`
-- `OPTIMIZATION_SUBMISSIONS_ENABLED` — freeze ordinary POSTs without removing GET
-- `OPTIMIZATION_TASK_SOFT_TIME_LIMIT` / `OPTIMIZATION_TASK_TIME_LIMIT` — defaults `180` / `240`
-- `OPTIMIZATION_LEASE_SECONDS` — default `300` (≥ hard + 60s margin)
-- `BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT` / `BUFFER_SENSITIVITY_TASK_TIME_LIMIT` — defaults `600` / `720`
-- `BUFFER_SENSITIVITY_LEASE_SECONDS` — default `840` (≥ hard + 120s margin)
-- `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` — freeze batch POSTs without removing GET
-- `JOB_RETENTION_DAYS` — default `7`; terminal jobs older than this are deleted
-  only when `cleanup_expired_jobs` runs (a host schedule is required)
-- `HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED` — default `False` everywhere; enables
-  `POST /api/v1/household-analysis-jobs/` (GET polling always available). Keep
-  disabled in production until the VPS runtime gate passes
-- `DRF_HOUSEHOLD_ANALYSIS_SUBMIT_THROTTLE` — default `3/hour`
-- `HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT` / `HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT` /
-  `HOUSEHOLD_ANALYSIS_LEASE_SECONDS` — development candidates `180` / `240` / `300`
-  (lease ≥ hard + 60s); not certified for difficult custom cases on the VPS
-- `SECURE_SSL_REDIRECT` / `SECURE_HSTS_SECONDS` / `SECURE_PROXY_SSL_HEADER_ENABLED` — HTTPS hardening
-- Global `CELERY_TASK_SOFT_TIME_LIMIT` / `CELERY_TASK_TIME_LIMIT` remain `120` / `180` for
-  unrelated tasks; optimization and batch tasks use task-specific annotations
-
-Health endpoints: `GET /api/v1/health/` (liveness) and `GET /api/v1/ready/` (DB + cache readiness).
-
-Production packaging
---------------------
-
-See `deploy/README.md` and `docs/deployment/`. Two Compose modes share one stack:
-
-- **Low-resource research pilot** (`--profile pilot` + `compose.low-resource.yaml`):
-  one combined Celery worker (`celery,buffer_sensitivity`), Gunicorn 1×2,
-  ≈4 GB candidate — see `docs/deployment/low-resource-pilot-profile.md`.
-- **Full profile** (`--profile full`): dedicated `worker_opt` + `worker_buffer`,
-  Gunicorn 2×2, ≈8 GB candidate.
-
-Never enable both worker profiles at once. Schedule daily retention cleanup via
-the `ops` profile (`cleanup_expired_jobs`). Do not increase Celery concurrency
-without a deployment-host benchmark. Personalized assessment is Phase 5.
-
-Job lifecycle notes
--------------------
-
-- Deterministic requests share one `request_fingerprint` row (unique).
-- Succeeded jobs return a cached result; failed jobs may be reset and retried
-  until `OPTIMIZATION_MAX_ATTEMPTS`.
-- Workers claim jobs with Celery task identity + lease expiry so lost workers
-  do not leave jobs permanently `running`.
-- Broker redeliveries (`delivery_info.redelivered`) increment `attempt_count`
-  and cannot bypass the attempt limit.
-- Completion writes succeed only while the completing task still owns the
-  `running` row; stale workers discard their result instead of overwriting.
-- Broker publication failure returns HTTP `503` with error code
-  `queue_unavailable` and leaves a failed row that can be retried later.
-  HTTP publish retries are disabled (`CELERY_TASK_PUBLISH_RETRY=False`).
-
-Scope notes
------------
-
-- SQLite is for local development and tests only; production uses PostgreSQL.
-- Authentication is not implemented yet.
-- DRF throttling is LocMem in development and Redis-backed when `DEBUG=False`
-  with `REDIS_CACHE_URL`. Throttling reduces abuse; it is not a complete
-  security boundary.
-- Scientific formulas, seeds, path counts, and optimization constraints in
-  `research_engine` must not be altered to make products “easier”.
-- This release is a **research pilot** for profiles P1–P4, not a personalized
-  financial diagnostic.
+- [Local development and tests](docs/development.md)
+- [Frontend structure](frontend/README.md)
+- [Model methodology](docs/product/resilience-and-buffer-methodology.md)
+- [Personal simulation API](docs/product/personalized-simulation-contract.md)
+- [Buffer sensitivity API](docs/product/buffer-sensitivity-batch-design.md)
+- [Deployment](deploy/README.md)
+- [Operations](docs/deployment/pilot-operations-runbook.md)

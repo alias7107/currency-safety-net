@@ -1,4 +1,4 @@
-# Low-resource research pilot override (Phase 4B.1).
+# Low-resource pilot override.
 # Use WITH compose.production.yaml and ONLY --profile pilot (never with --profile full).
 #
 # Example:
@@ -7,8 +7,7 @@
 #     -f deploy/compose.low-resource.yaml \
 #     --profile pilot config
 #
-# Sets Gunicorn to 1 worker × 2 threads for very low admissions-demo traffic.
-# Scientific Celery limits, queues, and validation are unchanged.
+# Sets Gunicorn to 1 worker × 2 threads for low traffic.
 
 name: currency-safety-net
 

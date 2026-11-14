@@ -1,5 +1,5 @@
 /**
- * Pure parsing, validation and arithmetic for the Phase 5A household assessment.
+ * Parsing, validation and arithmetic for the household assessment.
  *
  * Every amount is converted to KZT equivalent with the user's own valuation
  * rates before it is added or turned into a share. Nothing here calls the API,
@@ -401,7 +401,7 @@ export function evaluateAssessment(draft: AssessmentDraft, today: string): Asses
   };
 }
 
-/* ---------- Strict restoration of a persisted draft ---------- */
+/* Strict restoration of a persisted draft */
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
