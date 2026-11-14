@@ -3,7 +3,11 @@
     <div class="hero__grid">
       <div class="hero__copy stack stack--5">
         <h1 id="hero-title" class="hero__title">{{ strings.landing.heroTitle }}</h1>
-        <p class="hero__body">{{ strings.landing.heroBody }}</p>
+        <div class="hero__body stack stack--3">
+          @for (paragraph of strings.landing.heroBody; track paragraph) {
+            <p>{{ paragraph }}</p>
+          }
+        </div>
 
         <div class="hero__actions">
           <a

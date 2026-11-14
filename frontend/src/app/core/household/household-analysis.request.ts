@@ -65,6 +65,28 @@ function inRange(value: number, range: { min: number; max: number }): boolean {
   return Number.isFinite(value) && value >= range.min && value <= range.max;
 }
 
+/* Inclusive checks on unrounded values, shared by eligibility and inline feedback. */
+
+export function isExpenseIncomeRatioSupported(ratio: number): boolean {
+  return inRange(ratio, SUPPORTED_EXPENSE_INCOME_RATIO);
+}
+
+export function isBufferMonthsSupported(months: number): boolean {
+  return inRange(months, SUPPORTED_BUFFER_MONTHS);
+}
+
+export function isConversionCostSupported(cost: number): boolean {
+  return inRange(cost, SUPPORTED_CONVERSION_COST);
+}
+
+export function isRebalanceFrequencySupported(value: string): boolean {
+  return SUPPORTED_REBALANCE_FREQUENCIES.includes(value);
+}
+
+export function isHorizonSupported(years: number): boolean {
+  return SUPPORTED_HORIZON_YEARS.includes(years);
+}
+
 function copyVector(v: HouseholdVector): HouseholdVector {
   return [v[0], v[1], v[2]];
 }
@@ -97,7 +119,7 @@ export function evaluateSimulationEligibility(
   if (!isValidShareVector(incomeShares) || !isValidShareVector(expenseShares)) {
     add('share_vector_invalid', STEP_CASHFLOWS);
   }
-  if (ratio === null || !inRange(ratio, SUPPORTED_EXPENSE_INCOME_RATIO)) {
+  if (ratio === null || !isExpenseIncomeRatioSupported(ratio)) {
     add('expense_income_ratio_out_of_supported_range', STEP_CASHFLOWS);
   }
 
@@ -107,27 +129,27 @@ export function evaluateSimulationEligibility(
     if (!isValidShareVector(weights)) {
       add('share_vector_invalid', STEP_RESERVE);
     }
-    if (!inRange(buffer, SUPPORTED_BUFFER_MONTHS)) {
+    if (!isBufferMonthsSupported(buffer)) {
       add('buffer_months_out_of_supported_range', STEP_RESERVE);
     }
   }
 
   const horizon = overview.horizonYears;
-  if (horizon === null || !SUPPORTED_HORIZON_YEARS.includes(horizon)) {
+  if (horizon === null || !isHorizonSupported(horizon)) {
     add('horizon_unsupported', STEP_RESERVE);
   }
 
   const rebalance = overview.rebalanceFrequency;
   if (rebalance === null) {
     add('rebalance_frequency_not_selected', STEP_SETTINGS);
-  } else if (!SUPPORTED_REBALANCE_FREQUENCIES.includes(rebalance)) {
+  } else if (!isRebalanceFrequencySupported(rebalance)) {
     add('rebalance_frequency_unsupported', STEP_SETTINGS);
   }
 
   const cost = overview.conversionCost;
   if (cost === null) {
     add('conversion_cost_not_selected', STEP_SETTINGS);
-  } else if (!inRange(cost, SUPPORTED_CONVERSION_COST)) {
+  } else if (!isConversionCostSupported(cost)) {
     add('conversion_cost_out_of_supported_range', STEP_SETTINGS);
   }
 

@@ -190,8 +190,8 @@
                                 [attr.aria-describedby]="
                                   describedBy('rate-' + code, 'rate.' + code, 'rate-help')
                                 "
-                                (input)="setRate(code, inputValue($event))"
-                                (blur)="markTouched('rate.' + code)"
+                                (input)="setRate(code, inputValue($event)); startEditing()"
+                                (blur)="markTouched('rate.' + code); stopEditing()"
                               />
                               <span class="amount-input__unit" aria-hidden="true">KZT</span>
                             </div>
@@ -248,6 +248,13 @@
                       {{ copy.cashflows.totalsHeading }}
                     </h3>
                     <ng-container [ngTemplateOutlet]="cashflowFigures" />
+                    <ng-container
+                      [ngTemplateOutlet]="simulationNote"
+                      [ngTemplateOutletContext]="{
+                        feedback: ratioFeedback(),
+                        testid: 'ratio-simulation-feedback',
+                      }"
+                    />
                   </section>
                 </div>
               }
@@ -281,6 +288,13 @@
                     </h3>
                     <ng-container [ngTemplateOutlet]="reserveFigures" />
                     <p class="field__help">{{ copy.reserve.coverageExplanation }}</p>
+                    <ng-container
+                      [ngTemplateOutlet]="simulationNote"
+                      [ngTemplateOutletContext]="{
+                        feedback: coverageFeedback(),
+                        testid: 'coverage-simulation-feedback',
+                      }"
+                    />
                   </section>
 
                   <div class="field">
@@ -370,6 +384,15 @@
                         [value]="draft().rebalanceFrequency"
                         (valueChange)="setRebalance($event)"
                       />
+                      @if (rebalanceFeedback(); as feedback) {
+                        <ng-container
+                          [ngTemplateOutlet]="simulationNote"
+                          [ngTemplateOutletContext]="{
+                            feedback,
+                            testid: 'rebalance-simulation-feedback',
+                          }"
+                        />
+                      }
                     </fieldset>
 
                     <fieldset
@@ -390,6 +413,15 @@
                         [value]="draft().conversionCost"
                         (valueChange)="setConversionCost($event)"
                       />
+                      @if (conversionCostFeedback(); as feedback) {
+                        <ng-container
+                          [ngTemplateOutlet]="simulationNote"
+                          [ngTemplateOutletContext]="{
+                            feedback,
+                            testid: 'cost-simulation-feedback',
+                          }"
+                        />
+                      }
                     </fieldset>
                   }
 
@@ -469,7 +501,6 @@
             {{ copy.overview.heading }}
           </h2>
           <p class="field__help">{{ copy.overview.body }}</p>
-          <app-info-callout [body]="copy.overview.notAssessmentNote" />
         </div>
 
         <section class="panel stack stack--4" aria-labelledby="overview-situation">
@@ -650,122 +681,92 @@
               </ul>
               <p class="field__help">{{ simulationCopy.ineligibleNote }}</p>
             </div>
-          } @else {
-            <div class="stack stack--4" data-testid="simulation-eligible">
-              <section class="stack stack--2" aria-labelledby="simulation-assumptions">
-                <h4 id="simulation-assumptions">{{ simulationCopy.assumptionsHeading }}</h4>
-                <ul class="assessment__reasons">
-                  @for (item of simulationCopy.assumptions; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-              </section>
-              <section
-                class="stack stack--2"
-                aria-labelledby="simulation-privacy"
-                data-testid="simulation-privacy"
-              >
-                <h4 id="simulation-privacy">{{ simulationCopy.privacyHeading }}</h4>
-                <ul class="assessment__reasons">
-                  @for (item of simulationCopy.privacyPoints; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-              </section>
-              <div class="stack stack--2">
-                <label class="choice-check" for="simulation-ack">
-                  <input
-                    id="simulation-ack"
-                    type="checkbox"
-                    data-testid="simulation-ack"
-                    aria-describedby="simulation-ack-help"
-                    [checked]="acknowledged()"
-                    [disabled]="submitting()"
-                    (change)="setAcknowledged(checked($event))"
-                  />
-                  <span>{{ simulationCopy.acknowledgement }}</span>
-                </label>
-                <p id="simulation-ack-help" class="field__help">
-                  {{ simulationCopy.acknowledgementHelp }}
-                </p>
-              </div>
-
-              @if (submitError(); as error) {
-                <div
-                  class="stack stack--3"
-                  data-testid="simulation-error"
-                  [attr.data-code]="error.code"
-                >
-                  <app-error-panel
-                    [error]="error"
-                    [title]="submitErrorCopy(error).title"
-                    [body]="submitErrorCopy(error).body"
-                    [showRetry]="false"
-                  />
-                  @if (serverReasons(error).length) {
-                    <ul class="assessment__reasons" data-testid="simulation-server-reasons">
-                      @for (reason of serverReasons(error); track $index; let i = $index) {
-                        <li>
-                          <span [id]="'simulation-server-reason-' + i">{{ reason.text }}</span>
-                          <button
-                            type="button"
-                            class="button-link"
-                            [attr.aria-describedby]="'simulation-server-reason-' + i"
-                            (click)="editStep(reason.step)"
-                          >
-                            {{ simulationCopy.editReason }}
-                          </button>
-                        </li>
-                      }
-                    </ul>
-                  }
-                  @if (error.failedJobId) {
-                    <p class="field__help" data-testid="simulation-failed-job">
-                      {{ simulationCopy.errors.queueJobNote }}
-                      <a [routerLink]="['/assessment/results', error.failedJobId]">{{
-                        simulationCopy.errors.viewFailedJob
-                      }}</a>
-                    </p>
-                  }
-                </div>
-              }
-
-              @if (staleSubmission(); as stale) {
-                <div class="stack stack--2" role="status" data-testid="simulation-stale">
-                  <p>{{ simulationCopy.changedWhilePending }}</p>
-                  @if (stale.jobId) {
-                    <a [routerLink]="['/assessment/results', stale.jobId]">{{
-                      simulationCopy.viewSubmitted
-                    }}</a>
-                  }
-                </div>
-              }
-
-              <div class="calculator__run stack stack--2">
-                <button
-                  type="button"
-                  class="button button--primary button--large"
-                  data-testid="run-simulation"
-                  [disabled]="!canRunSimulation()"
-                  [attr.aria-describedby]="acknowledged() ? null : 'simulation-ack-required'"
-                  [attr.aria-busy]="submitting() ? 'true' : null"
-                  (click)="runSimulation()"
-                >
-                  {{ submitting() ? simulationCopy.submitting : simulationCopy.run }}
-                </button>
-                @if (!acknowledged() && !submitting()) {
-                  <p id="simulation-ack-required" class="field__help">
-                    {{ simulationCopy.ackRequired }}
-                  </p>
-                }
-                @if (retryAfterSeconds() !== null) {
-                  <p class="field__help" data-testid="simulation-retry-after">
-                    {{ retryAfterText() }}
-                  </p>
-                }
-              </div>
-            </div>
           }
+
+          <div class="stack stack--4">
+            @if (submitError(); as error) {
+              <div
+                class="stack stack--3"
+                data-testid="simulation-error"
+                [attr.data-code]="error.code"
+              >
+                <app-error-panel
+                  [error]="error"
+                  [title]="submitErrorCopy(error).title"
+                  [body]="submitErrorCopy(error).body"
+                  [showRetry]="false"
+                />
+                @if (serverReasons(error).length) {
+                  <ul class="assessment__reasons" data-testid="simulation-server-reasons">
+                    @for (reason of serverReasons(error); track $index; let i = $index) {
+                      <li>
+                        <span [id]="'simulation-server-reason-' + i">{{ reason.text }}</span>
+                        <button
+                          type="button"
+                          class="button-link"
+                          [attr.aria-describedby]="'simulation-server-reason-' + i"
+                          (click)="editStep(reason.step)"
+                        >
+                          {{ simulationCopy.editReason }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+                @if (error.failedJobId) {
+                  <p class="field__help" data-testid="simulation-failed-job">
+                    {{ simulationCopy.errors.queueJobNote }}
+                    <a [routerLink]="['/assessment/results', error.failedJobId]">{{
+                      simulationCopy.errors.viewFailedJob
+                    }}</a>
+                  </p>
+                }
+              </div>
+            }
+
+            @if (staleSubmission(); as stale) {
+              <div class="stack stack--2" role="status" data-testid="simulation-stale">
+                <p>{{ simulationCopy.changedWhilePending }}</p>
+                @if (stale.jobId) {
+                  <a [routerLink]="['/assessment/results', stale.jobId]">{{
+                    simulationCopy.viewSubmitted
+                  }}</a>
+                }
+              </div>
+            }
+
+            <div class="calculator__run stack stack--2">
+              <button
+                type="button"
+                class="button button--primary button--large"
+                data-testid="run-simulation"
+                [disabled]="!canRunSimulation()"
+                [attr.aria-describedby]="runDescribedBy()"
+                [attr.aria-busy]="submitting() ? 'true' : null"
+                (click)="runSimulation()"
+              >
+                {{ submitting() ? simulationCopy.submitting : simulationCopy.run }}
+              </button>
+              @if (runUnavailableText(); as text) {
+                <p
+                  id="simulation-run-status"
+                  class="field__help"
+                  data-testid="simulation-run-status"
+                >
+                  {{ text }}
+                </p>
+              }
+              @if (retryAfterSeconds() !== null) {
+                <p
+                  id="simulation-retry-after"
+                  class="field__help"
+                  data-testid="simulation-retry-after"
+                >
+                  {{ retryAfterText() }}
+                </p>
+              }
+            </div>
+          </div>
 
           <div class="results__actions">
             <button
@@ -903,8 +904,8 @@
               [attr.aria-describedby]="
                 describedBy(amountId(group, code), amountErrorKey(group, code), dataGroup + '-help')
               "
-              (input)="setAmount(group, code, inputValue($event))"
-              (blur)="markTouched(amountErrorKey(group, code))"
+              (input)="setAmount(group, code, inputValue($event)); startEditing()"
+              (blur)="markTouched(amountErrorKey(group, code)); stopEditing()"
             />
             <span class="amount-input__unit" aria-hidden="true">{{ code }}</span>
           </div>
@@ -923,6 +924,20 @@
       }
     </div>
   </fieldset>
+</ng-template>
+
+<!-- Simulation-range note beside the answers it depends on; not a live region. -->
+<ng-template #simulationNote let-feedback="feedback" let-testid="testid">
+  <div
+    class="assessment__simulation-note stack stack--2"
+    [attr.data-testid]="testid"
+    [attr.data-state]="feedback.state"
+  >
+    <p>{{ feedback.text }}</p>
+    @if (feedback.modelLimit) {
+      <p class="field__help">{{ feedback.modelLimit }}</p>
+    }
+  </div>
 </ng-template>
 
 <!-- Income and essential-expense figures (step 2 and overview). -->

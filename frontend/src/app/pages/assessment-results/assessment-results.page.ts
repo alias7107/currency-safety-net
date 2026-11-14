@@ -24,6 +24,7 @@ import type {
 } from '../../core/household/household-analysis.models';
 import { HouseholdAnalysisStore } from '../../core/household/household-analysis.store';
 import { validateHouseholdResult } from '../../core/household/household-analysis.validation';
+import { buildHouseholdPlainLanguageSummary } from '../../core/household/household-plain-language';
 import { EN_STRINGS } from '../../core/i18n/en';
 import {
   formatConversionCost,
@@ -437,6 +438,11 @@ export class AssessmentResultsPage {
       { key: 'fx', label: this.copy.fxPolicy, value: this.copy.fxPolicyValue, mono: false },
       { key: 'job', label: this.copy.jobId, value: this.jobId() ?? '', mono: true },
     ];
+  });
+
+  protected readonly plainSummary = computed(() => {
+    const result = this.result();
+    return result ? buildHouseholdPlainLanguageSummary(result) : null;
   });
 
   protected cvar(policy: HouseholdPolicyEvaluation): string {

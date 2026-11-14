@@ -9,6 +9,7 @@ import {
   computed,
   effect,
   inject,
+  linkedSignal,
   signal,
   untracked,
   viewChild,
@@ -55,6 +56,14 @@ import {
 } from '../../core/household/household-analysis.request';
 import { HouseholdAnalysisStore } from '../../core/household/household-analysis.store';
 import { validateHouseholdResult } from '../../core/household/household-analysis.validation';
+import {
+  buildConversionCostFeedback,
+  buildCoverageFeedback,
+  buildRatioFeedback,
+  buildRebalanceFeedback,
+  textAgainstRange,
+  type InlineFeedback,
+} from '../../core/household/household-eligibility-feedback';
 import { EN_STRINGS } from '../../core/i18n/en';
 import { AssessmentStore } from '../../core/state/assessment.store';
 import {
@@ -221,14 +230,12 @@ export class AssessmentPage {
     return { eligible: false, reasons, request: null };
   });
 
-  /** Every answer except the current step; any change resets the acknowledgement. */
+  /** Every answer except the current step; used to detect edits during a pending submission. */
   private readonly answersKey = computed(() => {
     const { step: _step, ...answers } = this.draft();
     return JSON.stringify(answers);
   });
 
-  /** Transient: never persisted or restored. */
-  protected readonly acknowledged = signal(false);
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<HouseholdApiError | null>(null);
   /** Set when the answers changed while a submission was pending. */
@@ -239,10 +246,70 @@ export class AssessmentPage {
   protected readonly canRunSimulation = computed(
     () =>
       this.simulationEligibility().eligible &&
-      this.acknowledged() &&
       !this.submitting() &&
       this.retryAfterSeconds() === null,
   );
+
+  /** Visible reason the run button is disabled; pending and cooldown states have their own text. */
+  protected readonly runUnavailableText = computed<string | null>(() => {
+    if (this.canRunSimulation() || this.submitting() || this.retryAfterSeconds() !== null) {
+      return null;
+    }
+    const copy = this.simulationCopy.runUnavailable;
+    return this.optionsLoading() && !this.options() ? copy.loading : copy.ineligible;
+  });
+
+  protected readonly runDescribedBy = computed<string | null>(() => {
+    if (this.retryAfterSeconds() !== null) {
+      return 'simulation-retry-after';
+    }
+    return this.runUnavailableText() ? 'simulation-run-status' : null;
+  });
+
+  /* ---------- Inline simulation feedback ---------- */
+
+  /** True while an amount or rate field is being typed in; feedback settles when it is left. */
+  private readonly editingField = signal(false);
+
+  private readonly cashflowFeedback = linkedSignal<
+    { feedback: { ratio: InlineFeedback; coverage: InlineFeedback }; editing: boolean },
+    { ratio: InlineFeedback; coverage: InlineFeedback }
+  >({
+    source: () => ({
+      feedback: {
+        ratio: buildRatioFeedback(this.evaluation()),
+        coverage: buildCoverageFeedback(this.evaluation()),
+      },
+      editing: this.editingField(),
+    }),
+    computation: (source, previous) =>
+      source.editing && previous ? previous.value : source.feedback,
+  });
+
+  protected readonly ratioFeedback = computed(() => this.cashflowFeedback().ratio);
+  protected readonly coverageFeedback = computed(() => this.cashflowFeedback().coverage);
+
+  protected readonly rebalanceFeedback = computed(() =>
+    buildRebalanceFeedback(
+      this.options()?.rebalance_frequencies ?? [],
+      this.draft().rebalanceFrequency,
+    ),
+  );
+
+  protected readonly conversionCostFeedback = computed(() =>
+    buildConversionCostFeedback(
+      this.conversionCostOptions().map((option) => Number(option.value)),
+      this.draft().conversionCost,
+    ),
+  );
+
+  protected startEditing(): void {
+    this.editingField.set(true);
+  }
+
+  protected stopEditing(): void {
+    this.editingField.set(false);
+  }
 
   constructor() {
     if (this.draft().step === ASSESSMENT_OVERVIEW_STEP && !this.evaluation().complete) {
@@ -251,7 +318,6 @@ export class AssessmentPage {
     effect(() => {
       this.answersKey();
       untracked(() => {
-        this.acknowledged.set(false);
         this.submitError.set(null);
         this.staleSubmission.set(null);
       });
@@ -261,10 +327,6 @@ export class AssessmentPage {
       this.clearRetryTimer();
     });
     this.loadOptions();
-  }
-
-  protected setAcknowledged(value: boolean): void {
-    this.acknowledged.set(value);
   }
 
   /** Explicit user action only; never triggered by load, restore, or timers. */
@@ -298,7 +360,6 @@ export class AssessmentPage {
             this.staleSubmission.set({ jobId: body.job_id });
             return;
           }
-          this.acknowledged.set(false);
           void this.router.navigate(['/assessment/results', body.job_id]);
         },
         error: (error: HouseholdApiError) => {
@@ -376,16 +437,24 @@ export class AssessmentPage {
     switch (code) {
       case 'expense_income_ratio_out_of_supported_range': {
         const range = supported ?? SUPPORTED_EXPENSE_INCOME_RATIO;
+        const ratio = overview.expenseIncomeRatio;
         return interpolate(reasons.expense_income_ratio_out_of_supported_range, {
-          value: formatPercent(overview.expenseIncomeRatio, 2),
+          value:
+            ratio === null
+              ? formatPercent(null)
+              : textAgainstRange(ratio, range, (v) => formatPercent(v, 2)),
           min: formatPercent(range.min, 2),
           max: formatPercent(range.max, 2),
         });
       }
       case 'buffer_months_out_of_supported_range': {
         const range = supported ?? SUPPORTED_BUFFER_MONTHS;
+        const months = overview.reserve?.coverageMonths ?? null;
         return interpolate(reasons.buffer_months_out_of_supported_range, {
-          value: formatMonthsOfIncome(overview.reserve?.coverageMonths, 2),
+          value:
+            months === null
+              ? formatMonthsOfIncome(null)
+              : textAgainstRange(months, range, (v) => formatMonthsOfIncome(v, 2)),
           min: formatMonthsOfIncome(range.min, 0),
           max: formatMonthsOfIncome(range.max, 0),
         });
@@ -613,6 +682,7 @@ export class AssessmentPage {
       this.focusFirstError(invalid);
       return;
     }
+    this.editingField.set(false);
     this.store.setStep(ASSESSMENT_OVERVIEW_STEP);
     this.liveMessage.set(this.copy.live.overview);
     this.focusAfterRender('assessment-step-heading');
@@ -639,6 +709,7 @@ export class AssessmentPage {
 
   private goToStep(step: number, focusHeading = true): void {
     const target = Math.min(Math.max(step, 0), ASSESSMENT_STEP_COUNT - 1);
+    this.editingField.set(false);
     this.store.setStep(target);
     this.liveMessage.set(
       interpolate(this.copy.live.step, {
@@ -730,6 +801,7 @@ export class AssessmentPage {
   protected confirmClearAnswers(): void {
     this.releaseBackground();
     this.store.clear();
+    this.editingField.set(false);
     this.attemptedSteps.set(new Set());
     this.touchedFields.set(new Set());
     this.confirmClear.set(false);

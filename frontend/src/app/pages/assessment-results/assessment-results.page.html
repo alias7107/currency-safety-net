@@ -230,6 +230,38 @@
           </ul>
         </section>
 
+        @if (plainSummary(); as summary) {
+          <section
+            class="panel stack stack--5 personal-results__plain"
+            aria-labelledby="personal-plain-language"
+            data-testid="personal-plain-language"
+            [attr.data-outcome]="summary.outcome"
+          >
+            <h2 id="personal-plain-language">{{ copy.plainLanguage.heading }}</h2>
+            <div class="stack stack--2" data-testid="plain-starting-point">
+              <h3>{{ copy.plainLanguage.startingHeading }}</h3>
+              @for (paragraph of summary.startingPoint; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+            <div class="stack stack--2" data-testid="plain-simulation">
+              <h3>{{ copy.plainLanguage.simulationHeading }}</h3>
+              @for (paragraph of summary.simulation; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+            <div class="stack stack--2" data-testid="plain-comparison">
+              <h3>{{ copy.plainLanguage.comparisonHeading }}</h3>
+              @for (paragraph of summary.comparison; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+            <p class="field__help" data-testid="plain-interpretation">
+              {{ summary.interpretation }}
+            </p>
+          </section>
+        }
+
         <ng-container [ngTemplateOutlet]="links" />
       </div>
     }

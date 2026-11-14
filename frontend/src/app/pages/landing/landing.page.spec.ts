@@ -231,6 +231,7 @@ describe('LandingPage product experience', () => {
     expect(copy).toContain('four predefined profiles evaluated in the research');
     expect(copy).toContain('explore the research model');
     expect(copy).toContain('check my resilience');
-    expect(copy).toContain('runs only when you explicitly request it');
+    expect(copy).toContain('only when you explicitly request it');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.hero__body p').length).toBe(2);
   });
 });

@@ -133,44 +133,46 @@ describe('AssessmentPage personal simulation', () => {
     return el<HTMLButtonElement>('run-simulation');
   }
 
-  async function acknowledge(): Promise<void> {
-    el<HTMLInputElement>('simulation-ack').click();
-    await settle();
-  }
-
   function expectPost(): TestRequest {
     const req = http.expectOne(HOUSEHOLD_JOBS_URL);
     expect(req.request.method).toBe('POST');
     return req;
   }
 
-  it('explains assumptions and privacy before an unchecked acknowledgement', async () => {
+  it('offers the run button directly for an eligible overview, without a confirmation step', async () => {
     await create();
     expect(el('assessment-overview')).toBeTruthy();
-    expect(el('simulation-eligible')).toBeTruthy();
-    for (const item of [...sim.assumptions, ...sim.privacyPoints]) {
-      expect(text()).toContain(item);
-    }
-    const ack = el<HTMLInputElement>('simulation-ack');
-    expect(ack.checked).toBe(false);
-    expect(host().querySelector('label[for="simulation-ack"]')).toBeTruthy();
-    expect(runButton().disabled).toBe(true);
-    expect(text()).toContain(sim.ackRequired);
+    expect(maybe('simulation-ineligible')).toBeNull();
+    expect(runButton().disabled).toBe(false);
+    expect(maybe('simulation-run-status')).toBeNull();
+    expect(runButton().getAttribute('aria-describedby')).toBeNull();
+    expect(runButton().textContent).toContain(sim.run);
+    const section = el('assessment-simulation');
+    expect(section.querySelector('input[type="checkbox"]')).toBeNull();
+    expect(section.querySelector('[role="dialog"]')).toBeNull();
+    expect(section.textContent).not.toMatch(
+      /Before you run it|What is sent and stored|Confirm the/,
+    );
     expect(text()).not.toMatch(/Target Finder will/);
+    expect(el('total-income')).toBeTruthy();
+    expect(el('reserve-composition')).toBeTruthy();
   });
 
-  it('never POSTs on load, restore, or without the acknowledgement', async () => {
+  it('never POSTs on load, restore, or after editing answers', async () => {
     await create();
-    runButton().click();
+    TestBed.inject(AssessmentStore).patch({ conversionCost: 0.005 });
     await settle();
+    TestBed.inject(AssessmentStore).patch({ monthlyContribution: '80000' });
+    await settle();
+    expect(runButton().disabled).toBe(false);
     http.expectNone((req) => req.method === 'POST');
     http.expectNone((req) => req.url.includes('optimization-jobs'));
     http.expectNone((req) => req.url.includes('buffer-sensitivity-jobs'));
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('submits exactly the contracted normalized fields once, then navigates to the results route', async () => {
     await create();
-    await acknowledge();
     expect(runButton().disabled).toBe(false);
     runButton().click();
     runButton().click();
@@ -216,7 +218,6 @@ describe('AssessmentPage personal simulation', () => {
 
   it('stores a validated cached 200 result and navigates without waiting for polling', async () => {
     await create();
-    await acknowledge();
     runButton().click();
     await settle();
     const req = expectPost();
@@ -232,7 +233,6 @@ describe('AssessmentPage personal simulation', () => {
 
   it('refuses a cached result whose scenario does not echo the submission', async () => {
     await create();
-    await acknowledge();
     runButton().click();
     await settle();
     const req = expectPost();
@@ -242,28 +242,27 @@ describe('AssessmentPage personal simulation', () => {
     expect(el('simulation-error').getAttribute('data-code')).toBe('malformed_response');
   });
 
-  it('resets the acknowledgement whenever answers change and after clearing', async () => {
+  it('clears a previous error when answers change but does not resubmit automatically', async () => {
     await create();
-    await acknowledge();
-    expect(el<HTMLInputElement>('simulation-ack').checked).toBe(true);
+    runButton().click();
+    await settle();
+    expectPost().flush(
+      { error: { code: 'provenance_unavailable', message: 'x' } },
+      { status: 503, statusText: 'Service Unavailable' },
+    );
+    await settle();
+    expect(maybe('simulation-error')).toBeTruthy();
 
     TestBed.inject(AssessmentStore).patch({ conversionCost: 0.005 });
     await settle();
-    expect(el<HTMLInputElement>('simulation-ack').checked).toBe(false);
-    expect(runButton().disabled).toBe(true);
-
-    await acknowledge();
-    TestBed.inject(AssessmentStore).patch({ monthlyContribution: '80000' });
-    await settle();
-    expect(el<HTMLInputElement>('simulation-ack').checked).toBe(false);
-
-    const stored = sessionStorage.getItem(ASSESSMENT_DRAFT_STORAGE_KEY)!;
-    expect(stored).not.toMatch(/acknowledg/i);
+    expect(maybe('simulation-error')).toBeNull();
+    expect(runButton().disabled).toBe(false);
+    http.expectNone((req) => req.method === 'POST');
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('does not associate a response with answers revised while it was pending', async () => {
     await create();
-    await acknowledge();
     runButton().click();
     await settle();
     const req = expectPost();
@@ -279,8 +278,12 @@ describe('AssessmentPage personal simulation', () => {
 
   it('lists every reason for a zero reserve without calling it unsafe', async () => {
     await create(eligibleDraft({ noReserve: true, reserveCurrencies: [], reserves: {} }));
-    expect(maybe('run-simulation')).toBeNull();
-    expect(maybe('simulation-ack')).toBeNull();
+    expect(runButton().disabled).toBe(true);
+    expect(el('simulation-run-status').textContent).toContain(sim.runUnavailable.ineligible);
+    expect(runButton().getAttribute('aria-describedby')).toBe('simulation-run-status');
+    runButton().click();
+    await settle();
+    http.expectNone((req) => req.method === 'POST');
     const reasons = Array.from(host().querySelectorAll('[data-testid="simulation-reason"]'));
     expect(reasons.map((r) => r.getAttribute('data-reason'))).toEqual(['no_current_reserve']);
     expect(text()).toContain('outside the model’s supported range');
@@ -316,12 +319,65 @@ describe('AssessmentPage personal simulation', () => {
     expect(reasons.map((r) => r.getAttribute('data-reason'))).toContain(
       'model_settings_unavailable',
     );
-    expect(maybe('run-simulation')).toBeNull();
+    expect(runButton().disabled).toBe(true);
+    expect(el('simulation-run-status').textContent).toContain(sim.runUnavailable.ineligible);
+    runButton().click();
+    await settle();
+    http.expectNone((req) => req.method === 'POST');
+  });
+
+  it('keeps the button visible but disabled while settings load, then enables it without submitting', async () => {
+    sessionStorage.setItem(ASSESSMENT_DRAFT_STORAGE_KEY, JSON.stringify(eligibleDraft()));
+    fixture = TestBed.createComponent(AssessmentPage);
+    fixture.detectChanges();
+    const optionsReq = http.expectOne(OPTIONS_URL);
+    expect(runButton().disabled).toBe(true);
+    expect(el('simulation-run-status').textContent).toContain(sim.runUnavailable.loading);
+    expect(runButton().getAttribute('aria-describedby')).toBe('simulation-run-status');
+    expect(maybe('simulation-ineligible')).toBeNull();
+    runButton().click();
+    http.expectNone((req) => req.method === 'POST');
+
+    optionsReq.flush(MODEL_OPTIONS);
+    await settle();
+    expect(runButton().disabled).toBe(false);
+    expect(maybe('simulation-run-status')).toBeNull();
+    http.expectNone((req) => req.method === 'POST');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('enables the button automatically once answers become eligible, but never submits by itself', async () => {
+    await create(eligibleDraft({ reserves: { USD: '20000', EUR: '0' } }));
+    const reasons = Array.from(host().querySelectorAll('[data-testid="simulation-reason"]'));
+    expect(reasons.map((r) => r.getAttribute('data-reason'))).toEqual([
+      'buffer_months_out_of_supported_range',
+    ]);
+    expect(el('simulation-reason-edit-buffer_months_out_of_supported_range')).toBeTruthy();
+    expect(runButton().disabled).toBe(true);
+
+    TestBed.inject(AssessmentStore).patch({ reserves: { USD: '2000', EUR: '500' } });
+    await settle();
+    expect(maybe('simulation-ineligible')).toBeNull();
+    expect(runButton().disabled).toBe(false);
+    http.expectNone((req) => req.method === 'POST');
+    expect(navigate).not.toHaveBeenCalled();
+
+    runButton().click();
+    await settle();
+    expectPost().flush(householdAccepted(), { status: 202, statusText: 'Accepted' });
+    await settle();
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses to POST from the guard itself while requirements are unmet', async () => {
+    await create(eligibleDraft({ noReserve: true, reserveCurrencies: [], reserves: {} }));
+    (fixture.componentInstance as unknown as { runSimulation(): void }).runSimulation();
+    await settle();
+    http.expectNone((req) => req.method === 'POST');
   });
 
   async function failWith(body: object, status: number, headers: Record<string, string> = {}) {
     await create();
-    await acknowledge();
     runButton().click();
     await settle();
     expectPost().flush(body, { status, statusText: 'x', headers });
@@ -404,6 +460,10 @@ describe('AssessmentPage personal simulation', () => {
       expect(text()).toContain(sim.errors.rateLimitTitle);
       expect(el('simulation-retry-after').textContent).toContain('30');
       expect(runButton().disabled).toBe(true);
+      expect(runButton().getAttribute('aria-describedby')).toBe('simulation-retry-after');
+      runButton().click();
+      fixture.detectChanges();
+      http.expectNone((req) => req.method === 'POST');
       await vi.advanceTimersByTimeAsync(30_000);
       fixture.detectChanges();
       expect(runButton().disabled).toBe(false);
@@ -415,7 +475,6 @@ describe('AssessmentPage personal simulation', () => {
 
   it('shows network and malformed responses safely', async () => {
     await create();
-    await acknowledge();
     runButton().click();
     await settle();
     expectPost().error(new ProgressEvent('error'));
