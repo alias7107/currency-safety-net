@@ -165,6 +165,27 @@ export function formatDate(value: string | null | undefined): string {
   return value && value.trim() ? value : '—';
 }
 
+/**
+ * Wall-clock duration for in-progress jobs, e.g. `45 seconds`, `3 minutes 20 seconds`.
+ * Values below one second display as `0 seconds`.
+ */
+export function formatElapsedDuration(totalSeconds: number): string {
+  if (!isFiniteNumber(totalSeconds) || totalSeconds < 0) {
+    return '—';
+  }
+  const seconds = Math.floor(totalSeconds);
+  if (seconds < 60) {
+    return `${seconds} ${seconds === 1 ? 'second' : 'seconds'}`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const rem = seconds % 60;
+  const minutePart = `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+  if (rem === 0) {
+    return minutePart;
+  }
+  return `${minutePart} ${rem} ${rem === 1 ? 'second' : 'seconds'}`;
+}
+
 /** Replace `{name}` placeholders in centralised copy. */
 export function interpolate(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>

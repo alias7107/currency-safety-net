@@ -1240,7 +1240,18 @@ export const EN_STRINGS = {
     processingTitle: 'Your simulation is in progress',
     processingBody:
       'A personal simulation evaluates thousands of simulated paths and may take several minutes. This page checks for updates automatically while it stays open.',
-    processingLive: 'Simulation status: {status}.',
+    processingExpected:
+      'Most personal simulations finish in about 3 to 8 minutes on this site. There is no percentage complete until the result arrives.',
+    processingElapsedQueued: 'Waiting in the queue for {elapsed}.',
+    processingElapsedRunning: 'Running for {elapsed}.',
+    processingStages: {
+      queued: 'Waiting for a free worker.',
+      preparing: 'Preparing the simulated market paths.',
+      coarse: 'Evaluating your current mix and a coarse allocation grid.',
+      refining: 'Searching nearby allocations more closely.',
+      extended: 'Still working — longer simulations can take up to about eight minutes.',
+    },
+    processingLive: 'Simulation status: {status}. {stage} {elapsedLine}',
     completedLive: 'Your personal simulation results are ready.',
     failedTitle: 'The simulation could not be completed',
     failedBody:

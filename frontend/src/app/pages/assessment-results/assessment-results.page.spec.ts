@@ -20,6 +20,7 @@ import {
 import {
   AssessmentResultsPage,
   HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS,
+  personalSimulationStage,
 } from './assessment-results.page';
 
 const copy = EN_STRINGS.assessmentResults;
@@ -53,6 +54,8 @@ describe('AssessmentResultsPage', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    // Align the clock with householdJobStatus fixture timestamps.
+    vi.setSystemTime(new Date('2026-11-10T10:00:10.000Z'));
     paramMap$ = new BehaviorSubject(params(TEST_HOUSEHOLD_JOB_ID));
     TestBed.configureTestingModule({
       imports: [AssessmentResultsPage],
@@ -85,12 +88,17 @@ describe('AssessmentResultsPage', () => {
     expect(el('personal-results-processing')).toBeTruthy();
     expect(text()).toContain(copy.processingBody);
     expect(text()).toContain(copy.statusQueued);
+    expect(text()).toContain(copy.processingExpected);
+    expect(el('personal-results-elapsed')!.textContent).toContain('10 seconds');
+    expect(el('personal-results-stage')!.textContent).toContain(copy.processingStages.queued);
     expect(text().toLowerCase()).not.toMatch(/\d+% complete|progress: \d/);
 
     await tick(HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS);
     http.expectOne(householdJobUrl()).flush(householdJobStatus('running'));
     fixture.detectChanges();
     expect(text()).toContain(copy.statusRunning);
+    expect(el('personal-results-elapsed')!.textContent).toContain('9 seconds');
+    expect(el('personal-results-stage')!.textContent).toContain(copy.processingStages.preparing);
 
     await tick(HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS);
     http
@@ -98,11 +106,44 @@ describe('AssessmentResultsPage', () => {
       .flush(householdJobStatus('succeeded', { result: householdResult() }));
     fixture.detectChanges();
     expect(el('personal-results')).toBeTruthy();
+    expect(el('personal-results-progress')).toBeNull();
     expect(host().querySelectorAll('h1').length).toBe(1);
     expect(el('personal-results-live')!.textContent).toContain(copy.completedLive);
 
     await tick(HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS * 3);
     http.expectNone(householdJobUrl());
+  });
+
+  it('advances staged copy with elapsed time while running, without a fake percentage', async () => {
+    create();
+    await tick(0);
+    http.expectOne(householdJobUrl()).flush(householdJobStatus('running'));
+    fixture.detectChanges();
+    expect(el('personal-results-stage')!.textContent).toContain(copy.processingStages.preparing);
+
+    await tick(50_000);
+    http.expectOne(householdJobUrl()).flush(householdJobStatus('running'));
+    fixture.detectChanges();
+    expect(el('personal-results-stage')!.textContent).toContain(copy.processingStages.coarse);
+    expect(el('personal-results-elapsed')!.textContent).toContain('55 seconds');
+
+    await tick(120_000);
+    http.expectOne(householdJobUrl()).flush(householdJobStatus('running'));
+    fixture.detectChanges();
+    expect(el('personal-results-stage')!.textContent).toContain(copy.processingStages.refining);
+    expect(text().toLowerCase()).not.toMatch(/\d+% complete|progress: \d/);
+
+    fixture.destroy();
+    await tick(HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS * 2);
+    http.expectNone(householdJobUrl());
+  });
+
+  it('maps elapsed thresholds to stages without claiming completion fraction', () => {
+    expect(personalSimulationStage('queued', 999)).toBe('queued');
+    expect(personalSimulationStage('running', 10)).toBe('preparing');
+    expect(personalSimulationStage('running', 60)).toBe('coarse');
+    expect(personalSimulationStage('running', 200)).toBe('refining');
+    expect(personalSimulationStage('running', 400)).toBe('extended');
   });
 
   it('does not overlap poll requests', async () => {

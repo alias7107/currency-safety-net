@@ -29,6 +29,7 @@ import { buildHouseholdPlainLanguageSummary } from '../../core/household/househo
 import { EN_STRINGS } from '../../core/i18n/en';
 import {
   formatConversionCost,
+  formatElapsedDuration,
   formatHorizon,
   formatInteger,
   formatMonthsOfIncome,
@@ -48,6 +49,35 @@ import { StatusBadge, type StatusTone } from '../../shared/components/status-bad
 
 /** Household-analysis polling cadence. */
 export const HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS = 4000;
+
+/** Elapsed-clock cadence while a job is queued or running. */
+export const HOUSEHOLD_ANALYSIS_ELAPSED_TICK_MS = 1000;
+
+/**
+ * Stage labels for perceived progress. Thresholds follow measured wall time on
+ * the pilot host (coarse grid ≈ 1.5 min, refined search ≈ 4–6 min). They are
+ * not server-reported completion fractions.
+ */
+export type PersonalSimulationStage = 'queued' | 'preparing' | 'coarse' | 'refining' | 'extended';
+
+export function personalSimulationStage(
+  status: JobStatus | null,
+  elapsedSeconds: number,
+): PersonalSimulationStage {
+  if (status !== 'running') {
+    return 'queued';
+  }
+  if (elapsedSeconds < 45) {
+    return 'preparing';
+  }
+  if (elapsedSeconds < 150) {
+    return 'coarse';
+  }
+  if (elapsedSeconds < 360) {
+    return 'refining';
+  }
+  return 'extended';
+}
 
 interface MetricRow {
   key: string;
@@ -81,7 +111,9 @@ export class AssessmentResultsPage {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly stopPolling$ = new Subject<void>();
+  private readonly stopElapsedClock$ = new Subject<void>();
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollOpenedAtMs = 0;
 
   protected readonly copy = EN_STRINGS.assessmentResults;
   protected readonly currencies = ALLOCATION_CURRENCY_ORDER;
@@ -89,6 +121,9 @@ export class AssessmentResultsPage {
   protected readonly jobId = signal<string | null>(null);
   protected readonly invalidId = signal(false);
   protected readonly status = signal<JobStatus | null>(null);
+  protected readonly createdAt = signal<string | null>(null);
+  protected readonly startedAt = signal<string | null>(null);
+  protected readonly nowMs = signal(Date.now());
   protected readonly result = signal<HouseholdAnalysisResult | null>(null);
   protected readonly error = signal<HouseholdApiError | null>(null);
   protected readonly failureCode = signal<string | null>(null);
@@ -102,18 +137,23 @@ export class AssessmentResultsPage {
     this.destroyRef.onDestroy(() => {
       this.stopPolling$.next();
       this.stopPolling$.complete();
+      this.stopElapsedClock$.next();
+      this.stopElapsedClock$.complete();
       this.clearRetryTimer();
     });
   }
 
   private load(rawId: string | null): void {
     this.stopPolling$.next();
+    this.stopElapsedClock();
     this.clearRetryTimer();
     this.result.set(null);
     this.error.set(null);
     this.failed.set(false);
     this.failureCode.set(null);
     this.status.set(null);
+    this.createdAt.set(null);
+    this.startedAt.set(null);
 
     if (!isValidOriginJobId(rawId) || rawId !== rawId.trim()) {
       this.jobId.set(null);
@@ -135,6 +175,8 @@ export class AssessmentResultsPage {
   private startPolling(jobId: string): void {
     this.stopPolling$.next();
     this.error.set(null);
+    this.pollOpenedAtMs = Date.now();
+    this.startElapsedClock();
     timer(0, HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS)
       .pipe(
         exhaustMap(() => this.api.getJob(jobId)),
@@ -153,15 +195,31 @@ export class AssessmentResultsPage {
           }
           this.error.set(error);
           this.stopPolling$.next();
+          this.stopElapsedClock();
           this.startRetryDelay(error.retryAfterSeconds);
         },
       });
   }
 
+  private startElapsedClock(): void {
+    this.stopElapsedClock$.next();
+    this.nowMs.set(Date.now());
+    timer(0, HOUSEHOLD_ANALYSIS_ELAPSED_TICK_MS)
+      .pipe(takeUntil(this.stopElapsedClock$))
+      .subscribe(() => this.nowMs.set(Date.now()));
+  }
+
+  private stopElapsedClock(): void {
+    this.stopElapsedClock$.next();
+  }
+
   private handleJob(jobId: string, job: HouseholdJobStatus): void {
     this.status.set(job.status);
+    this.createdAt.set(job.created_at);
+    this.startedAt.set(job.started_at);
     if (job.status === 'succeeded') {
       this.stopPolling$.next();
+      this.stopElapsedClock();
       const request = this.store.get(jobId)?.request ?? null;
       const checked = validateHouseholdResult(job.result, request);
       if (!checked.ok) {
@@ -174,6 +232,7 @@ export class AssessmentResultsPage {
     }
     if (job.status === 'failed') {
       this.stopPolling$.next();
+      this.stopElapsedClock();
       this.failed.set(true);
       this.failureCode.set(job.error_code ?? null);
     }
@@ -192,6 +251,8 @@ export class AssessmentResultsPage {
       return;
     }
     this.status.set(null);
+    this.createdAt.set(null);
+    this.startedAt.set(null);
     this.startPolling(jobId);
   }
 
@@ -234,12 +295,47 @@ export class AssessmentResultsPage {
     this.status() === 'running' ? 'info' : 'neutral',
   );
 
+  /** Seconds since the best available job timestamp (or since this page opened). */
+  protected readonly elapsedSeconds = computed(() => {
+    this.nowMs();
+    const status = this.status();
+    const iso =
+      status === 'running' && this.startedAt()
+        ? this.startedAt()
+        : (this.createdAt() ?? this.startedAt());
+    const parsed = iso ? Date.parse(iso) : Number.NaN;
+    const anchor = Number.isFinite(parsed) ? parsed : this.pollOpenedAtMs || Date.now();
+    return Math.max(0, Math.floor((this.nowMs() - anchor) / 1000));
+  });
+
+  protected readonly processingStage = computed(() =>
+    personalSimulationStage(this.status(), this.elapsedSeconds()),
+  );
+
+  protected readonly processingStageText = computed(
+    () => this.copy.processingStages[this.processingStage()],
+  );
+
+  protected readonly elapsedLine = computed(() => {
+    if (!this.isProcessing() || this.status() === null) {
+      return '';
+    }
+    const elapsed = formatElapsedDuration(this.elapsedSeconds());
+    return this.status() === 'running'
+      ? interpolate(this.copy.processingElapsedRunning, { elapsed })
+      : interpolate(this.copy.processingElapsedQueued, { elapsed });
+  });
+
   protected readonly liveMessage = computed(() => {
     if (this.result()) {
       return this.copy.completedLive;
     }
     if (this.isProcessing() && this.status() !== null) {
-      return interpolate(this.copy.processingLive, { status: this.statusLabel() });
+      return interpolate(this.copy.processingLive, {
+        status: this.statusLabel(),
+        stage: this.processingStageText(),
+        elapsedLine: this.elapsedLine(),
+      });
     }
     return '';
   });

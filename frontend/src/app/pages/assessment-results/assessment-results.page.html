@@ -66,6 +66,15 @@
           }
         </div>
         <app-loading-indicator [label]="copy.processingTitle" [hideLabel]="true" />
+        <div class="stack stack--2" data-testid="personal-results-progress">
+          <p class="field__help" data-testid="personal-results-expected">
+            {{ copy.processingExpected }}
+          </p>
+          @if (status() !== null) {
+            <p data-testid="personal-results-elapsed">{{ elapsedLine() }}</p>
+            <p data-testid="personal-results-stage">{{ processingStageText() }}</p>
+          }
+        </div>
         <ng-container [ngTemplateOutlet]="links" />
       </div>
     } @else if (result(); as r) {

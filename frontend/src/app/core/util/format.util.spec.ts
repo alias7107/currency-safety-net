@@ -1,6 +1,7 @@
 import {
   formatBufferMonths,
   formatConversionCost,
+  formatElapsedDuration,
   formatHorizon,
   formatInteger,
   formatMonthsOfIncome,
@@ -99,5 +100,15 @@ describe('format.util', () => {
     );
     expect(interpolate('{a} and {b}', { a: 1, b: 2 })).toBe('1 and 2');
     expect(interpolate('{missing}', {})).toBe('{missing}');
+  });
+
+  it('formats elapsed durations without inventing a percentage', () => {
+    expect(formatElapsedDuration(0)).toBe('0 seconds');
+    expect(formatElapsedDuration(1)).toBe('1 second');
+    expect(formatElapsedDuration(45)).toBe('45 seconds');
+    expect(formatElapsedDuration(60)).toBe('1 minute');
+    expect(formatElapsedDuration(90)).toBe('1 minute 30 seconds');
+    expect(formatElapsedDuration(200)).toBe('3 minutes 20 seconds');
+    expect(formatElapsedDuration(Number.NaN)).toBe('—');
   });
 });
