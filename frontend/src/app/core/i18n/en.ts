@@ -23,10 +23,12 @@ export const EN_STRINGS = {
     howItWorks: 'How it works',
     whoItHelps: 'Who it helps',
     research: 'Research',
-    assessment: 'Research calculator',
+    householdAssessment: 'Household assessment',
+    researchCalculator: 'Research calculator',
     compare: 'Compare',
     compareWithCount: 'Compare ({count})',
-    primaryAction: 'Explore the research model',
+    primaryAction: 'Check my resilience',
+    researchAction: 'Explore the research model',
   },
 
   footer: {
@@ -112,8 +114,8 @@ export const EN_STRINGS = {
   landing: {
     heroTitle: 'Explore how modelled currency buffers behave when exchange rates move',
     heroBody:
-      'This research pilot lets you explore the four predefined household profiles evaluated in the published research — not a personalized financial diagnostic.',
-    heroCta: 'Explore the research model',
+      'Describe your household’s income, essential expenses, and savings to build a household overview, or explore the four predefined household profiles evaluated in the research. A personal model simulation runs only when you explicitly request it from the overview, and only where the service has enabled it.',
+    heroCta: 'Check my resilience',
     heroSecondaryCta: 'View the published research',
     trustLine:
       'Research pilot · No account · No bank connection · Not financial advice · Analytics disabled',
@@ -187,6 +189,7 @@ export const EN_STRINGS = {
       'The product does not connect to a bank.',
       'Names and contact details are not requested.',
       'An unfinished form is kept in your browser session only.',
+      'Household assessment answers stay in this browser tab’s session storage. Only if you explicitly run a personal simulation are normalized scenario parameters — not your raw amounts or exchange rates — sent to the server and stored with the job.',
       'Saved comparison scenarios stay in the current browser session only.',
       'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
       'Terminal job payloads and results are retained for seven days in the research pilot.',
@@ -210,13 +213,294 @@ export const EN_STRINGS = {
       'Results are not individualized financial advice.',
       'Interest, inflation, tax, and deposit yield are not modelled.',
       'Outcomes depend on the assumptions you select and on historical data up to the as-of date.',
-      'This version uses four predefined profiles evaluated in the research — not fully custom income, expense, or savings distributions.',
+      'Modelled results in this version use the four predefined profiles evaluated in the research or, only when you explicitly request it, a direct model evaluation of your own normalized household scenario. The household overview itself is arithmetic only.',
     ],
 
     ctaHeading: 'Ready to explore a researched scenario?',
     ctaBody:
       'Open the research calculator, choose one of the four published household profiles, and review the modelled result.',
     ctaButton: 'Explore the research model',
+  },
+
+  assessment: {
+    documentTitle: 'Household assessment',
+    title: 'Household assessment',
+    intro:
+      'Describe your income, essential expenses, and savings to build your household overview.',
+    phaseNote:
+      'Completing the form produces an arithmetic overview of the figures you enter. From the overview you can separately request a personal model simulation; it runs only when you explicitly submit it. Neither step produces a risk score or a recommendation.',
+    privacyNote:
+      'Your answers are kept in this browser tab’s session storage and are not placed in the page address. The questions themselves send nothing to the server; only an explicitly submitted personal simulation sends normalized scenario parameters, as explained on the overview. Closing the tab or choosing “Clear my answers” removes the answers from this tab.',
+    researchLinkLabel: 'Open the research calculator',
+    researchLinkNote:
+      'The research calculator is a separate exploration of the four predefined household profiles evaluated in the study. It does not use the answers you enter here.',
+    progressLabel: 'Household assessment progress',
+    steps: [
+      { id: 'situation', label: 'Household situation', short: 'Situation' },
+      { id: 'cashflows', label: 'Monthly income and essential expenses', short: 'Income' },
+      { id: 'reserve', label: 'Financial reserve', short: 'Reserve' },
+      { id: 'settings', label: 'Settings and review', short: 'Settings' },
+    ],
+    actions: {
+      back: 'Back',
+      next: 'Continue',
+      viewOverview: 'View my household overview',
+      edit: 'Edit',
+      editSection: 'Edit {section}',
+      editHorizon: 'Edit horizon',
+      backToQuestions: 'Back to the questions',
+      clear: 'Clear my answers',
+    },
+    situation: {
+      heading: 'Household situation',
+      body: 'Tell us where your household is based and which currencies it uses.',
+      countryLabel: 'Country',
+      baseCurrencyLabel: 'Base currency',
+      supportedNote:
+        'These are the currently supported choices. Amounts are converted to tenge (KZT) for totals and shares.',
+      countries: { KZ: 'Kazakhstan' },
+      baseCurrencies: { KZT: 'Kazakhstani tenge (KZT)' },
+      incomeLegend: 'Income currencies',
+      incomeHelp: 'Select every currency your household receives regular net income in.',
+      expenseLegend: 'Essential-expense currencies',
+      expenseHelp:
+        'Select every currency you pay essential expenses in, such as housing, food, utilities, and transport.',
+      reserveLegend: 'Reserve currencies',
+      reserveHelp:
+        'Select every currency your savings reserve is currently held in, for example cash or deposits you could use in an emergency.',
+      noReserveLabel: 'I do not currently have a reserve',
+      noReserveHelp: 'Your reserve total will be zero and no reserve composition will be shown.',
+    },
+    cashflows: {
+      heading: 'Monthly income and essential expenses',
+      body: 'Enter typical monthly amounts in the currency they arrive or are paid in. Totals are calculated for you.',
+      incomeLegend: 'Monthly net income',
+      incomeFieldLabel: 'Monthly net income in {currency}',
+      expenseLegend: 'Monthly essential expenses',
+      expenseFieldLabel: 'Monthly essential expenses in {currency}',
+      amountHelp:
+        'Use digits and an optional decimal point, for example 250000 or 1250.50. You may group thousands with single spaces, for example 1 250 000.',
+      valuationLegend: 'Your conversion assumptions',
+      valuationBody:
+        'Amounts in different currencies are converted to tenge before they are added. Enter the rates you want to use — for example from your bank or another source you trust. These are your own assumptions, not live or verified market rates.',
+      rateLabel: '1 {currency} = how many KZT',
+      kztFixed: '1 KZT = 1 KZT (fixed)',
+      rateHelp: 'Use a positive number with up to six decimal places.',
+      dateLabel: 'Date of these rates',
+      dateHelp: 'The date your conversion rates refer to. It cannot be in the future.',
+      noForeignNote: 'All selected currencies are tenge, so no conversion rates are needed.',
+      totalsHeading: 'Calculated from your entries',
+    },
+    reserve: {
+      heading: 'Financial reserve',
+      body: 'Describe the savings reserve you hold today and the horizon you want to consider.',
+      amountsLegend: 'Current reserve',
+      amountLabel: 'Current reserve in {currency}',
+      noReserveDeclared:
+        'You indicated that you do not currently have a reserve. Your reserve total is zero.',
+      coverageExplanation:
+        'Reserve coverage shows how many months of your current essential expenses this reserve equals. It is arithmetic, not a forecast of how long the reserve would actually last.',
+      contributionLabel: 'Planned monthly contribution to the reserve (KZT, optional)',
+      contributionHelp:
+        'Leave blank if you prefer not to say; enter 0 for no planned contribution. This figure is shown for context only: it is not added to income, not subtracted from expenses, and not used to project future savings or risk.',
+      horizonLabel: 'Horizon',
+      horizonHelp: 'The period future scenario calculations would consider: 1, 3, or 5 years.',
+    },
+    settings: {
+      heading: 'Settings and review',
+      body: 'These settings are used only if you choose to run a personal simulation from the overview. They do not change the arithmetic household overview.',
+      rebalanceLabel: 'Rebalancing frequency',
+      rebalanceHelp:
+        'Describes how often a simulated reserve would be returned to its currency mix. This website does not perform any transactions.',
+      conversionCostLabel: 'Conversion cost',
+      conversionCostHelp:
+        'A proportional fee for converting between currencies in a future simulation. It is separate from the valuation rates you entered.',
+      optionsLoading: 'Loading model settings',
+      optionsErrorTitle: 'Model settings could not be loaded',
+      optionsErrorBody:
+        'Your answers are safe and the household overview is still available. Try loading the settings again.',
+      targetHeading: 'Desired protection',
+      targetBody:
+        'Protection targets are not checked for personal scenarios. The research Target Finder works only with the predefined research profiles, and your reserve is never changed to meet a target.',
+      readyNote: 'All questions are answered. Your household overview is ready.',
+      incompleteNote: 'Some answers still need attention before the overview can be shown.',
+    },
+    overview: {
+      heading: 'Your household overview',
+      body: 'An arithmetic summary of the figures you entered, using your own conversion assumptions.',
+      notAssessmentNote:
+        'This overview is not a scientific risk assessment. It contains no simulated risk, no probabilities, and no recommended allocation.',
+      situationHeading: 'Household situation',
+      countryLabel: 'Country',
+      baseCurrencyLabel: 'Base currency',
+      valuationHeading: 'Conversion assumptions',
+      valuationSource: 'User-provided rates',
+      valuationDateLabel: 'Rate date',
+      kztOnlyValuation: 'All amounts are in tenge; no conversion was needed.',
+      incomeHeading: 'Monthly income',
+      expensesHeading: 'Monthly essential expenses',
+      totalIncomeLabel: 'Total monthly income (KZT equivalent)',
+      totalExpensesLabel: 'Total essential expenses (KZT equivalent)',
+      shareColumn: 'Share',
+      amountColumn: 'Amount',
+      valueColumn: 'KZT equivalent',
+      currencyColumn: 'Currency',
+      ratioHeading: 'Income and essential expenses',
+      ratioLabel: 'Share of income used for essential expenses',
+      ratioValueLabel: 'Expense-to-income ratio',
+      remainingLabel: 'Income remaining after essential expenses',
+      remainingNegative: 'Essential expenses exceed monthly income by {amount}.',
+      remainingNote:
+        'Non-essential spending is not collected, so this is not disposable income or guaranteed savings.',
+      reserveHeading: 'Current reserve',
+      reserveTotalLabel: 'Reserve total (KZT equivalent)',
+      coverageLabel: 'Reserve coverage',
+      coverageValue: '{months} months of current essential expenses',
+      noReserve: 'No current reserve',
+      compositionHeading: 'Current reserve composition',
+      compositionNote:
+        'These are your existing holdings as entered. They have not been evaluated or optimized.',
+      compositionLabel: 'Current reserve composition',
+      contributionLabel: 'Planned monthly contribution',
+      notProvided: 'Not provided',
+      settingsHeading: 'Horizon and model settings',
+      modelSettingsLabel: 'model settings',
+      horizonLabel: 'Horizon',
+      rebalanceLabel: 'Rebalancing frequency',
+      conversionCostLabel: 'Conversion cost',
+      notSelected: 'Not selected',
+      settingsUnavailable: 'Model settings unavailable',
+    },
+    simulation: {
+      heading: 'Personal model simulation',
+      body: 'Optionally, the model can evaluate your current reserve mix and search its evaluation grid for the mix with the lowest CVaR95 under the same assumptions. This is separate from the arithmetic overview above and runs only when you submit it.',
+      ineligibleIntro: 'A personal simulation cannot run for these answers:',
+      ineligibleNote:
+        'Your entered values are unchanged and the household overview above remains valid. A scenario outside the model’s supported range is not a judgement that your household is unsafe.',
+      reasons: {
+        answers_incomplete: 'Some answers are still missing or invalid.',
+        share_vector_invalid: 'The currency shares could not be formed from your answers.',
+        model_settings_unavailable:
+          'Model settings could not be loaded, so the selected settings cannot be confirmed.',
+        rebalance_frequency_not_selected: 'Select a rebalancing frequency.',
+        rebalance_frequency_unsupported: 'The selected rebalancing frequency is not supported.',
+        conversion_cost_not_selected: 'Select a conversion cost.',
+        horizon_unsupported: 'Select a horizon of 1, 3, or 5 years.',
+        expense_income_ratio_out_of_supported_range:
+          'Essential expenses are {value} of income. The model currently supports {min} to {max}, so this is outside the model’s supported range.',
+        no_current_reserve:
+          'There is no current reserve. The model evaluates how an existing reserve’s currency mix behaves, so a zero reserve is outside the model’s supported range.',
+        buffer_months_out_of_supported_range:
+          'The reserve covers {value} months of essential expenses. The model currently supports {min} to {max} months, so this is outside the model’s supported range.',
+        conversion_cost_out_of_supported_range:
+          'The conversion cost {value} is outside the model’s supported range of {min} to {max}.',
+        generic: 'One of the scenario values is outside the model’s supported range.',
+      },
+      editReason: 'Edit this answer',
+      assumptionsHeading: 'Before you run it',
+      assumptions: [
+        'Income left after essential expenses is assumed to stay in savings in the model. Because non-essential spending is not collected, simulated results may be optimistic.',
+        'Your planned monthly contribution is not used by the simulation.',
+        'Only the essential expenses you entered are modelled; any spending you did not enter is absent from the simulation.',
+      ],
+      privacyHeading: 'What is sent and stored',
+      privacyPoints: [
+        'Your raw amounts, exchange rates, rate date, and planned contribution stay in this browser tab’s draft. They are not sent.',
+        'Submitting sends normalized scenario parameters: income and expense currency shares, the expense-to-income ratio, reserve coverage in months, your current reserve composition, the horizon, and the model settings. They are stored on the server with the job and its result.',
+        'Clearing your answers in this tab does not delete a simulation that was already submitted.',
+        'Stored jobs may be removed by a server clean-up process, but no deletion date is promised.',
+        'Anyone with the result link can view its normalized scenario and results.',
+      ],
+      acknowledgement:
+        'I understand that remaining income is assumed to stay in savings, my planned contribution is not used, and spending I did not enter is not included.',
+      acknowledgementHelp:
+        'This confirmation is not saved and resets whenever your answers change.',
+      run: 'Run personal simulation',
+      submitting: 'Submitting…',
+      submittingLive: 'Submitting your personal simulation.',
+      ackRequired: 'Confirm the statement above to run the simulation.',
+      changedWhilePending:
+        'Your answers changed while the simulation was being submitted, so that submission is not linked to your revised answers.',
+      viewSubmitted: 'View the simulation for the previously submitted answers',
+      retryAfter: 'You can try again in about {seconds} seconds.',
+      errors: {
+        disabledTitle: 'Personal simulations are not available',
+        disabledBody:
+          'Personal simulations are not enabled on this site at the moment. Your answers are kept in this tab, and the research calculator remains available.',
+        provenanceTitle: 'The model is temporarily unavailable',
+        provenanceBody:
+          'The model’s data and version could not be confirmed, so no simulation was started. Your answers are kept; try again later.',
+        queueTitle: 'The calculation queue is unavailable',
+        queueBody:
+          'The simulation could not be queued. Your answers are kept; you can submit again when you are ready.',
+        queueJobNote: 'The server kept a failed job record for this attempt.',
+        viewFailedJob: 'View the failed job record',
+        unavailableTitle: 'Service temporarily unavailable',
+        unavailableBody:
+          'The service did not accept the request. Your answers are kept; try again later.',
+        unsupportedTitle: 'Outside the model’s supported range',
+        unsupportedBody:
+          'The server found this scenario outside the range the model currently supports. Your entered values are unchanged.',
+        validationTitle: 'The scenario was not accepted',
+        validationBody:
+          'The server could not accept the normalized scenario. Your answers are kept; review them and try again.',
+        rateLimitTitle: 'Too many simulation requests',
+        rateLimitBody:
+          'Personal simulations are rate limited because each one is computationally expensive. Your answers are kept; wait before trying again.',
+        networkTitle: 'Cannot reach the server',
+        networkBody: 'Check your connection. Your answers are kept; you can submit again.',
+        malformedTitle: 'The response could not be verified',
+        malformedBody:
+          'The server’s response did not match the expected format, so nothing is shown. Your answers are kept.',
+        genericTitle: 'The simulation could not be submitted',
+        genericBody: 'Your answers are kept; try again later.',
+      },
+    },
+    summary: {
+      heading: 'Household summary',
+      compactToggle: 'Show household summary',
+      hint: 'Updated as you type. Values appear once the related answers are valid.',
+      income: 'Monthly income',
+      expenses: 'Essential expenses',
+      ratio: 'Share used for essential expenses',
+      remaining: 'Remaining after essential expenses',
+      reserve: 'Current reserve',
+      coverage: 'Reserve coverage',
+      pending: 'Not yet available',
+    },
+    clearDialog: {
+      title: 'Clear your answers?',
+      body: 'This removes every answer from this browser tab. It cannot be undone.',
+      confirm: 'Clear my answers',
+      cancel: 'Keep my answers',
+      clearedLive: 'Your answers were cleared.',
+    },
+    live: {
+      step: 'Step {current} of {total}: {label}',
+      overview: 'Household overview shown.',
+    },
+    errors: {
+      required: 'Enter an amount. Enter 0 if there is none in this currency.',
+      requiredRate: 'Enter the conversion rate you want to use.',
+      invalid_number:
+        'Use digits and an optional decimal point, for example 250000 or 1250.50. Group thousands only with single spaces, for example 1 250 000.',
+      negative: 'Amounts cannot be negative.',
+      too_many_decimals: 'Use no more than {decimals} decimal places.',
+      too_large: 'This number is larger than the assessment accepts.',
+      too_long: 'Use no more than {max} characters.',
+      rate_not_positive: 'A conversion rate must be greater than zero.',
+      income_currency_required: 'Select at least one income currency.',
+      expense_currency_required: 'Select at least one essential-expense currency.',
+      reserve_currency_required:
+        'Select at least one reserve currency, or choose “I do not currently have a reserve”.',
+      income_total_zero: 'Total monthly income must be greater than zero.',
+      expense_total_zero: 'Total essential expenses must be greater than zero.',
+      date_required: 'Enter the date of your conversion rates.',
+      date_invalid: 'Enter a valid date.',
+      date_future: 'The rate date cannot be in the future.',
+      horizon_required: 'Choose a horizon.',
+      stepSummary: 'Please correct the highlighted answers before continuing.',
+    },
   },
 
   calculator: {
@@ -923,6 +1207,136 @@ export const EN_STRINGS = {
     backToResults: 'Back to results',
   },
 
+  assessmentResults: {
+    documentTitle: 'Personal simulation results',
+    title: 'Your personal simulation',
+    intro:
+      'A direct model evaluation of the normalized household scenario that was submitted. Custom scenarios are not part of the published research validation, and nothing here is a recommendation or a trading instruction.',
+    statusLabel: 'Status',
+    statusQueued: 'Queued',
+    statusRunning: 'Running',
+    processingTitle: 'Your simulation is in progress',
+    processingBody:
+      'A personal simulation evaluates thousands of simulated paths and may take several minutes. This page checks for updates automatically while it stays open.',
+    processingLive: 'Simulation status: {status}.',
+    completedLive: 'Your personal simulation results are ready.',
+    failedTitle: 'The simulation could not be completed',
+    failedBody:
+      'No result was produced for this job. Your answers are not affected; you can return to the assessment and submit again.',
+    failedCodes: {
+      provenance_changed:
+        'The model’s data or version changed before the calculation finished, so the result was not kept.',
+      result_validation_failed: 'The calculation output did not pass its consistency checks.',
+      soft_time_limit: 'The calculation took longer than its allowed time.',
+      analysis_failed: 'The calculation could not be completed.',
+      max_attempts_exceeded: 'The calculation was attempted the maximum number of times.',
+      queue_unavailable: 'The calculation queue was unavailable when this job was submitted.',
+    },
+    invalidIdTitle: 'This result link is not valid',
+    invalidIdBody: 'Check the link, or return to the assessment to run a simulation.',
+    notFoundTitle: 'Simulation not found',
+    notFoundBody:
+      'This simulation is not available on the server. It may have been removed by clean-up, or the link may be wrong.',
+    loadErrorTitle: 'The simulation status could not be loaded',
+    loadErrorBody: 'Your answers are not affected. You can check the status again.',
+    rateLimitBody: 'Status checks are rate limited. Wait a moment, then check again.',
+    malformedTitle: 'The result could not be verified',
+    malformedBody:
+      'The server’s response did not match the expected format, so nothing is shown rather than partial figures.',
+    checkAgain: 'Check again',
+    retryAfter: 'You can check again in about {seconds} seconds.',
+    assumptionsHeading: 'Submitted assumptions',
+    assumptionsBody:
+      'These are the normalized parameters stored with this job, as returned by the server. Shares are KZT-equivalent at the start of the simulation.',
+    incomeShares: 'Income currency shares',
+    expenseShares: 'Essential-expense currency shares',
+    currentWeights: 'Current reserve composition',
+    ratio: 'Essential expenses as a share of income',
+    buffer: 'Reserve coverage',
+    bufferValue: '{months} months of essential expenses',
+    horizon: 'Horizon',
+    rebalance: 'Rebalancing frequency',
+    conversionCost: 'Conversion cost',
+    cvarHeading: 'How to read CVaR95',
+    cvarBody:
+      'CVaR95 is the average cumulative shortfall across the worst 5% of simulated paths. It is measured in units of initial monthly income: 1.00 means a shortfall equal to one month of the income you had at the start. Lower is better. It is not expressed in months of expenses or in tenge.',
+    unit: 'months of initial monthly income',
+    currentHeading: 'Your current mix under the selected rebalancing',
+    currentBody:
+      'Your current reserve composition is both the starting allocation and the target the simulated reserve is returned to under the selected rebalancing policy.',
+    currentChartLabel: 'Current reserve composition across KZT, USD and EUR',
+    optimizedHeading: 'Lowest-CVaR95 mix found on the evaluated grid',
+    optimizedBody:
+      'The allocation with the lowest CVaR95 among the allocations the model evaluated on its search grid, under the same assumptions and the same simulated paths.',
+    optimizedChartLabel: 'Lowest-CVaR95 grid allocation across KZT, USD and EUR',
+    cvarLabel: 'CVaR95 (sole objective)',
+    comparisonHeading: 'Comparison of CVaR95',
+    differenceLabel: 'Grid mix minus current mix',
+    differenceTiny: '{sign}less than 0.0001',
+    outcomeLabel: 'Outcome',
+    outcomes: {
+      optimized_lower:
+        'The grid mix has a lower CVaR95 than your current mix on these simulated paths.',
+      current_lower:
+        'Your current mix has a lower CVaR95 than every allocation evaluated on the grid. Your mix is not one of the grid points, so the search did not reach it.',
+      equal_within_tolerance:
+        'The two mixes have the same CVaR95 within the comparison tolerance of 0.00000001.',
+    },
+    comparisonNote:
+      'This compares modelled tail shortfalls only. It excludes the cost of switching your actual holdings today and is not a recommendation to change them.',
+    diagnosticsHeading: 'Diagnostics',
+    diagnosticsBody:
+      'These figures describe the same simulated paths but are not what the grid search minimizes. CVaR95 is the sole objective. Shortfall values are in units of initial monthly income.',
+    shortfallProbability:
+      'Share of simulated paths where expenses could not be fully covered at some point in the horizon',
+    var95: 'VaR95 of cumulative shortfall',
+    var95ZeroNote:
+      'A VaR95 of zero does not mean there is no risk. Losses can still appear in the worst tail of simulated paths, which CVaR95 describes.',
+    implementationHeading: 'Implementation-only diagnostics',
+    implementationBody:
+      'Produced by this implementation of the model and not part of the published methodology. Shortfall and terminal-wealth values are in units of initial monthly income.',
+    meanShortfall: 'Mean cumulative shortfall',
+    depletion:
+      'Share of simulated paths whose reserve was at or below the model’s depletion tolerance at the end of the horizon',
+    meanTerminal: 'Mean terminal wealth',
+    medianTerminal: 'Median terminal wealth',
+    p05Terminal: '5th percentile of terminal wealth',
+    p95Terminal: '95th percentile of terminal wealth',
+    currentColumn: 'Current mix',
+    optimizedColumn: 'Grid mix',
+    metricColumn: 'Measure',
+    identificationHeading: 'Identification of the grid result',
+    identificationNote:
+      'Identification applies only to the optimization surface searched for the grid mix. It does not describe your current mix.',
+    identificationClass: 'Identification',
+    nCoarse: 'Coarse grid allocations',
+    nRefined: 'Refined grid allocations',
+    nSurface: 'Allocations on the evaluated surface',
+    nearOptimal: 'Allocations within 1% of the lowest CVaR95',
+    provenanceHeading: 'Model and data',
+    modelVersion: 'Model version',
+    dataAsOf: 'Data as of',
+    datasetSha: 'Dataset SHA-256',
+    paths: 'Simulated paths',
+    seed: 'Random seed',
+    specification: 'Optimization specification',
+    fxPolicy: 'Exchange-rate paths',
+    fxPolicyValue: 'One shared set of simulated exchange-rate paths for both mixes',
+    jobId: 'Job reference',
+    limitationsHeading: 'Limitations',
+    limitations: [
+      'Income left after essential expenses is assumed to stay in savings, and non-essential spending is not modelled, so results may be optimistic.',
+      'Your planned monthly contribution was not used.',
+      'With no rebalancing, holdings still change through income, expenses, exchange-rate movements, and any liquidation needed to cover shortfalls.',
+      'Simulated exchange-rate paths are not forecasts, and the results are not guarantees.',
+      'Custom scenarios are direct model evaluations, not results from the published validation of the four research profiles.',
+      'There is no overall score, risk band, or recommended buffer.',
+    ],
+    editAssessment: 'Edit my answers',
+    researchCalculator: 'Explore the research calculator',
+    researchNote:
+      'The research calculator explores the four predefined household profiles from the study. It does not use this personal scenario.',
+  },
   errors: {
     genericTitle: 'Something went wrong',
     genericBody: 'The request could not be completed. Please try again.',

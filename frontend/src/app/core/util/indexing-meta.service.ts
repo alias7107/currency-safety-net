@@ -4,7 +4,13 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
 /** Capability or private exploration URLs that must not be indexed. */
-const NOINDEX_PREFIXES = ['/results/', '/report/', '/buffer-sensitivity/', '/compare'] as const;
+const NOINDEX_PREFIXES = [
+  '/results/',
+  '/report/',
+  '/buffer-sensitivity/',
+  '/compare',
+  '/assessment',
+] as const;
 
 @Injectable({ providedIn: 'root' })
 export class IndexingMetaService {

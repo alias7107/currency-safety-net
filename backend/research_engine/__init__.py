@@ -5,5 +5,6 @@ settlement, simulation, or optimization internals from Django views.
 """
 
 from .api import evaluate_allocation, optimize_allocation
+from .personal import analyze_household
 
-__all__ = ["evaluate_allocation", "optimize_allocation"]
+__all__ = ["analyze_household", "evaluate_allocation", "optimize_allocation"]

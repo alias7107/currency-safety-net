@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BufferSensitivityJob, OptimizationJob
+from .models import BufferSensitivityJob, HouseholdAnalysisJob, OptimizationJob
 
 
 @admin.register(OptimizationJob)
@@ -32,6 +32,25 @@ class OptimizationJobAdmin(admin.ModelAdmin):
         "started_at",
         "completed_at",
         "lease_expires_at",
+    )
+
+
+@admin.register(HouseholdAnalysisJob)
+class HouseholdAnalysisJobAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "status",
+        "attempt_count",
+        "contract_version",
+        "model_version",
+        "data_as_of",
+        "created_at",
+        "completed_at",
+    )
+    list_filter = ("status", "contract_version", "model_version")
+    search_fields = ("id", "request_fingerprint", "error_code", "celery_task_id")
+    readonly_fields = tuple(
+        field.name for field in HouseholdAnalysisJob._meta.get_fields() if field.concrete
     )
 
 

@@ -20,6 +20,8 @@ describe('IndexingMetaService', () => {
           { path: 'research', component: StubPage },
           { path: 'results/:jobId', component: StubPage },
           { path: 'compare', component: StubPage },
+          { path: 'assessment', component: StubPage },
+          { path: 'assessment/results/:jobId', component: StubPage },
           { path: 'report/:jobId', component: StubPage },
           { path: 'buffer-sensitivity/:jobId', component: StubPage },
         ]),
@@ -36,6 +38,12 @@ describe('IndexingMetaService', () => {
     await router.navigateByUrl('/results/00000000-0000-0000-0000-000000000001');
     expect(meta.getTag('name="robots"')?.content).toContain('noindex');
     await router.navigateByUrl('/compare');
+    expect(meta.getTag('name="robots"')?.content).toContain('noindex');
+    await router.navigateByUrl('/assessment');
+    expect(meta.getTag('name="robots"')?.content).toContain('noindex');
+    await router.navigateByUrl('/');
+    expect(meta.getTag('name="robots"')?.content).toContain('index, follow');
+    await router.navigateByUrl('/assessment/results/7c9e6679-7425-40de-944b-e07fc1f90ae7');
     expect(meta.getTag('name="robots"')?.content).toContain('noindex');
     await router.navigateByUrl('/');
     expect(meta.getTag('name="robots"')?.content).toContain('index, follow');

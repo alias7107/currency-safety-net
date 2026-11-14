@@ -21,8 +21,24 @@ from .batch_services import (
     submit_buffer_sensitivity_job,
     submissions_enabled,
 )
+from .household_contract import (
+    CONTRACT_VERSION as HOUSEHOLD_CONTRACT_VERSION,
+    HouseholdRequestError,
+    ProvenanceUnavailableError,
+    UnsupportedScenarioError,
+    live_provenance,
+    parse_household_request,
+)
+from .household_services import (
+    PROVENANCE_UNAVAILABLE_MESSAGE as HOUSEHOLD_PROVENANCE_UNAVAILABLE_MESSAGE,
+    QUEUE_UNAVAILABLE_MESSAGE as HOUSEHOLD_QUEUE_UNAVAILABLE_MESSAGE,
+    SUBMISSIONS_DISABLED_MESSAGE as HOUSEHOLD_SUBMISSIONS_DISABLED_MESSAGE,
+    QueueUnavailableError as HouseholdQueueUnavailableError,
+    submissions_enabled as household_submissions_enabled,
+    submit_household_analysis,
+)
 from .manifest import public_metadata, public_options
-from .models import BufferSensitivityJob, OptimizationJob
+from .models import BufferSensitivityJob, HouseholdAnalysisJob, OptimizationJob
 from .serializers import (
     BufferSensitivityJobCreateSerializer,
     OptimizationJobCreateSerializer,
@@ -36,6 +52,7 @@ from .services import (
 )
 from .throttles import (
     BufferSensitivitySubmitThrottle,
+    HouseholdAnalysisSubmitThrottle,
     JobPollThrottle,
     ModelMetadataThrottle,
     OptimizationSubmitThrottle,
@@ -261,6 +278,138 @@ class BufferSensitivityJobDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(_batch_detail_response(job))
+
+
+def _household_status_url(job_id) -> str:
+    return f"/api/v1/household-analysis-jobs/{job_id}/"
+
+
+class HouseholdAnalysisJobCreateView(APIView):
+    """Validate, check eligibility, then create or reuse a job. Never computes."""
+
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes = [HouseholdAnalysisSubmitThrottle]
+
+    def post(self, request: Request) -> Response:
+        if not household_submissions_enabled():
+            return Response(
+                {
+                    "error": {
+                        "code": "submissions_disabled",
+                        "message": HOUSEHOLD_SUBMISSIONS_DISABLED_MESSAGE,
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            normalized = parse_household_request(request.data)
+        except HouseholdRequestError as exc:
+            return Response(
+                {
+                    "error": {
+                        "code": "validation_error",
+                        "message": "The request could not be processed.",
+                        "details": exc.details,
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except UnsupportedScenarioError as exc:
+            return Response(
+                {
+                    "error": {
+                        "code": "unsupported_scenario",
+                        "message": (
+                            "This household scenario is outside the range the model "
+                            "currently supports. Your entered values are unchanged."
+                        ),
+                        "reasons": exc.reasons,
+                    }
+                },
+                status=422,
+            )
+        try:
+            provenance = live_provenance()
+        except ProvenanceUnavailableError:
+            return Response(
+                {
+                    "error": {
+                        "code": "provenance_unavailable",
+                        "message": HOUSEHOLD_PROVENANCE_UNAVAILABLE_MESSAGE,
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            outcome = submit_household_analysis(normalized, provenance)
+        except HouseholdQueueUnavailableError as exc:
+            return Response(
+                {
+                    "job_id": str(exc.job.id),
+                    "status": HouseholdAnalysisJob.Status.FAILED,
+                    "cached": False,
+                    "status_url": _household_status_url(exc.job.id),
+                    "contract_version": HOUSEHOLD_CONTRACT_VERSION,
+                    "error": {
+                        "code": "queue_unavailable",
+                        "message": HOUSEHOLD_QUEUE_UNAVAILABLE_MESSAGE,
+                    },
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        job = outcome.job
+        body = {
+            "job_id": str(job.id),
+            "status": job.status,
+            "cached": outcome.cached,
+            "status_url": _household_status_url(job.id),
+            "contract_version": job.contract_version,
+        }
+        if outcome.cached and job.status == HouseholdAnalysisJob.Status.SUCCEEDED:
+            body["result"] = job.result_payload
+        elif job.status == HouseholdAnalysisJob.Status.FAILED:
+            body["error_code"] = job.error_code
+            body["error_message"] = job.error_message
+        return Response(body, status=outcome.http_status)
+
+
+class HouseholdAnalysisJobDetailView(APIView):
+    """Poll a household job; available even when submissions are disabled."""
+
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes = [JobPollThrottle]
+
+    def get(self, request: Request, job_id) -> Response:
+        try:
+            job = HouseholdAnalysisJob.objects.get(id=job_id)
+        except HouseholdAnalysisJob.DoesNotExist:
+            return Response(
+                {
+                    "error": {
+                        "code": "not_found",
+                        "message": "Household analysis job not found.",
+                    }
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = {
+            "job_id": str(job.id),
+            "status": job.status,
+            "created_at": _iso(job.created_at),
+            "started_at": _iso(job.started_at),
+            "contract_version": job.contract_version,
+        }
+        if job.completed_at is not None:
+            data["completed_at"] = _iso(job.completed_at)
+        if job.status == HouseholdAnalysisJob.Status.SUCCEEDED:
+            data["result"] = job.result_payload
+        if job.status == HouseholdAnalysisJob.Status.FAILED:
+            data["error_code"] = job.error_code
+            data["error_message"] = job.error_message
+        return Response(data)
 
 
 def _optimization_detail_response(job: OptimizationJob) -> dict:

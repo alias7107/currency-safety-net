@@ -1,0 +1,1096 @@
+<p class="visually-hidden" aria-live="polite" data-testid="assessment-live">{{ liveMessage() }}</p>
+
+<section class="section section--tight">
+  <app-page-container>
+    <div class="assessment__header">
+      <app-section-heading
+        [level]="1"
+        headingId="assessment-title"
+        [heading]="copy.title"
+        [body]="copy.intro"
+      />
+      <button
+        type="button"
+        class="button button--ghost"
+        data-testid="assessment-clear"
+        (click)="openClearDialog($event)"
+      >
+        {{ copy.actions.clear }}
+      </button>
+    </div>
+
+    <div class="assessment__notes stack stack--3">
+      <app-info-callout tone="accent" [body]="copy.phaseNote" data-testid="assessment-phase-note" />
+      <p class="field__help" data-testid="assessment-privacy">{{ copy.privacyNote }}</p>
+    </div>
+
+    @if (step() < overviewStep) {
+      <app-step-indicator [steps]="steps" [currentIndex]="step()" [label]="copy.progressLabel" />
+
+      <details
+        class="summary-card assessment__summary-compact"
+        data-testid="assessment-summary-compact"
+      >
+        <summary class="assessment__summary-toggle">{{ copy.summary.compactToggle }}</summary>
+        <ng-container [ngTemplateOutlet]="summaryContent" />
+      </details>
+
+      <div class="calculator__grid">
+        <div class="calculator__main">
+          <form novalidate (submit)="$event.preventDefault()" data-testid="assessment-form">
+            <h2
+              id="assessment-step-heading"
+              class="assessment__step-heading"
+              tabindex="-1"
+              data-testid="assessment-step-heading"
+            >
+              {{ steps[step()].label }}
+            </h2>
+
+            @if (stepHasVisibleErrors()) {
+              <p class="field__error" role="alert" data-testid="assessment-step-errors">
+                {{ copy.errors.stepSummary }}
+              </p>
+            }
+
+            @switch (step()) {
+              @case (0) {
+                <div class="stack stack--5" data-testid="assessment-step-situation">
+                  <p class="field__help">{{ copy.situation.body }}</p>
+
+                  <div class="assessment__selects">
+                    <div class="field">
+                      <label class="field__label" for="assessment-country">{{
+                        copy.situation.countryLabel
+                      }}</label>
+                      <select
+                        id="assessment-country"
+                        class="form-control"
+                        aria-describedby="assessment-supported-note"
+                        [value]="draft().country"
+                      >
+                        <option value="KZ">{{ copy.situation.countries.KZ }}</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field__label" for="assessment-base-currency">{{
+                        copy.situation.baseCurrencyLabel
+                      }}</label>
+                      <select
+                        id="assessment-base-currency"
+                        class="form-control"
+                        aria-describedby="assessment-supported-note"
+                        [value]="draft().baseCurrency"
+                      >
+                        <option value="KZT">{{ copy.situation.baseCurrencies.KZT }}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p id="assessment-supported-note" class="field__help">
+                    {{ copy.situation.supportedNote }}
+                  </p>
+
+                  <ng-container
+                    [ngTemplateOutlet]="currencyGroup"
+                    [ngTemplateOutletContext]="{
+                      list: 'incomeCurrencies',
+                      legend: copy.situation.incomeLegend,
+                      help: copy.situation.incomeHelp,
+                      disabled: false,
+                    }"
+                  />
+                  <ng-container
+                    [ngTemplateOutlet]="currencyGroup"
+                    [ngTemplateOutletContext]="{
+                      list: 'expenseCurrencies',
+                      legend: copy.situation.expenseLegend,
+                      help: copy.situation.expenseHelp,
+                      disabled: false,
+                    }"
+                  />
+
+                  <div class="stack stack--3">
+                    <ng-container
+                      [ngTemplateOutlet]="currencyGroup"
+                      [ngTemplateOutletContext]="{
+                        list: 'reserveCurrencies',
+                        legend: copy.situation.reserveLegend,
+                        help: copy.situation.reserveHelp,
+                        disabled: draft().noReserve,
+                      }"
+                    />
+                    <label class="choice-check" for="assessment-no-reserve">
+                      <input
+                        id="assessment-no-reserve"
+                        type="checkbox"
+                        data-testid="assessment-no-reserve"
+                        aria-describedby="assessment-no-reserve-help"
+                        [checked]="draft().noReserve"
+                        (change)="setNoReserve(checked($event))"
+                      />
+                      <span>{{ copy.situation.noReserveLabel }}</span>
+                    </label>
+                    <p id="assessment-no-reserve-help" class="field__help">
+                      {{ copy.situation.noReserveHelp }}
+                    </p>
+                  </div>
+                </div>
+              }
+
+              @case (1) {
+                <div class="stack stack--6" data-testid="assessment-step-cashflows">
+                  <p class="field__help">{{ copy.cashflows.body }}</p>
+
+                  <ng-container
+                    [ngTemplateOutlet]="amountGroup"
+                    [ngTemplateOutletContext]="{
+                      group: 'income',
+                      dataGroup: 'income-amounts',
+                      legend: copy.cashflows.incomeLegend,
+                      labelTemplate: copy.cashflows.incomeFieldLabel,
+                      codes: incomeCurrencies(),
+                      totalKey: 'incomeTotal',
+                    }"
+                  />
+                  <ng-container
+                    [ngTemplateOutlet]="amountGroup"
+                    [ngTemplateOutletContext]="{
+                      group: 'expenses',
+                      dataGroup: 'expense-amounts',
+                      legend: copy.cashflows.expenseLegend,
+                      labelTemplate: copy.cashflows.expenseFieldLabel,
+                      codes: expenseCurrencies(),
+                      totalKey: 'expenseTotal',
+                    }"
+                  />
+
+                  <fieldset class="fieldset assessment__group" data-testid="assessment-valuation">
+                    <legend class="fieldset__legend">
+                      <span class="assessment__legend">{{ copy.cashflows.valuationLegend }}</span>
+                      <span class="fieldset__legend-body">{{ copy.cashflows.valuationBody }}</span>
+                    </legend>
+                    @if (evaluation().requiredRates.length) {
+                      <div class="stack stack--4">
+                        <p class="field__help">{{ copy.cashflows.kztFixed }}</p>
+                        @for (code of evaluation().requiredRates; track code) {
+                          <div class="field">
+                            <label class="field__label" [for]="'rate-' + code">{{
+                              fieldLabel(copy.cashflows.rateLabel, code)
+                            }}</label>
+                            <div class="amount-input">
+                              <input
+                                class="form-control"
+                                type="text"
+                                inputmode="decimal"
+                                autocomplete="off"
+                                [id]="'rate-' + code"
+                                [attr.data-testid]="'rate-' + code"
+                                [value]="rawRate(code)"
+                                [attr.aria-invalid]="showError('rate.' + code) ? 'true' : null"
+                                [attr.aria-describedby]="
+                                  describedBy('rate-' + code, 'rate.' + code, 'rate-help')
+                                "
+                                (input)="setRate(code, inputValue($event))"
+                                (blur)="markTouched('rate.' + code)"
+                              />
+                              <span class="amount-input__unit" aria-hidden="true">KZT</span>
+                            </div>
+                            @if (showError('rate.' + code)) {
+                              <p class="field__error" [id]="'rate-' + code + '-error'">
+                                {{ errorMessage('rate.' + code) }}
+                              </p>
+                            }
+                          </div>
+                        }
+                        <p id="rate-help" class="field__help">{{ copy.cashflows.rateHelp }}</p>
+
+                        <div class="field">
+                          <label class="field__label" for="valuation-date">{{
+                            copy.cashflows.dateLabel
+                          }}</label>
+                          <input
+                            id="valuation-date"
+                            class="form-control assessment__date"
+                            type="date"
+                            data-testid="valuation-date"
+                            [max]="today"
+                            [value]="draft().valuationDate"
+                            [attr.aria-invalid]="showError('valuationDate') ? 'true' : null"
+                            [attr.aria-describedby]="
+                              describedBy('valuation-date', 'valuationDate', 'valuation-date-help')
+                            "
+                            (input)="setValuationDate(inputValue($event))"
+                            (change)="setValuationDate(inputValue($event))"
+                            (blur)="markTouched('valuationDate')"
+                          />
+                          <p id="valuation-date-help" class="field__help">
+                            {{ copy.cashflows.dateHelp }}
+                          </p>
+                          @if (showError('valuationDate')) {
+                            <p class="field__error" id="valuation-date-error">
+                              {{ errorMessage('valuationDate') }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="field__help" data-testid="assessment-no-rates">
+                        {{ copy.cashflows.noForeignNote }}
+                      </p>
+                    }
+                  </fieldset>
+
+                  <section
+                    class="assessment__computed"
+                    aria-labelledby="assessment-cashflow-totals"
+                  >
+                    <h3 id="assessment-cashflow-totals" class="assessment__legend">
+                      {{ copy.cashflows.totalsHeading }}
+                    </h3>
+                    <ng-container [ngTemplateOutlet]="cashflowFigures" />
+                  </section>
+                </div>
+              }
+
+              @case (2) {
+                <div class="stack stack--6" data-testid="assessment-step-reserve">
+                  <p class="field__help">{{ copy.reserve.body }}</p>
+
+                  @if (draft().noReserve) {
+                    <app-info-callout
+                      [body]="copy.reserve.noReserveDeclared"
+                      data-testid="assessment-no-reserve-note"
+                    />
+                  } @else {
+                    <ng-container
+                      [ngTemplateOutlet]="amountGroup"
+                      [ngTemplateOutletContext]="{
+                        group: 'reserves',
+                        dataGroup: 'reserve-amounts',
+                        legend: copy.reserve.amountsLegend,
+                        labelTemplate: copy.reserve.amountLabel,
+                        codes: reserveCurrencies(),
+                        totalKey: null,
+                      }"
+                    />
+                  }
+
+                  <section class="assessment__computed" aria-labelledby="assessment-reserve-totals">
+                    <h3 id="assessment-reserve-totals" class="assessment__legend">
+                      {{ copy.cashflows.totalsHeading }}
+                    </h3>
+                    <ng-container [ngTemplateOutlet]="reserveFigures" />
+                    <p class="field__help">{{ copy.reserve.coverageExplanation }}</p>
+                  </section>
+
+                  <div class="field">
+                    <label class="field__label" for="monthly-contribution">{{
+                      copy.reserve.contributionLabel
+                    }}</label>
+                    <p id="monthly-contribution-help" class="field__help">
+                      {{ copy.reserve.contributionHelp }}
+                    </p>
+                    <div class="amount-input">
+                      <input
+                        id="monthly-contribution"
+                        class="form-control"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        data-testid="monthly-contribution"
+                        [value]="draft().monthlyContribution"
+                        [attr.aria-invalid]="showError('monthlyContribution') ? 'true' : null"
+                        [attr.aria-describedby]="
+                          describedBy(
+                            'monthly-contribution',
+                            'monthlyContribution',
+                            'monthly-contribution-help'
+                          )
+                        "
+                        (input)="setContribution(inputValue($event))"
+                        (blur)="markTouched('monthlyContribution')"
+                      />
+                      <span class="amount-input__unit" aria-hidden="true">KZT</span>
+                    </div>
+                    @if (showError('monthlyContribution')) {
+                      <p class="field__error" id="monthly-contribution-error">
+                        {{ errorMessage('monthlyContribution') }}
+                      </p>
+                    }
+                  </div>
+
+                  <fieldset
+                    class="fieldset assessment__group"
+                    data-group="horizon"
+                    [attr.aria-describedby]="describedBy('horizon', 'horizonYears', 'horizon-help')"
+                  >
+                    <legend class="fieldset__legend">
+                      <span class="assessment__legend">{{ copy.reserve.horizonLabel }}</span>
+                    </legend>
+                    <p id="horizon-help" class="field__help">{{ copy.reserve.horizonHelp }}</p>
+                    <app-segmented-control
+                      groupName="assessment-horizon"
+                      [options]="horizonOptions"
+                      [value]="draft().horizonYears"
+                      (valueChange)="setHorizon($event)"
+                    />
+                    @if (showError('horizonYears')) {
+                      <p class="field__error" id="horizon-error">
+                        {{ errorMessage('horizonYears') }}
+                      </p>
+                    }
+                  </fieldset>
+                </div>
+              }
+
+              @default {
+                <div class="stack stack--6" data-testid="assessment-step-settings">
+                  <p class="field__help">{{ copy.settings.body }}</p>
+
+                  @if (optionsLoading()) {
+                    <app-loading-indicator [label]="copy.settings.optionsLoading" />
+                  } @else if (optionsError(); as error) {
+                    <app-error-panel
+                      [error]="error"
+                      [title]="copy.settings.optionsErrorTitle"
+                      [body]="copy.settings.optionsErrorBody"
+                      (retry)="loadOptions()"
+                    />
+                  } @else {
+                    <fieldset class="fieldset assessment__group" aria-describedby="rebalance-help">
+                      <legend class="fieldset__legend">
+                        <span class="assessment__legend">{{ copy.settings.rebalanceLabel }}</span>
+                      </legend>
+                      <p id="rebalance-help" class="field__help">
+                        {{ copy.settings.rebalanceHelp }}
+                      </p>
+                      <app-segmented-control
+                        groupName="assessment-rebalance"
+                        [options]="rebalanceOptions()"
+                        [value]="draft().rebalanceFrequency"
+                        (valueChange)="setRebalance($event)"
+                      />
+                    </fieldset>
+
+                    <fieldset
+                      class="fieldset assessment__group"
+                      aria-describedby="conversion-cost-help"
+                    >
+                      <legend class="fieldset__legend">
+                        <span class="assessment__legend">{{
+                          copy.settings.conversionCostLabel
+                        }}</span>
+                      </legend>
+                      <p id="conversion-cost-help" class="field__help">
+                        {{ copy.settings.conversionCostHelp }}
+                      </p>
+                      <app-segmented-control
+                        groupName="assessment-conversion-cost"
+                        [options]="conversionCostOptions()"
+                        [value]="draft().conversionCost"
+                        (valueChange)="setConversionCost($event)"
+                      />
+                    </fieldset>
+                  }
+
+                  <section class="assessment__computed" aria-labelledby="assessment-target-title">
+                    <h3 id="assessment-target-title" class="assessment__legend">
+                      {{ copy.settings.targetHeading }}
+                    </h3>
+                    <p class="field__help">{{ copy.settings.targetBody }}</p>
+                  </section>
+
+                  <p class="field__help" data-testid="assessment-readiness">
+                    {{
+                      evaluation().complete ? copy.settings.readyNote : copy.settings.incompleteNote
+                    }}
+                  </p>
+
+                  <div class="calculator__run">
+                    <button
+                      type="button"
+                      class="button button--primary button--large"
+                      data-testid="assessment-view-overview"
+                      (click)="viewOverview()"
+                    >
+                      {{ copy.actions.viewOverview }}
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+
+            <div class="calculator__nav">
+              @if (step() > 0) {
+                <button
+                  type="button"
+                  class="button button--ghost"
+                  data-testid="assessment-back"
+                  (click)="previous()"
+                >
+                  {{ copy.actions.back }}
+                </button>
+              } @else {
+                <span></span>
+              }
+              @if (step() < steps.length - 1) {
+                <button
+                  type="button"
+                  class="button button--secondary"
+                  data-testid="assessment-next"
+                  (click)="next()"
+                >
+                  {{ copy.actions.next }}
+                </button>
+              }
+            </div>
+          </form>
+        </div>
+
+        <aside
+          class="calculator__aside assessment__summary-desktop"
+          [attr.aria-label]="copy.summary.heading"
+        >
+          <div class="summary-card">
+            <h2 class="summary-card__title">{{ copy.summary.heading }}</h2>
+            <ng-container [ngTemplateOutlet]="summaryContent" />
+          </div>
+        </aside>
+      </div>
+    } @else {
+      <div class="assessment__overview stack stack--6" data-testid="assessment-overview">
+        <div class="stack stack--3">
+          <h2
+            id="assessment-step-heading"
+            class="assessment__step-heading"
+            tabindex="-1"
+            data-testid="assessment-step-heading"
+          >
+            {{ copy.overview.heading }}
+          </h2>
+          <p class="field__help">{{ copy.overview.body }}</p>
+          <app-info-callout [body]="copy.overview.notAssessmentNote" />
+        </div>
+
+        <section class="panel stack stack--4" aria-labelledby="overview-situation">
+          <div class="assessment__panel-head">
+            <h3 id="overview-situation">{{ copy.overview.situationHeading }}</h3>
+            <button
+              type="button"
+              class="button-link"
+              data-testid="edit-step-0"
+              [attr.aria-label]="editLabel(copy.overview.situationHeading)"
+              (click)="editStep(0)"
+            >
+              {{ copy.actions.edit }}
+            </button>
+          </div>
+          <dl class="detail-grid">
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.countryLabel }}</dt>
+              <dd class="detail-grid__value">{{ copy.situation.countries.KZ }}</dd>
+            </div>
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.baseCurrencyLabel }}</dt>
+              <dd class="detail-grid__value">{{ copy.situation.baseCurrencies.KZT }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="overview-valuation">
+          <div class="assessment__panel-head">
+            <h3 id="overview-valuation">{{ copy.overview.valuationHeading }}</h3>
+            <button
+              type="button"
+              class="button-link"
+              data-testid="edit-step-1-valuation"
+              [attr.aria-label]="editLabel(copy.overview.valuationHeading)"
+              (click)="editStep(1)"
+            >
+              {{ copy.actions.edit }}
+            </button>
+          </div>
+          @if (evaluation().requiredRates.length) {
+            <dl class="detail-grid" data-testid="overview-valuation">
+              <div class="detail-grid__row">
+                <dt class="detail-grid__term">{{ copy.overview.valuationSource }}</dt>
+                <dd class="detail-grid__value">
+                  @for (code of evaluation().requiredRates; track code) {
+                    <span class="assessment__rate">{{ rateText(code) }}</span>
+                  }
+                </dd>
+              </div>
+              <div class="detail-grid__row">
+                <dt class="detail-grid__term">{{ copy.overview.valuationDateLabel }}</dt>
+                <dd class="detail-grid__value">{{ overview().valuation?.date }}</dd>
+              </div>
+            </dl>
+          } @else {
+            <p class="field__help">{{ copy.overview.kztOnlyValuation }}</p>
+          }
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="overview-cashflows">
+          <div class="assessment__panel-head">
+            <h3 id="overview-cashflows">{{ copy.overview.ratioHeading }}</h3>
+            <button
+              type="button"
+              class="button-link"
+              data-testid="edit-step-1"
+              [attr.aria-label]="editLabel(copy.overview.ratioHeading)"
+              (click)="editStep(1)"
+            >
+              {{ copy.actions.edit }}
+            </button>
+          </div>
+          <ng-container [ngTemplateOutlet]="cashflowFigures" />
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="overview-reserve">
+          <div class="assessment__panel-head">
+            <h3 id="overview-reserve">{{ copy.overview.reserveHeading }}</h3>
+            <button
+              type="button"
+              class="button-link"
+              data-testid="edit-step-2"
+              [attr.aria-label]="editLabel(copy.overview.reserveHeading)"
+              (click)="editStep(2)"
+            >
+              {{ copy.actions.edit }}
+            </button>
+          </div>
+          <ng-container [ngTemplateOutlet]="reserveFigures" />
+          <p class="field__help">{{ copy.reserve.coverageExplanation }}</p>
+          <dl class="detail-grid">
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.contributionLabel }}</dt>
+              <dd class="detail-grid__value" data-testid="overview-contribution">
+                {{
+                  overview().monthlyContributionKzt === null
+                    ? copy.overview.notProvided
+                    : kzt(overview().monthlyContributionKzt)
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="overview-settings">
+          <div class="assessment__panel-head">
+            <h3 id="overview-settings">{{ copy.overview.settingsHeading }}</h3>
+            <button
+              type="button"
+              class="button-link"
+              data-testid="edit-step-3"
+              [attr.aria-label]="editLabel(copy.overview.modelSettingsLabel)"
+              (click)="editStep(3)"
+            >
+              {{ copy.actions.edit }}
+            </button>
+          </div>
+          <dl class="detail-grid" data-testid="overview-settings">
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.horizonLabel }}</dt>
+              <dd class="detail-grid__value assessment__value-with-action">
+                <span>{{ horizonText() }}</span>
+                <button
+                  type="button"
+                  class="button-link"
+                  data-testid="edit-horizon"
+                  (click)="editHorizon()"
+                >
+                  {{ copy.actions.editHorizon }}
+                </button>
+              </dd>
+            </div>
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.rebalanceLabel }}</dt>
+              <dd class="detail-grid__value">{{ rebalanceText() }}</dd>
+            </div>
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.overview.conversionCostLabel }}</dt>
+              <dd class="detail-grid__value">{{ conversionCostText() }}</dd>
+            </div>
+          </dl>
+          <p class="field__help">{{ copy.settings.body }}</p>
+        </section>
+
+        <section
+          class="panel stack stack--4"
+          aria-labelledby="overview-simulation"
+          data-testid="assessment-simulation"
+        >
+          <h3 id="overview-simulation">{{ simulationCopy.heading }}</h3>
+          <p class="field__help">{{ simulationCopy.body }}</p>
+
+          @if (optionsLoading() && !options()) {
+            <app-loading-indicator [label]="copy.settings.optionsLoading" />
+          } @else if (!simulationEligibility().eligible) {
+            <div class="stack stack--3" data-testid="simulation-ineligible">
+              <p>{{ simulationCopy.ineligibleIntro }}</p>
+              <ul class="assessment__reasons">
+                @for (
+                  reason of simulationEligibility().reasons;
+                  track reason.code;
+                  let i = $index
+                ) {
+                  <li data-testid="simulation-reason" [attr.data-reason]="reason.code">
+                    <span [id]="'simulation-reason-' + i">{{ reasonText(reason.code) }}</span>
+                    <button
+                      type="button"
+                      class="button-link"
+                      [attr.data-testid]="'simulation-reason-edit-' + reason.code"
+                      [attr.aria-describedby]="'simulation-reason-' + i"
+                      (click)="editStep(reason.step)"
+                    >
+                      {{ simulationCopy.editReason }}
+                    </button>
+                  </li>
+                }
+              </ul>
+              <p class="field__help">{{ simulationCopy.ineligibleNote }}</p>
+            </div>
+          } @else {
+            <div class="stack stack--4" data-testid="simulation-eligible">
+              <section class="stack stack--2" aria-labelledby="simulation-assumptions">
+                <h4 id="simulation-assumptions">{{ simulationCopy.assumptionsHeading }}</h4>
+                <ul class="assessment__reasons">
+                  @for (item of simulationCopy.assumptions; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              </section>
+              <section
+                class="stack stack--2"
+                aria-labelledby="simulation-privacy"
+                data-testid="simulation-privacy"
+              >
+                <h4 id="simulation-privacy">{{ simulationCopy.privacyHeading }}</h4>
+                <ul class="assessment__reasons">
+                  @for (item of simulationCopy.privacyPoints; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              </section>
+              <div class="stack stack--2">
+                <label class="choice-check" for="simulation-ack">
+                  <input
+                    id="simulation-ack"
+                    type="checkbox"
+                    data-testid="simulation-ack"
+                    aria-describedby="simulation-ack-help"
+                    [checked]="acknowledged()"
+                    [disabled]="submitting()"
+                    (change)="setAcknowledged(checked($event))"
+                  />
+                  <span>{{ simulationCopy.acknowledgement }}</span>
+                </label>
+                <p id="simulation-ack-help" class="field__help">
+                  {{ simulationCopy.acknowledgementHelp }}
+                </p>
+              </div>
+
+              @if (submitError(); as error) {
+                <div
+                  class="stack stack--3"
+                  data-testid="simulation-error"
+                  [attr.data-code]="error.code"
+                >
+                  <app-error-panel
+                    [error]="error"
+                    [title]="submitErrorCopy(error).title"
+                    [body]="submitErrorCopy(error).body"
+                    [showRetry]="false"
+                  />
+                  @if (serverReasons(error).length) {
+                    <ul class="assessment__reasons" data-testid="simulation-server-reasons">
+                      @for (reason of serverReasons(error); track $index; let i = $index) {
+                        <li>
+                          <span [id]="'simulation-server-reason-' + i">{{ reason.text }}</span>
+                          <button
+                            type="button"
+                            class="button-link"
+                            [attr.aria-describedby]="'simulation-server-reason-' + i"
+                            (click)="editStep(reason.step)"
+                          >
+                            {{ simulationCopy.editReason }}
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  @if (error.failedJobId) {
+                    <p class="field__help" data-testid="simulation-failed-job">
+                      {{ simulationCopy.errors.queueJobNote }}
+                      <a [routerLink]="['/assessment/results', error.failedJobId]">{{
+                        simulationCopy.errors.viewFailedJob
+                      }}</a>
+                    </p>
+                  }
+                </div>
+              }
+
+              @if (staleSubmission(); as stale) {
+                <div class="stack stack--2" role="status" data-testid="simulation-stale">
+                  <p>{{ simulationCopy.changedWhilePending }}</p>
+                  @if (stale.jobId) {
+                    <a [routerLink]="['/assessment/results', stale.jobId]">{{
+                      simulationCopy.viewSubmitted
+                    }}</a>
+                  }
+                </div>
+              }
+
+              <div class="calculator__run stack stack--2">
+                <button
+                  type="button"
+                  class="button button--primary button--large"
+                  data-testid="run-simulation"
+                  [disabled]="!canRunSimulation()"
+                  [attr.aria-describedby]="acknowledged() ? null : 'simulation-ack-required'"
+                  [attr.aria-busy]="submitting() ? 'true' : null"
+                  (click)="runSimulation()"
+                >
+                  {{ submitting() ? simulationCopy.submitting : simulationCopy.run }}
+                </button>
+                @if (!acknowledged() && !submitting()) {
+                  <p id="simulation-ack-required" class="field__help">
+                    {{ simulationCopy.ackRequired }}
+                  </p>
+                }
+                @if (retryAfterSeconds() !== null) {
+                  <p class="field__help" data-testid="simulation-retry-after">
+                    {{ retryAfterText() }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="results__actions">
+            <button
+              type="button"
+              class="button button--ghost"
+              data-testid="assessment-back-to-questions"
+              (click)="editStep(3)"
+            >
+              {{ copy.actions.backToQuestions }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    <aside class="assessment__research-link stack stack--2" data-testid="assessment-research-link">
+      <p class="field__help">{{ copy.researchLinkNote }}</p>
+      <a class="button button--ghost" routerLink="/research/calculator">{{
+        copy.researchLinkLabel
+      }}</a>
+    </aside>
+  </app-page-container>
+</section>
+
+@if (confirmClear()) {
+  <div
+    #clearDialog
+    class="compare-confirm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="assessment-clear-title"
+    aria-describedby="assessment-clear-body"
+    data-testid="assessment-clear-dialog"
+  >
+    <div class="panel stack stack--4">
+      <h2 id="assessment-clear-title" tabindex="-1">{{ copy.clearDialog.title }}</h2>
+      <p id="assessment-clear-body">{{ copy.clearDialog.body }}</p>
+      <div class="compare-toolbar">
+        <button
+          type="button"
+          class="button button--primary"
+          data-testid="assessment-clear-confirm"
+          (click)="confirmClearAnswers()"
+        >
+          {{ copy.clearDialog.confirm }}
+        </button>
+        <button
+          type="button"
+          class="button button--ghost"
+          data-testid="assessment-clear-cancel"
+          (click)="cancelClear()"
+        >
+          {{ copy.clearDialog.cancel }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Currency multi-select: native checkboxes styled as chips. -->
+<ng-template
+  #currencyGroup
+  let-list="list"
+  let-legend="legend"
+  let-help="help"
+  let-disabled="disabled"
+>
+  <fieldset
+    class="fieldset assessment__group"
+    [attr.data-group]="list"
+    [attr.aria-describedby]="describedBy(list, list, list + '-help')"
+  >
+    <legend class="fieldset__legend">
+      <span class="assessment__legend">{{ legend }}</span>
+    </legend>
+    <p class="field__help" [id]="list + '-help'">{{ help }}</p>
+    <div class="choice-chips">
+      @for (code of currencies; track code) {
+        <label
+          class="choice-chip"
+          [class.is-selected]="isSelected(list, code)"
+          [class.is-disabled]="disabled"
+          [for]="list + '-' + code"
+        >
+          <input
+            class="choice-chip__input"
+            type="checkbox"
+            [id]="list + '-' + code"
+            [attr.data-testid]="list + '-' + code"
+            [checked]="isSelected(list, code)"
+            [disabled]="disabled"
+            (change)="toggleCurrency(list, code, checked($event))"
+          />
+          <span class="choice-chip__code">{{ code }}</span>
+          <span class="choice-chip__name">{{ currencyName(code) }}</span>
+        </label>
+      }
+    </div>
+    @if (showError(list)) {
+      <p class="field__error" [id]="list + '-error'">{{ errorMessage(list) }}</p>
+    }
+  </fieldset>
+</ng-template>
+
+<!-- One amount input per selected currency. -->
+<ng-template
+  #amountGroup
+  let-group="group"
+  let-dataGroup="dataGroup"
+  let-legend="legend"
+  let-labelTemplate="labelTemplate"
+  let-codes="codes"
+  let-totalKey="totalKey"
+>
+  <fieldset class="fieldset assessment__group" [attr.data-group]="dataGroup">
+    <legend class="fieldset__legend">
+      <span class="assessment__legend">{{ legend }}</span>
+    </legend>
+    <div class="stack stack--4">
+      @for (code of codes; track code) {
+        <div class="field">
+          <label class="field__label" [for]="amountId(group, code)">{{
+            fieldLabel(labelTemplate, code)
+          }}</label>
+          <div class="amount-input">
+            <input
+              class="form-control"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              [id]="amountId(group, code)"
+              [attr.data-testid]="amountId(group, code)"
+              [value]="rawAmount(group, code)"
+              [attr.aria-invalid]="showError(amountErrorKey(group, code)) ? 'true' : null"
+              [attr.aria-describedby]="
+                describedBy(amountId(group, code), amountErrorKey(group, code), dataGroup + '-help')
+              "
+              (input)="setAmount(group, code, inputValue($event))"
+              (blur)="markTouched(amountErrorKey(group, code))"
+            />
+            <span class="amount-input__unit" aria-hidden="true">{{ code }}</span>
+          </div>
+          @if (showError(amountErrorKey(group, code))) {
+            <p class="field__error" [id]="amountId(group, code) + '-error'">
+              {{ errorMessage(amountErrorKey(group, code)) }}
+            </p>
+          }
+        </div>
+      }
+      <p class="field__help" [id]="dataGroup + '-help'">{{ copy.cashflows.amountHelp }}</p>
+      @if (totalKey && showError(totalKey)) {
+        <p class="field__error" role="alert" [attr.data-testid]="totalKey + '-error'">
+          {{ errorMessage(totalKey) }}
+        </p>
+      }
+    </div>
+  </fieldset>
+</ng-template>
+
+<!-- Income and essential-expense figures (step 2 and overview). -->
+<ng-template #cashflowFigures>
+  <div class="assessment__figures stack stack--4" data-testid="cashflow-figures">
+    @for (section of cashflowSections(); track section.key) {
+      <div class="stack stack--2" [attr.data-testid]="'figures-' + section.key">
+        <h4 class="assessment__figure-heading">{{ section.heading }}</h4>
+        @if (section.data; as data) {
+          <ul class="assessment__lines">
+            @for (line of data.lines; track line.currency) {
+              <li class="assessment__line" [attr.data-currency]="line.currency">
+                <span class="assessment__line-code">{{ line.currency }}</span>
+                <span class="assessment__line-amount">{{ amount(line) }}</span>
+                <span class="assessment__line-value">{{ kzt(line.valueKzt) }}</span>
+                <span class="assessment__line-share" data-testid="line-share">{{
+                  percent(line.share)
+                }}</span>
+              </li>
+            }
+          </ul>
+          <p class="assessment__total">
+            <span>{{ section.totalLabel }}</span>
+            <strong [attr.data-testid]="'total-' + section.key">{{ kzt(data.totalKzt) }}</strong>
+          </p>
+        } @else {
+          <p class="field__help">{{ copy.summary.pending }}</p>
+        }
+      </div>
+    }
+
+    <dl class="detail-grid assessment__ratio">
+      <div class="detail-grid__row">
+        <dt class="detail-grid__term">{{ copy.overview.ratioLabel }}</dt>
+        <dd class="detail-grid__value" data-testid="expense-share-of-income">
+          {{
+            overview().expenseIncomeRatio === null
+              ? copy.summary.pending
+              : percent(overview().expenseIncomeRatio)
+          }}
+        </dd>
+      </div>
+      <div class="detail-grid__row">
+        <dt class="detail-grid__term">{{ copy.overview.ratioValueLabel }}</dt>
+        <dd class="detail-grid__value" data-testid="expense-income-ratio">
+          {{
+            overview().expenseIncomeRatio === null
+              ? copy.summary.pending
+              : ratio(overview().expenseIncomeRatio)
+          }}
+        </dd>
+      </div>
+      <div class="detail-grid__row">
+        <dt class="detail-grid__term">{{ copy.overview.remainingLabel }}</dt>
+        <dd class="detail-grid__value" data-testid="income-remaining">
+          {{ remainingDisplay() }}
+        </dd>
+      </div>
+    </dl>
+    <p class="field__help">{{ copy.overview.remainingNote }}</p>
+  </div>
+</ng-template>
+
+<!-- Reserve total, coverage and current composition. -->
+<ng-template #reserveFigures>
+  <div class="assessment__figures stack stack--3" data-testid="reserve-figures">
+    @if (overview().reserve; as reserve) {
+      <dl class="detail-grid">
+        <div class="detail-grid__row">
+          <dt class="detail-grid__term">{{ copy.overview.reserveTotalLabel }}</dt>
+          <dd class="detail-grid__value" data-testid="reserve-total">
+            {{ kzt(reserve.totalKzt) }}
+          </dd>
+        </div>
+        <div class="detail-grid__row">
+          <dt class="detail-grid__term">{{ copy.overview.coverageLabel }}</dt>
+          <dd class="detail-grid__value" data-testid="reserve-coverage">
+            {{
+              reserve.coverageMonths === null
+                ? copy.summary.pending
+                : months(reserve.coverageMonths)
+            }}
+          </dd>
+        </div>
+      </dl>
+      @if (reserve.status === 'holdings') {
+        <div class="stack stack--2" data-testid="reserve-composition">
+          <h4 class="assessment__figure-heading">{{ copy.overview.compositionHeading }}</h4>
+          <ul class="assessment__lines" [attr.aria-label]="copy.overview.compositionLabel">
+            @for (line of reserve.lines; track line.currency) {
+              <li class="assessment__line" [attr.data-currency]="line.currency">
+                <span class="assessment__line-code">{{ line.currency }}</span>
+                <span class="assessment__line-amount">{{ amount(line) }}</span>
+                <span class="assessment__line-value">{{ kzt(line.valueKzt) }}</span>
+                <span class="assessment__line-share" data-testid="line-share">{{
+                  percent(line.share)
+                }}</span>
+              </li>
+            }
+          </ul>
+          <p class="field__help">{{ copy.overview.compositionNote }}</p>
+        </div>
+      } @else {
+        <p class="assessment__no-reserve" data-testid="reserve-none">
+          {{ copy.overview.noReserve }}
+        </p>
+      }
+    } @else {
+      <p class="field__help">{{ copy.summary.pending }}</p>
+    }
+  </div>
+</ng-template>
+
+<!-- Live summary shared by the desktop aside and the compact mobile disclosure. -->
+<ng-template #summaryContent>
+  <dl class="summary assessment__summary">
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.income }}</dt>
+      <dd class="summary__value">
+        {{ overview().income ? kzt(overview().income!.totalKzt) : copy.summary.pending }}
+      </dd>
+    </div>
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.expenses }}</dt>
+      <dd class="summary__value">
+        {{ overview().expenses ? kzt(overview().expenses!.totalKzt) : copy.summary.pending }}
+      </dd>
+    </div>
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.ratio }}</dt>
+      <dd class="summary__value">
+        {{
+          overview().expenseIncomeRatio === null
+            ? copy.summary.pending
+            : percent(overview().expenseIncomeRatio)
+        }}
+      </dd>
+    </div>
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.remaining }}</dt>
+      <dd class="summary__value">
+        {{
+          overview().incomeAfterEssentialKzt === null
+            ? copy.summary.pending
+            : kzt(overview().incomeAfterEssentialKzt)
+        }}
+      </dd>
+    </div>
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.reserve }}</dt>
+      <dd class="summary__value">
+        @if (overview().reserve; as reserve) {
+          {{ reserve.status === 'holdings' ? kzt(reserve.totalKzt) : copy.overview.noReserve }}
+        } @else {
+          {{ copy.summary.pending }}
+        }
+      </dd>
+    </div>
+    <div class="summary__row">
+      <dt class="summary__term">{{ copy.summary.coverage }}</dt>
+      <dd class="summary__value">
+        {{
+          overview().reserve?.coverageMonths == null
+            ? copy.summary.pending
+            : months(overview().reserve!.coverageMonths)
+        }}
+      </dd>
+    </div>
+  </dl>
+  <p class="summary-card__hint">{{ copy.summary.hint }}</p>
+</ng-template>

@@ -146,6 +146,9 @@ REST_FRAMEWORK = {
         "buffer_sensitivity_submit": env(
             "DRF_BUFFER_SENSITIVITY_SUBMIT_THROTTLE", default="2/hour"
         ),
+        "household_analysis_submit": env(
+            "DRF_HOUSEHOLD_ANALYSIS_SUBMIT_THROTTLE", default="3/hour"
+        ),
         "job_poll": env("DRF_JOB_POLL_THROTTLE", default="120/min"),
         "model_metadata": env("DRF_MODEL_METADATA_THROTTLE", default="60/min"),
     },
@@ -215,6 +218,19 @@ BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS = 120
 BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED = env("BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED")
 BUFFER_SENSITIVITY_QUEUE = "buffer_sensitivity"
 
+# Household analysis (Phase 5B.2). Disabled by default in every environment;
+# enable only explicitly (local .env / tests) until the VPS runtime gate passes.
+HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED = env.bool(
+    "HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED", default=False
+)
+# Development candidates, not certified for difficult custom cases on the VPS.
+HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT = int(
+    env("HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT", default=180)
+)
+HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT = int(env("HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT", default=240))
+HOUSEHOLD_ANALYSIS_LEASE_SECONDS = int(env("HOUSEHOLD_ANALYSIS_LEASE_SECONDS", default=300))
+HOUSEHOLD_ANALYSIS_LEASE_SAFETY_MARGIN_SECONDS = 60
+
 JOB_RETENTION_DAYS = validate_retention_days(env("JOB_RETENTION_DAYS"))
 
 CELERY_TASK_ANNOTATIONS = {
@@ -225,6 +241,10 @@ CELERY_TASK_ANNOTATIONS = {
     "calculations.run_buffer_sensitivity_job": {
         "soft_time_limit": BUFFER_SENSITIVITY_TASK_SOFT_TIME_LIMIT,
         "time_limit": BUFFER_SENSITIVITY_TASK_TIME_LIMIT,
+    },
+    "calculations.run_household_analysis_job": {
+        "soft_time_limit": HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT,
+        "time_limit": HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT,
     },
 }
 CELERY_TASK_ROUTES = {
@@ -293,6 +313,13 @@ validate_task_time_limits(
     lease_seconds=BUFFER_SENSITIVITY_LEASE_SECONDS,
     safety_margin_seconds=BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS,
     label="buffer sensitivity job",
+)
+validate_task_time_limits(
+    soft_time_limit=HOUSEHOLD_ANALYSIS_TASK_SOFT_TIME_LIMIT,
+    hard_time_limit=HOUSEHOLD_ANALYSIS_TASK_TIME_LIMIT,
+    lease_seconds=HOUSEHOLD_ANALYSIS_LEASE_SECONDS,
+    safety_margin_seconds=HOUSEHOLD_ANALYSIS_LEASE_SAFETY_MARGIN_SECONDS,
+    label="household analysis job",
 )
 
 # --- HTTP security (environment-driven; development remains usable) ---

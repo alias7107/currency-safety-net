@@ -74,7 +74,8 @@ describe('App', () => {
     const copy = (footer?.textContent ?? '').replace(/\s+/g, ' ');
     expect(copy).toContain('not exchange-rate forecasts');
     expect(copy).toContain('not investment advice');
-    expect(copy).toContain(EN_STRINGS.nav.assessment);
+    expect(copy).toContain(EN_STRINGS.nav.householdAssessment);
+    expect(copy).toContain(EN_STRINGS.nav.researchCalculator);
     expect(copy).toContain(EN_STRINGS.nav.compare);
     expect(copy).toContain(EN_STRINGS.nav.research);
     expect(copy).toContain('No account, bank connection, or transactions');

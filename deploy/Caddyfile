@@ -11,7 +11,7 @@ www.{$CADDY_SITE_ADDRESS} {
   encode gzip
 
   # Capability / private exploration surfaces — do not index.
-  @noindex path /results/* /report/* /compare /compare/* /buffer-sensitivity/*
+  @noindex path /results/* /report/* /compare /compare/* /buffer-sensitivity/* /assessment /assessment/*
   header @noindex X-Robots-Tag "noindex, nofollow"
 
   handle /api/* {

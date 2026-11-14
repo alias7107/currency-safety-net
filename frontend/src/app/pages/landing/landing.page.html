@@ -8,7 +8,7 @@
         <div class="hero__actions">
           <a
             class="button button--primary"
-            routerLink="/research/calculator"
+            routerLink="/assessment"
             data-testid="landing-primary-cta"
             >{{ strings.landing.heroCta }}</a
           >
@@ -272,9 +272,12 @@
       <h2 id="cta-title" class="cta-panel__title">{{ strings.landing.ctaHeading }}</h2>
       <p>{{ strings.landing.ctaBody }}</p>
       <div>
-        <a class="button button--primary" routerLink="/research/calculator" data-testid="landing-bottom-cta">{{
-          strings.landing.ctaButton
-        }}</a>
+        <a
+          class="button button--primary"
+          routerLink="/research/calculator"
+          data-testid="landing-bottom-cta"
+          >{{ strings.landing.ctaButton }}</a
+        >
       </div>
     </div>
   </app-page-container>

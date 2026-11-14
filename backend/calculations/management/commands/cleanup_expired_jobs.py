@@ -5,8 +5,9 @@ from calculations.retention import cleanup_expired_jobs, retention_cutoff
 
 class Command(BaseCommand):
     help = (
-        "Delete terminal optimization and buffer-sensitivity jobs older than "
-        "JOB_RETENTION_DAYS (default 7). Never deletes queued or running jobs."
+        "Delete terminal optimization, buffer-sensitivity and household-analysis "
+        "jobs older than JOB_RETENTION_DAYS (default 7). Never deletes queued or "
+        "running jobs. Removal happens only when this command is executed."
     )
 
     def add_arguments(self, parser) -> None:
@@ -29,5 +30,6 @@ class Command(BaseCommand):
             f"retention_cleanup mode={mode} cutoff={cutoff.isoformat()} "
             f"optimization={result.optimization_count} "
             f"buffer_sensitivity={result.buffer_sensitivity_count} "
+            f"household_analysis={result.household_analysis_count} "
             f"total={result.total}"
         )

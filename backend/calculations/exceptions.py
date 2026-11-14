@@ -6,6 +6,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
+# Headers DRF's default handler sets (throttling wait, auth challenge); clients rely on them.
+PRESERVED_HEADERS = ("Retry-After", "WWW-Authenticate")
+
 
 def api_exception_handler(exc, context):
     response = exception_handler(exc, context)
@@ -35,4 +38,5 @@ def api_exception_handler(exc, context):
             }
         },
         status=response.status_code,
+        headers={name: response[name] for name in PRESERVED_HEADERS if response.has_header(name)},
     )

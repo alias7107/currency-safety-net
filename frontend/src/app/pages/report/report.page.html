@@ -15,7 +15,7 @@
             routerLink="/research/calculator"
             data-testid="report-assessment"
           >
-            {{ strings.nav.primaryAction }}
+            {{ strings.nav.researchAction }}
           </a>
         </div>
       </div>
@@ -33,7 +33,7 @@
         <app-section-heading [level]="1" [heading]="strings.report.documentTitle" />
         <app-error-panel [error]="apiError" (retry)="retry()">
           <a class="button button--primary" routerLink="/research/calculator">{{
-            strings.nav.primaryAction
+            strings.nav.researchAction
           }}</a>
         </app-error-panel>
       </div>
@@ -51,7 +51,7 @@
         </app-info-callout>
         <div>
           <a class="button button--primary" routerLink="/research/calculator">{{
-            strings.nav.primaryAction
+            strings.nav.researchAction
           }}</a>
         </div>
       </div>

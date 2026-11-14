@@ -140,6 +140,27 @@ export function humanizeIdentificationClass(value: string | null | undefined): s
     .join(' ');
 }
 
+/** Money amount with its currency code, up to two decimals, e.g. `1,250,000.5 KZT`. */
+export function formatCurrencyAmount(value: number | null | undefined, currency: string): string {
+  if (!isFiniteNumber(value)) {
+    return '—';
+  }
+  const amount = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 }).format(value);
+  return `${amount} ${currency}`;
+}
+
+export function formatKzt(value: number | null | undefined): string {
+  return formatCurrencyAmount(value, 'KZT');
+}
+
+/** User-provided valuation rate, up to six decimals, e.g. `512.345`. */
+export function formatRate(value: number | null | undefined): string {
+  if (!isFiniteNumber(value)) {
+    return '—';
+  }
+  return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 6 }).format(value);
+}
+
 export function formatDate(value: string | null | undefined): string {
   return value && value.trim() ? value : '—';
 }

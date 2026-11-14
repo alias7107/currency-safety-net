@@ -1,0 +1,282 @@
+<section class="section section--tight">
+  <app-page-container>
+    <p class="visually-hidden" aria-live="polite" data-testid="personal-results-live">
+      {{ liveMessage() }}
+    </p>
+
+    @if (invalidId()) {
+      <div class="stack stack--4" data-testid="personal-results-invalid">
+        <app-section-heading
+          [level]="1"
+          [heading]="copy.invalidIdTitle"
+          [body]="copy.invalidIdBody"
+        />
+        <ng-container [ngTemplateOutlet]="links" />
+      </div>
+    } @else if (error(); as apiError) {
+      <div
+        class="stack stack--4"
+        data-testid="personal-results-error"
+        [attr.data-code]="apiError.code"
+      >
+        <app-section-heading [level]="1" [heading]="copy.title" />
+        <app-error-panel
+          [error]="apiError"
+          [title]="errorCopy()!.title"
+          [body]="errorCopy()!.body"
+          [showRetry]="false"
+        >
+          @if (canCheckAgain()) {
+            <button
+              type="button"
+              class="button button--secondary"
+              data-testid="personal-results-check-again"
+              [disabled]="retryAfterSeconds() !== null"
+              (click)="checkAgain()"
+            >
+              {{ copy.checkAgain }}
+            </button>
+          }
+        </app-error-panel>
+        @if (retryAfterSeconds() !== null) {
+          <p class="field__help" data-testid="personal-results-retry-after">
+            {{ retryAfterText() }}
+          </p>
+        }
+        <ng-container [ngTemplateOutlet]="links" />
+      </div>
+    } @else if (failed()) {
+      <div class="stack stack--4" data-testid="personal-results-failed">
+        <app-section-heading [level]="1" [heading]="copy.failedTitle" [body]="copy.failedBody" />
+        @if (failureMessage(); as message) {
+          <app-info-callout tone="warning" [body]="message" />
+        }
+        <ng-container [ngTemplateOutlet]="links" />
+      </div>
+    } @else if (isProcessing()) {
+      <div class="stack stack--5" data-testid="personal-results-processing">
+        <div class="results__status-row">
+          <app-section-heading
+            [level]="1"
+            [heading]="copy.processingTitle"
+            [body]="copy.processingBody"
+          />
+          @if (status() !== null) {
+            <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+          }
+        </div>
+        <app-loading-indicator [label]="copy.processingTitle" [hideLabel]="true" />
+        <ng-container [ngTemplateOutlet]="links" />
+      </div>
+    } @else if (result(); as r) {
+      <div class="stack stack--6" data-testid="personal-results">
+        <app-section-heading [level]="1" [heading]="copy.title" [body]="copy.intro" />
+
+        <section class="panel stack stack--4" aria-labelledby="personal-assumptions">
+          <h2 id="personal-assumptions">{{ copy.assumptionsHeading }}</h2>
+          <p class="field__help">{{ copy.assumptionsBody }}</p>
+          <dl class="detail-grid" data-testid="personal-assumptions">
+            @for (row of assumptionRows(); track row.key) {
+              <div class="detail-grid__row" [attr.data-row]="row.key">
+                <dt class="detail-grid__term">{{ row.label }}</dt>
+                <dd class="detail-grid__value">{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section class="panel stack stack--3" aria-labelledby="personal-cvar">
+          <h2 id="personal-cvar">{{ copy.cvarHeading }}</h2>
+          <p>{{ copy.cvarBody }}</p>
+        </section>
+
+        <div class="personal-results__grid">
+          <section
+            class="panel stack stack--4"
+            aria-labelledby="personal-current"
+            data-testid="personal-current"
+          >
+            <h2 id="personal-current">{{ copy.currentHeading }}</h2>
+            <p class="field__help">{{ copy.currentBody }}</p>
+            <div>
+              <p class="field__help">{{ copy.cvarLabel }}</p>
+              <p class="personal-results__figure" data-testid="personal-current-cvar">
+                {{ cvar(r.current_policy) }}
+                <span class="personal-results__unit">{{ copy.unit }}</span>
+              </p>
+            </div>
+            <app-allocation-chart
+              [weights]="r.current_policy.weights"
+              [label]="copy.currentChartLabel"
+            />
+          </section>
+
+          <section
+            class="panel stack stack--4"
+            aria-labelledby="personal-optimized"
+            data-testid="personal-optimized"
+          >
+            <h2 id="personal-optimized">{{ copy.optimizedHeading }}</h2>
+            <p class="field__help">{{ copy.optimizedBody }}</p>
+            <div>
+              <p class="field__help">{{ copy.cvarLabel }}</p>
+              <p class="personal-results__figure" data-testid="personal-optimized-cvar">
+                {{ cvar(r.optimized_policy) }}
+                <span class="personal-results__unit">{{ copy.unit }}</span>
+              </p>
+            </div>
+            <app-allocation-chart
+              [weights]="r.optimized_policy.weights"
+              [label]="copy.optimizedChartLabel"
+            />
+          </section>
+        </div>
+
+        <section
+          class="panel stack stack--4"
+          aria-labelledby="personal-comparison"
+          data-testid="personal-comparison"
+          [attr.data-outcome]="r.comparison.outcome"
+        >
+          <h2 id="personal-comparison">{{ copy.comparisonHeading }}</h2>
+          <dl class="detail-grid">
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.differenceLabel }}</dt>
+              <dd class="detail-grid__value" data-testid="personal-difference">
+                {{ differenceText() }} {{ copy.unit }}
+              </dd>
+            </div>
+            <div class="detail-grid__row">
+              <dt class="detail-grid__term">{{ copy.outcomeLabel }}</dt>
+              <dd class="detail-grid__value" data-testid="personal-outcome">{{ outcomeText() }}</dd>
+            </div>
+          </dl>
+          <app-info-callout [body]="copy.comparisonNote" />
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="personal-diagnostics">
+          <h2 id="personal-diagnostics">{{ copy.diagnosticsHeading }}</h2>
+          <p class="field__help">{{ copy.diagnosticsBody }}</p>
+          <ng-container
+            [ngTemplateOutlet]="metricTable"
+            [ngTemplateOutletContext]="{ rows: diagnosticRows(), testid: 'personal-diagnostics' }"
+          />
+        </section>
+
+        <section class="panel stack stack--4" aria-labelledby="personal-implementation">
+          <h2 id="personal-implementation">{{ copy.implementationHeading }}</h2>
+          <p class="field__help">{{ copy.implementationBody }}</p>
+          <ng-container
+            [ngTemplateOutlet]="metricTable"
+            [ngTemplateOutletContext]="{
+              rows: implementationRows(),
+              testid: 'personal-implementation',
+            }"
+          />
+        </section>
+
+        @if (identification(); as id) {
+          <section
+            class="panel stack stack--4"
+            aria-labelledby="personal-identification"
+            data-testid="personal-identification"
+          >
+            <h2 id="personal-identification">{{ copy.identificationHeading }}</h2>
+            <p class="field__help">{{ copy.identificationNote }}</p>
+            <dl class="detail-grid">
+              <div class="detail-grid__row">
+                <dt class="detail-grid__term">{{ copy.identificationClass }}</dt>
+                <dd class="detail-grid__value">{{ id.presentation.label }}</dd>
+              </div>
+              @for (row of id.rows; track row.key) {
+                <div class="detail-grid__row">
+                  <dt class="detail-grid__term">{{ row.label }}</dt>
+                  <dd class="detail-grid__value">{{ row.value }}</dd>
+                </div>
+              }
+            </dl>
+            <p class="field__help">{{ id.presentation.body }}</p>
+          </section>
+        }
+
+        <section
+          class="panel stack stack--4"
+          aria-labelledby="personal-provenance"
+          data-testid="personal-provenance"
+        >
+          <h2 id="personal-provenance">{{ copy.provenanceHeading }}</h2>
+          <dl class="detail-grid">
+            @for (row of provenanceRows(); track row.key) {
+              <div class="detail-grid__row">
+                <dt class="detail-grid__term">{{ row.label }}</dt>
+                <dd class="detail-grid__value" [class.personal-results__mono]="row.mono">
+                  {{ row.value }}
+                </dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section
+          class="panel stack stack--3"
+          aria-labelledby="personal-limitations"
+          data-testid="personal-limitations"
+        >
+          <h2 id="personal-limitations">{{ copy.limitationsHeading }}</h2>
+          <ul class="assessment__reasons">
+            @for (item of copy.limitations; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+
+        <ng-container [ngTemplateOutlet]="links" />
+      </div>
+    }
+  </app-page-container>
+</section>
+
+<ng-template #links>
+  <div class="stack stack--2" data-testid="personal-results-links">
+    <div class="results__actions">
+      <a class="button button--primary" routerLink="/assessment" data-testid="personal-edit-link">{{
+        copy.editAssessment
+      }}</a>
+      <a
+        class="button button--ghost"
+        routerLink="/research/calculator"
+        data-testid="personal-research-link"
+        >{{ copy.researchCalculator }}</a
+      >
+    </div>
+    <p class="field__help">{{ copy.researchNote }}</p>
+  </div>
+</ng-template>
+
+<ng-template #metricTable let-rows="rows" let-testid="testid">
+  <div class="personal-results__table-wrap">
+    <table class="personal-results__table" [attr.data-testid]="testid">
+      <thead>
+        <tr>
+          <th scope="col">{{ copy.metricColumn }}</th>
+          <th scope="col" class="personal-results__num">{{ copy.currentColumn }}</th>
+          <th scope="col" class="personal-results__num">{{ copy.optimizedColumn }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows; track row.key) {
+          <tr [attr.data-row]="row.key">
+            <th scope="row">
+              {{ row.label }}
+              @if (row.note) {
+                <span class="personal-results__unit">{{ row.note }}</span>
+              }
+            </th>
+            <td class="personal-results__num">{{ row.current }}</td>
+            <td class="personal-results__num">{{ row.optimized }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>

@@ -19,6 +19,10 @@ class BufferSensitivitySubmitThrottle(AnonRateThrottle):
     scope = "buffer_sensitivity_submit"
 
 
+class HouseholdAnalysisSubmitThrottle(AnonRateThrottle):
+    scope = "household_analysis_submit"
+
+
 class JobPollThrottle(AnonRateThrottle):
     scope = "job_poll"
 
