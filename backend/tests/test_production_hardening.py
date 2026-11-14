@@ -1,4 +1,4 @@
-"""Phase 4B production configuration and operational helper tests."""
+"""Production configuration and operational helper tests."""
 
 from __future__ import annotations
 

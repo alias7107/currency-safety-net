@@ -1049,7 +1049,7 @@
   }
 }
 
-/* Household assessment (Phase 5A) */
+/* Household assessment */
 
 .assessment__header {
   display: flex;
@@ -1345,6 +1345,20 @@
   margin-inline-start: var(--space-2);
 }
 
+.assessment__simulation-note {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-inline-start: 3px solid var(--color-border-strong, var(--color-border));
+  border-radius: var(--radius-md);
+  max-width: 72ch;
+  overflow-wrap: anywhere;
+}
+
+.assessment__simulation-note p {
+  margin: 0;
+}
+
 /* Personal simulation results */
 
 .personal-results__grid {
@@ -1403,6 +1417,14 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
+}
+
+.personal-results__plain p {
+  max-width: 68ch;
+}
+
+.personal-results__plain h3 {
+  font-size: var(--text-md);
 }
 
 @media (max-width: 767px) {

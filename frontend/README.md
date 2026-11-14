@@ -1,59 +1,51 @@
-# CurrencySafetyNetUi
+# Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
-
-## Development server
-
-To start a local development server, run:
+Angular standalone application for household assessments and research scenarios.
+Use the Node.js version in the root `.node-version` file.
 
 ```bash
-ng serve
+npm ci
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The development server runs on `http://localhost:4200` and forwards `/api` to
+the Django server on port 8000. See [local development](../docs/development.md)
+for backend and worker setup.
 
-## Code scaffolding
+## Structure
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- `src/app/pages/`: landing, research, questionnaires, results, comparison and reports.
+- `src/app/core/api/`: research API types, validation and requests.
+- `src/app/core/household/`: personal simulation requests, validation and presentation.
+- `src/app/core/assessment/`: household input parsing and normalization.
+- `src/app/core/state/`: form drafts and scenario comparison state.
+- `src/app/core/i18n/en.ts`: English interface text.
+- `src/app/shared/components/`: reusable interface components.
+- `src/styles/`: shared styles and print layout.
+
+## Routes
+
+| Route                        | Purpose                                                 |
+| ---------------------------- | ------------------------------------------------------- |
+| `/`                          | Product introduction                                    |
+| `/assessment`                | Household questionnaire and overview                    |
+| `/assessment/results/:jobId` | Personal simulation status and results                  |
+| `/research`                  | Research background and preprint                        |
+| `/research/calculator`       | Four-profile research calculator                        |
+| `/results/:jobId`            | Research calculation status and results                 |
+| `/buffer-sensitivity/:jobId` | Tested buffer comparison                                |
+| `/compare`                   | Research scenarios saved in the current browser session |
+| `/report/:jobId`             | Printable research report                               |
+
+`/calculator` redirects to the research calculator; `/methodology` redirects
+to `/research`. API calls use relative `/api/v1/` URLs.
+
+## Verification
 
 ```bash
-ng generate component component-name
+npm test -- --watch=false
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Tests use Vitest and Angular's HTTP testing tools. Production assets are
+generated under `dist/`; deployment serves them through Caddy.

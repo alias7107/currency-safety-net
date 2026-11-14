@@ -44,6 +44,13 @@ export const EN_STRINGS = {
     contactEmail: 'ashkeyevli@gmail.com',
   },
 
+  analytics: {
+    privacyLinkLabel: 'Microsoft Privacy Statement',
+    footerHeading: 'Analytics',
+    footerNotice:
+      'This site uses Microsoft Clarity for usage analytics and session recordings. Text entered in form fields is masked by default.',
+  },
+
   common: {
     loading: 'Loading',
     loadingOptions: 'Loading model options',
@@ -112,74 +119,77 @@ export const EN_STRINGS = {
   },
 
   landing: {
-    heroTitle: 'Explore how modelled currency buffers behave when exchange rates move',
-    heroBody:
-      'Describe your household’s income, essential expenses, and savings to build a household overview, or explore the four predefined household profiles evaluated in the research. A personal model simulation runs only when you explicitly request it from the overview, and only where the service has enabled it.',
-    heroCta: 'Check my resilience',
-    heroSecondaryCta: 'View the published research',
-    trustLine:
-      'Research pilot · No account · No bank connection · Not financial advice · Analytics disabled',
+    heroTitle: 'Understand your money. Build your financial safety net',
+    /** Each entry is rendered as its own paragraph. */
+    heroBody: [
+      'Get a clear picture of your income, essential expenses and savings. Understand how many months of expenses your reserve covers, and explore how currency changes could affect the money you rely on for housing, food, healthcare and education.',
+      'Currency Safety Net makes financial research easier to understand, so you can make more informed decisions about your savings.',
+    ],
+    heroCta: 'Start my assessment',
+    heroSecondaryCta: 'Explore the research',
+    trustLine: '',
     illustrationAlt:
       'Diagram of a household savings buffer held in tenge, dollars and euros, sheltered under a protective arc representing modelled shortfall coverage.',
 
-    whoHeading: 'Who the research profiles describe',
+    whoHeading: 'Who it’s for',
     whoBody:
-      'The research model evaluates four published household currency situations. Use them to explore modelled shortfall risk — this pilot does not claim measured impact on real outcomes.',
+      'For people and families who want to understand their finances and the savings they rely on.',
     whoAudiences: [
       {
-        title: 'Currency-mismatch households',
-        body: 'Designed for households that earn in one currency and spend in another.',
+        title: 'Building an emergency fund',
+        body: 'See how your savings compare with your essential monthly expenses, even if you are just getting started.',
       },
       {
-        title: 'Foreign-currency income',
-        body: 'May help explore situations where wages or contracts arrive in USD or EUR while costs stay local.',
+        title: 'Earning in another currency',
+        body: 'Understand your financial picture when you earn in dollars or euros but pay everyday bills in tenge.',
       },
       {
-        title: 'Remittance-receiving families',
-        body: 'Designed for families who receive support from abroad and cover local expenses.',
+        title: 'Receiving money from abroad',
+        body: 'Bring overseas income or family support together with your local expenses to understand your household budget.',
       },
       {
-        title: 'Multi-currency emergency savings',
-        body: 'May help explore buffers held across KZT, USD, or EUR.',
+        title: 'Saving in different currencies',
+        body: 'Explore how savings held in tenge, dollars and euros relate to the expenses they need to cover.',
       },
     ],
 
     workflowHeading: 'How it works',
-    workflowBody: 'Three short steps using documented research profiles and assumptions.',
+    workflowBody:
+      'Start with your own numbers and build a clearer picture of your financial safety net.',
     workflowSteps: [
       {
-        title: 'Choose a household profile',
-        body: 'Select one of the four researched profiles closest to how households earn and spend across currencies.',
+        title: 'Tell us about your finances',
+        body: 'Enter your income, essential expenses and savings, including the currencies you use. No bank connection is needed.',
       },
       {
-        title: 'Set modelling assumptions',
-        body: 'Choose the modelled horizon, buffer, rebalancing frequency, and conversion-cost assumption from documented values.',
+        title: 'Understand your starting point',
+        body: 'See your income and essential spending together, how your savings are distributed, and how many months of current expenses your reserve represents.',
       },
       {
-        title: 'Review modelled risk',
-        body: 'See the modelled currency allocation and shortfall-risk metrics for that scenario.',
+        title: 'Explore your currency risk',
+        body: 'For supported scenarios, choose to run a simulation. Compare your current savings mix with the mix selected by the model and see how each performs across simulated currency scenarios.',
       },
     ],
 
-    outputsHeading: 'What you receive',
+    outputsHeading: 'What you’ll learn',
     outputsBody:
-      'The research calculator reports modelled results for the scenario you select — guidance for understanding the model, not a personal recommendation.',
+      'A clearer understanding of where you stand today, with optional simulations to explore currency risk.',
     outputs: [
       {
-        title: 'Transparent resilience profile',
-        body: 'Separate views of tail severity, shortfall frequency, end-of-horizon depletion, and allocation identification — without collapsing them into a single score.',
+        title: 'Your income and essential spending',
+        body: 'See how much of your income goes toward essential expenses and what remains before other spending.',
       },
       {
-        title: 'Tested buffer sensitivity',
-        body: 'A side-by-side look at the four documented buffer sizes the model evaluates, using only returned values — never interpolated advice.',
+        title: 'Your financial buffer',
+        body: 'Understand how many months of today’s essential expenses your current savings represent.',
       },
       {
-        title: 'Modelled currency allocation',
-        body: 'A KZT / USD / EUR mix selected by the research model for your inputs.',
+        title: 'How your savings mix compares',
+        body: 'With a simulation, compare your current currency mix with the mix selected by the model under the same assumptions.',
       },
       {
-        title: 'Assumptions and reproducibility metadata',
-        body: 'The full set of selected assumptions plus model version, data as-of, path count, and seed.',
+        title: 'What the risks mean',
+        body: 'Understand how often money runs short in the simulated scenarios and how severe those shortfalls are, with explanations in plain language.',
       },
     ],
 
@@ -193,7 +203,7 @@ export const EN_STRINGS = {
       'Saved comparison scenarios stay in the current browser session only.',
       'When you run a scenario, the selected parameters and model results are stored by the service so the job can be retrieved and identical scenarios can reuse a cached result.',
       'Terminal job payloads and results are retained for seven days in the research pilot.',
-      'Third-party analytics are disabled for the initial pilot.',
+      'This site uses Microsoft Clarity for usage analytics and session recordings, including clicks, scrolling and visited page addresses (such as result links). Text entered in form fields is masked by default. Clarity loads automatically on the public site.',
     ],
 
     researchHeading: 'Based on published research',
@@ -229,8 +239,7 @@ export const EN_STRINGS = {
       'Describe your income, essential expenses, and savings to build your household overview.',
     phaseNote:
       'Completing the form produces an arithmetic overview of the figures you enter. From the overview you can separately request a personal model simulation; it runs only when you explicitly submit it. Neither step produces a risk score or a recommendation.',
-    privacyNote:
-      'Your answers are kept in this browser tab’s session storage and are not placed in the page address. The questions themselves send nothing to the server; only an explicitly submitted personal simulation sends normalized scenario parameters, as explained on the overview. Closing the tab or choosing “Clear my answers” removes the answers from this tab.',
+    privacyNote: '',
     researchLinkLabel: 'Open the research calculator',
     researchLinkNote:
       'The research calculator is a separate exploration of the four predefined household profiles evaluated in the study. It does not use the answers you enter here.',
@@ -397,28 +406,41 @@ export const EN_STRINGS = {
         generic: 'One of the scenario values is outside the model’s supported range.',
       },
       editReason: 'Edit this answer',
-      assumptionsHeading: 'Before you run it',
-      assumptions: [
-        'Income left after essential expenses is assumed to stay in savings in the model. Because non-essential spending is not collected, simulated results may be optimistic.',
-        'Your planned monthly contribution is not used by the simulation.',
-        'Only the essential expenses you entered are modelled; any spending you did not enter is absent from the simulation.',
-      ],
-      privacyHeading: 'What is sent and stored',
-      privacyPoints: [
-        'Your raw amounts, exchange rates, rate date, and planned contribution stay in this browser tab’s draft. They are not sent.',
-        'Submitting sends normalized scenario parameters: income and expense currency shares, the expense-to-income ratio, reserve coverage in months, your current reserve composition, the horizon, and the model settings. They are stored on the server with the job and its result.',
-        'Clearing your answers in this tab does not delete a simulation that was already submitted.',
-        'Stored jobs may be removed by a server clean-up process, but no deletion date is promised.',
-        'Anyone with the result link can view its normalized scenario and results.',
-      ],
-      acknowledgement:
-        'I understand that remaining income is assumed to stay in savings, my planned contribution is not used, and spending I did not enter is not included.',
-      acknowledgementHelp:
-        'This confirmation is not saved and resets whenever your answers change.',
+      inline: {
+        ratioSupported:
+          'Your essential expenses are {value} of your income. Personal simulations currently support {min}–{max}, so this value is within the supported range.',
+        ratioOutside:
+          'Your essential expenses are {value} of your income. Personal simulations currently support {min}–{max}, so a personal simulation is not available for this value. You can still continue to your household overview.',
+        ratioPending:
+          'Personal simulations currently support essential expenses of {min}–{max} of income. Your share will appear here once the amounts and conversion rates above are complete.',
+        coverageSupported:
+          'Your reserve covers {value} of essential expenses. Personal simulations currently support {min}–{max} months, so this value is within the supported range.',
+        coverageOutside:
+          'Your reserve covers {value} of essential expenses. Personal simulations currently support {min}–{max} months, so a personal simulation is not available for this value. Your household overview is still available.',
+        coverageNone:
+          'Personal simulations currently need an existing reserve covering {min}–{max} months of essential expenses, so a personal simulation is not available without one. Your household overview is still available.',
+        coveragePending:
+          'Personal simulations currently support a reserve covering {min}–{max} months of essential expenses. Your coverage will appear here once your reserve amounts and essential expenses are complete.',
+        modelLimit:
+          'This is a limit of the current model, not a judgement about your household’s finances.',
+        justOver: 'just over {value}',
+        justUnder: 'just under {value}',
+        rebalanceRange: 'Personal simulations currently support {list}.',
+        rebalanceOutside:
+          'Personal simulations currently support {list}, so a personal simulation is not available with the selected frequency. Your household overview is still available.',
+        costRange: 'Personal simulations currently support conversion costs from {min} to {max}.',
+        costOutside:
+          'Personal simulations currently support conversion costs from {min} to {max}, so a personal simulation is not available with the selected cost. Your household overview is still available.',
+        or: 'or',
+      },
+      runUnavailable: {
+        loading: 'The button becomes available once the model settings have loaded.',
+        ineligible:
+          'Not available for these answers, for the reasons listed above. Your household overview remains available.',
+      },
       run: 'Run personal simulation',
       submitting: 'Submitting…',
       submittingLive: 'Submitting your personal simulation.',
-      ackRequired: 'Confirm the statement above to run the simulation.',
       changedWhilePending:
         'Your answers changed while the simulation was being submitted, so that submission is not linked to your revised answers.',
       viewSubmitted: 'View the simulation for the previously submitted answers',
@@ -1336,6 +1358,45 @@ export const EN_STRINGS = {
     researchCalculator: 'Explore the research calculator',
     researchNote:
       'The research calculator explores the four predefined household profiles from the study. It does not use this personal scenario.',
+    plainLanguage: {
+      heading: 'Your results in plain language',
+      startingHeading: 'Your starting point',
+      ratioBelow:
+        'Your essential expenses were {ratio} of your income. The rest is not necessarily money left over, because the assessment did not ask about your other spending.',
+      ratioEqual: 'Your essential expenses were equal to your income.',
+      ratioAbove:
+        'Your essential expenses were {ratio} of your income, which means they were higher than your income.',
+      justUnderHundred: 'just under 100%',
+      justOverHundred: 'just over 100%',
+      coverage:
+        'At the start, your savings were equal to {months} of your entered essential expenses, at the amounts and exchange rates you entered. This describes your starting point only. It is not a prediction of how long your savings would actually last.',
+      simulationHeading: 'What happened in the simulation',
+      shortfallSome:
+        'In {percentage} of simulated scenarios, income and available savings could not fully cover your entered essential expenses at some point over {horizon}.',
+      shortfallSomeNote:
+        'This figure is for your current savings mix. It is a share of simulated scenarios, not a prediction of your personal chance of a shortfall.',
+      shortfallNone:
+        'With your current savings mix, no shortfalls occurred in these simulated scenarios: income and available savings fully covered your entered essential expenses over {horizon}. This does not mean there is no risk, because simulated scenarios cannot include every possible future.',
+      lessThan: 'less than {value}',
+      moreThan: 'more than {value}',
+      comparisonHeading: 'What the currency comparison means',
+      comparisonIntro:
+        'The model also tested other ways of dividing your savings between tenge, US dollars and euros. It compared them on one measure: the average total shortfall in the worst 5% of simulated scenarios.',
+      outcomes: {
+        optimized_lower:
+          'On that measure, the mix the model selected did better than your current mix: its average total shortfall in the worst 5% of simulated scenarios was lower.',
+        equal_within_tolerance:
+          'On that measure, the mix the model selected and your current mix produced essentially the same result. This applies to that measure only; the two mixes can still differ in other figures and in how they divide your savings.',
+        current_lower:
+          'On that measure, your current mix did better than the alternatives the model tested. This does not make it the best possible mix, only better than the tested alternatives on that measure.',
+      },
+      severityNote:
+        'This measure is about how large shortfalls were in the worst scenarios, not how often they happened. A lower result on it does not necessarily mean fewer shortfalls or lower risk overall.',
+      notIdentified:
+        'The model did not clearly distinguish a preferred mix among the tested alternatives; several of them gave similar results on this measure. The mix it selected is shown above, but it is not a uniquely preferred choice.',
+      interpretation:
+        'These results depend on the amounts, currencies and settings you entered and on the model’s assumptions, including that income left after essential expenses stays in savings. The comparison does not include the cost of switching your actual savings between currencies today.',
+    },
   },
   errors: {
     genericTitle: 'Something went wrong',

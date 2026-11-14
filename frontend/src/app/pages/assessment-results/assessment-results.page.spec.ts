@@ -6,6 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { HouseholdAnalysisStore } from '../../core/household/household-analysis.store';
+import { AssessmentStore } from '../../core/state/assessment.store';
 import { validateHouseholdResult } from '../../core/household/household-analysis.validation';
 import { EN_STRINGS } from '../../core/i18n/en';
 import {
@@ -344,6 +345,117 @@ describe('AssessmentResultsPage', () => {
       ]) {
         expect(lower).not.toContain(forbidden);
       }
+    });
+
+    it('adds a plain-language conclusion after the technical sections and before the links', async () => {
+      await showResult('optimized_lower');
+      const plain = el('personal-plain-language')!;
+      expect(plain.getAttribute('data-outcome')).toBe('optimized_lower');
+      expect(plain.querySelector('h2')!.textContent).toContain(copy.plainLanguage.heading);
+      const headings = Array.from(plain.querySelectorAll('h3')).map((h) => h.textContent!.trim());
+      expect(headings).toEqual([
+        copy.plainLanguage.startingHeading,
+        copy.plainLanguage.simulationHeading,
+        copy.plainLanguage.comparisonHeading,
+      ]);
+      const order = Array.from(
+        host().querySelectorAll(
+          '[data-testid="personal-limitations"], [data-testid="personal-plain-language"], [data-testid="personal-results-links"]',
+        ),
+      ).map((n) => n.getAttribute('data-testid'));
+      expect(order).toEqual([
+        'personal-limitations',
+        'personal-plain-language',
+        'personal-results-links',
+      ]);
+      expect(el('plain-starting-point')!.textContent).toContain('90% of your income');
+      expect(el('plain-starting-point')!.textContent).toContain('3 months');
+      expect(el('plain-simulation')!.textContent).toContain('In 12% of simulated scenarios');
+      expect(el('plain-comparison')!.textContent).toContain(
+        copy.plainLanguage.outcomes.optimized_lower,
+      );
+      expect(el('plain-interpretation')!.textContent).toContain(copy.plainLanguage.interpretation);
+      expect(host().querySelector('input[type="checkbox"]')).toBeNull();
+      for (const item of copy.limitations) {
+        expect(el('personal-limitations')!.textContent).toContain(item);
+      }
+    });
+
+    it('shows the matching comparison wording for each validated outcome', async () => {
+      await showResult('current_lower');
+      expect(el('personal-plain-language')!.getAttribute('data-outcome')).toBe('current_lower');
+      expect(el('plain-comparison')!.textContent).toContain(
+        copy.plainLanguage.outcomes.current_lower,
+      );
+      expect(el('plain-comparison')!.textContent).not.toContain(copy.plainLanguage.notIdentified);
+    });
+
+    it('presents a tie as essentially the same result', async () => {
+      await showResult('equal_within_tolerance');
+      expect(el('plain-comparison')!.textContent).toContain(
+        copy.plainLanguage.outcomes.equal_within_tolerance,
+      );
+    });
+
+    it('describes the submitted scenario for this job, not the questionnaire draft in this tab', async () => {
+      TestBed.inject(AssessmentStore).patch({
+        incomeCurrencies: ['KZT'],
+        income: { KZT: '1000000' },
+        expenseCurrencies: ['KZT'],
+        expenses: { KZT: '500000' },
+        reserveCurrencies: ['KZT'],
+        reserves: { KZT: '5000000' },
+        horizonYears: 5,
+      });
+      const submitted = {
+        ...HOUSEHOLD_REQUEST,
+        expense_income_ratio: 1.025,
+        buffer_months: 7.5,
+        horizon_years: 1,
+      };
+      const raw = householdResult('current_lower', submitted);
+      raw['current_policy'].diagnostics.shortfall_probability = 0.004;
+      store.remember(TEST_HOUSEHOLD_JOB_ID, submitted);
+      create();
+      await tick(0);
+      http.expectOne(householdJobUrl()).flush(householdJobStatus('succeeded', { result: raw }));
+      fixture.detectChanges();
+
+      const starting = el('plain-starting-point')!.textContent!;
+      expect(starting).toContain('102.5% of your income, which means they were higher');
+      expect(starting).toContain('equal to 7.5 months');
+      expect(starting).not.toMatch(/50%|10 months/);
+      const simulation = el('plain-simulation')!.textContent!;
+      expect(simulation).toContain('In 0.4% of simulated scenarios');
+      expect(simulation).toContain('over 1 year.');
+      expect(simulation).not.toContain('5 years');
+      http.expectNone((r) => r.method === 'POST');
+    });
+
+    it('describes class C without presenting the selected mix as uniquely preferred', async () => {
+      const raw = householdResult('optimized_lower');
+      raw['optimized_policy'].identification.identification_class = 'C_NOT_IDENTIFIED';
+      create();
+      await tick(0);
+      http.expectOne(householdJobUrl()).flush(householdJobStatus('succeeded', { result: raw }));
+      fixture.detectChanges();
+      expect(el('plain-comparison')!.textContent).toContain(copy.plainLanguage.notIdentified);
+      expect(el('plain-comparison')!.textContent).not.toContain('C_NOT_IDENTIFIED');
+    });
+
+    it('shows no conclusion while processing or when the result fails validation', async () => {
+      create();
+      await tick(0);
+      http.expectOne(householdJobUrl()).flush(householdJobStatus('running'));
+      fixture.detectChanges();
+      expect(el('personal-plain-language')).toBeNull();
+      await tick(HOUSEHOLD_ANALYSIS_POLL_INTERVAL_MS);
+      const broken = householdResult();
+      broken['comparison'].outcome = 'current_lower';
+      http.expectOne(householdJobUrl()).flush(householdJobStatus('succeeded', { result: broken }));
+      fixture.detectChanges();
+      expect(el('personal-results-error')).toBeTruthy();
+      expect(el('personal-plain-language')).toBeNull();
     });
 
     it('links back to the assessment and to the research calculator only', async () => {

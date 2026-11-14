@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 3B engineering probe: buffer-sensitivity batch (public API path).
+"""Buffer-sensitivity benchmark using the public engine API.
 
 This is tooling, not production API code. The primary measurement runs four
 sequential ``optimize_allocation(..., buffer_months=B)`` calls through the
@@ -10,7 +10,7 @@ Usage (from repository root, with backend venv):
 
     cd backend
     .venv/bin/python ../scripts/benchmarks/buffer_sensitivity_batch_probe.py \\
-        --output ../docs/product/benchmarks/buffer-sensitivity-phase3b.json
+        --output ../artifacts/buffer-sensitivity.json
 """
 
 from __future__ import annotations
@@ -52,13 +52,13 @@ SINGLE_JOB_SOFT_S = 120
 SINGLE_JOB_HARD_S = 180
 SINGLE_JOB_LEASE_S = 240
 
-# Candidate batch limits under evaluation (not applied to production in 3B).
+# Batch limits used for benchmark acceptance.
 # Revised after public-path P1 5y measurement (~466.6 s total on this host).
 CANDIDATE_BATCH_SOFT_S = 600
 CANDIDATE_BATCH_HARD_S = 720
 CANDIDATE_BATCH_LEASE_S = 840
 
-# Candidate single-job annotations (existing defaults are unsafe for some advertised inputs).
+# Single-job limits used for benchmark acceptance.
 CANDIDATE_SINGLE_SOFT_S = 180
 CANDIDATE_SINGLE_HARD_S = 240
 CANDIDATE_SINGLE_LEASE_S = 300
@@ -636,7 +636,7 @@ def build_report(case_records: list[dict[str, Any]]) -> dict[str, Any]:
             "production_proposal": (
                 "Four sequential public optimize_allocation calls; each regenerates "
                 "the deterministic production FX path set. Do not call _fx_bundle in "
-                "Phase 3C production workers."
+                "production workers."
             ),
             "private_hook_status": (
                 "_fx_bundle remains test-only. Prior shared-bundle timings are "
@@ -703,7 +703,7 @@ def build_report(case_records: list[dict[str, Any]]) -> dict[str, Any]:
             "single_job_soft_limit_risk": (
                 "Existing single-job Celery soft limit (120 s) is already exceeded by at "
                 "least one advertised valid public optimize call on this host "
-                "(P2 5y η=1.05 B=1 ≈ 125.2 s). Phase 3C must introduce task-specific "
+                "(P2 5y η=1.05 B=1 ≈ 125.2 s). Deployment must use task-specific "
                 "single-job soft/hard/lease limits with lease > hard + margin, or "
                 "demonstrate on deployment hardware that all advertised inputs fit the "
                 "existing limits with adequate margin. Do not silently restrict "
@@ -802,7 +802,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("docs/product/benchmarks/buffer-sensitivity-phase3b.json"),
+        default=Path("artifacts/buffer-sensitivity.json"),
         help="Relative path for JSON artifact (from cwd).",
     )
     parser.add_argument(

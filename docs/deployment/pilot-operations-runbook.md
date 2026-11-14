@@ -1,272 +1,87 @@
-# Pilot Operations Runbook
+# Operations
 
-**Phase:** 4A (design only)  
-**Date:** 2026-09-14  
-**Companions:** [`phase4a-production-pilot-readiness.md`](./phase4a-production-pilot-readiness.md), [`pilot-deployment-architecture.md`](./pilot-deployment-architecture.md), [`pilot-go-live-checklist.md`](./pilot-go-live-checklist.md)
+Use the Compose configuration described in [deployment](../../deploy/README.md).
+PostgreSQL is the source of truth for jobs and results. Redis holds queued work,
+task backend data and the shared throttle cache.
 
-This runbook describes how a limited research pilot **should** be released, monitored, frozen, and rolled back. It does not execute those steps.
+## Release and health checks
 
----
+Build images, back up the database, apply migrations and restart the relevant
+services. Preserve persistent volumes and the previous release's images.
+Check TLS, `/api/v1/health/`, `/api/v1/ready/`, model options and a cached result.
+Test a fresh job deliberately when the deployment change affects execution.
 
-## 1. Principles
+Workers need a Celery health check. Their containers do not serve HTTP on port 8000. Inspect actual task completion as well as worker ping responses.
 
-1. Artifacts are built from **committed** sources in CI or a clean checkout — not from uncommitted local trees.
-2. Long optimization work runs only in Celery workers (concurrency **1**, prefetch **1**, max-tasks-per-child **1**).
-3. PostgreSQL is system of record; Redis is broker/cache; SQLite is local-dev only.
-4. Prefer same-origin `https://<domain>/api/` reverse proxy.
-5. Freeze submissions before risky migrations or incident containment.
-6. Never paste secrets into tickets or chat logs.
+## Monitoring
 
----
+Watch API errors and latency, queue lengths, computation and waiting times,
+worker memory, restarts and OOM events. Also track PostgreSQL/Redis disk use,
+backup age and certificate renewal. Choose alert thresholds from measurements
+on the deployment host rather than copying laptop timings.
 
-## 2. Release sequence
+A worker crash before the database claim can cause repeated message redelivery
+without increasing the job's attempt counter. Detect repeated worker-child
+failures and stop the affected worker while investigating; a claim-level
+attempt limit alone does not bound that case.
 
-### 2.1 Build artifacts
+## Submission controls
 
-| Artifact | Command intent (Node 24 / Python 3.9.6) | Output |
-|---|---|---|
-| Frontend | In `frontend/`: install deps; `npm test -- --watch=false`; `npm run build` | Static files under `frontend/dist/...` |
-| Backend/worker image or package | Install `backend/requirements.txt` (+ future `psycopg`); copy app code; **do not** alter `research_engine` science | Runnable API + worker environments |
-| Config | Inject production env from secret store | No `.env` committed secrets |
+| Setting set to `False`                   | New work paused              |
+| ---------------------------------------- | ---------------------------- |
+| `OPTIMIZATION_SUBMISSIONS_ENABLED`       | Research allocation jobs     |
+| `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` | Four-buffer research batches |
+| `HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED` | Personal simulations         |
 
-Pin Node via root `.node-version` (`24.21.0`).
+Restart/recreate the API with updated environment settings for a switch change
+to take effect. Existing job GET requests remain available. Changing a switch
+does not itself cancel tasks already queued or running.
 
-### 2.2 Pre-deploy freezes (recommended)
+## Retention
 
-1. Set `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False`.
-2. When implemented, set `OPTIMIZATION_SUBMISSIONS_ENABLED=False` (**proposed**).
-3. Drain or wait for running tasks (monitor queue + `running` rows).
+`JOB_RETENTION_DAYS` defaults to seven. The management command
+`cleanup_expired_jobs` deletes only expired terminal jobs across all three job
+types, leaving queued and running jobs alone. First use `--dry-run` to inspect
+the counts, then schedule the command daily and monitor its completion.
 
-### 2.3 Database migrations
+The command output includes optimization, buffer sensitivity and household
+analysis counts. The repository does not install a scheduler, so a retention
+setting is not a guaranteed deletion deadline. Browser draft deletion does not
+delete server-side results.
 
-1. Take PostgreSQL backup (`pg_dump`) **before** migrate.
-2. Apply `python manage.py migrate`.
-3. Record migration state.
-4. If migrate fails: restore backup; do not partial-start workers against a broken schema.
+## Backups
 
-### 2.4 Startup order
+Take a PostgreSQL `pg_dump` daily and before schema changes. Store encrypted
+copies off-host with a retention policy. Keep deployment configuration and
+secrets in appropriate separate backups. Redis persistence does not replace
+a PostgreSQL backup.
 
-**Low-resource pilot** (see `low-resource-pilot-profile.md`):
+Restore a backup into an isolated database, apply the matching application
+version, and verify row counts and representative result reads. Do not test
+restoration by overwriting the live database. Retest this procedure periodically.
 
-1. Fill `deploy/.env.pilot` from `.env.pilot.example`.
-2. PostgreSQL healthy → Redis healthy.
-3. Migrate (`--profile ops run --rm migrate` with both compose files + `--env-file .env.pilot`).
-4. Start `--profile pilot` (api + `worker_pilot` + proxy).
-5. Confirm `/api/v1/health/` and `/api/v1/ready/`.
+## Incidents and recovery
 
-**Full profile:**
+Pause new submissions when the queue is growing without completion, workers
+repeatedly crash, or database integrity is uncertain. Preserve relevant logs
+without exporting payloads or secrets. Check task and lease ownership before
+recovery; do not manually change result payloads or delete broker data as a
+routine troubleshooting step.
 
-1. Fill `deploy/.env.production`.
-2. Migrate with `--profile ops`.
-3. Start `--profile full` (`worker_opt` + `worker_buffer`, not `worker_pilot`).
-4. Confirm health/ready.
+Restart workers with concurrency one and watch claim/redelivery behavior.
+Validate recovery using the real PostgreSQL and Redis setup. For an application
+rollback, use the previous images with a compatible schema and verify cached
+reads before enabling submissions. Prefer a forward migration fix; test any
+database restoration in a separate environment first.
 
-Never combine `--profile full` and `--profile pilot`.
+## Personal simulations
 
-### 2.5 Enable submissions
+The personal submission switch defaults to disabled. Before enabling it,
+benchmark difficult custom cases on the host, including five-year horizons
+and broad near-optimal surfaces. Review the configured 180/240/300-second
+soft/hard/lease defaults against those measurements. Verify concurrent duplicate
+submissions, worker loss/recovery and cleanup before relying on the service.
 
-1. Confirm smoke tests (section 4) on production-like URL.
-2. Re-enable optimization submissions.
-3. Re-enable `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED` only if batch worker is online and measured limits are acceptable.
-4. Announce pilot window internally.
-
----
-
-## 3. Health checks
-
-| Name | Probe | Pass | Fail action |
-|---|---|---|---|
-| Frontend liveness | `GET https://<domain>/` | HTTP 200 + HTML shell | Page proxy/static |
-| API liveness | `GET /api/v1/health/` | `{"status":"ok"}` | Restart API |
-| API readiness | `GET /api/v1/ready/` | DB + cache `ok` | Stop taking traffic at proxy |
-| Worker process | Supervisor/compose shows workers online | Both consumers registered | Restart worker; investigate OOM |
-| Metadata | `GET /api/v1/model/metadata/` | JSON with model_version/data_as_of | Investigate engine packaging |
-
-**Phase 4B:** readiness is implemented. Worker health remains an operational check and is not folded into every readiness probe beyond DB/cache.
-
-### Retention cleanup (daily)
-
-```bash
-python manage.py cleanup_expired_jobs
-python manage.py cleanup_expired_jobs --dry-run
-```
-
-Default `JOB_RETENTION_DAYS=7`. Never deletes `queued`/`running` jobs. Compose ops profile: `cleanup`.
-
-### Submission freeze
-
-| Switch | Effect |
-|---|---|
-| `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False` | POST batch → 503 `submissions_disabled`; GET remains |
-| `OPTIMIZATION_SUBMISSIONS_ENABLED=False` | POST optimization → 503 `submissions_disabled`; GET remains |
-
----
-
-## 4. Smoke testing plan (do not run expensive jobs in Phase 4A)
-
-Use a **staging** host first. On production, prefer cached/repeated fingerprints after one warm-up window.
-
-| # | Test | Expect |
-|---|---|---|
-| 1 | Landing + research pages | Render; research framing visible |
-| 2 | `GET /api/v1/model/metadata/` + `options/` | 200; documented P1–P4 |
-| 3 | One ordinary optimization job | 202→poll→succeeded **or** 200 cached |
-| 4 | Identical repeat POST | `cached=true` when succeeded fingerprint exists |
-| 5 | One buffer-sensitivity job | 202→poll→succeeded **or** cached; contract buffers `[1,3,6,12]` |
-| 6 | Terminal states | succeeded payload validates; failed shows safe codes |
-| 7 | Report page | Loads from job id; no stack traces |
-| 8 | Comparison | sessionStorage round-trip on device |
-| 9 | Safe error rendering | Force 503/HTML upstream in staging; UI shows safe copy |
-| 10 | Mobile viewport | No critical overflow on assessment/results |
-| 11 | Restart worker mid-queue | Lease expiry allows reclaim; no stuck permanent `running` without lease expiry |
-| 12 | Broker unavailable | POST returns `queue_unavailable` / 503 |
-| 13 | Backup/restore drill | Restore dump to scratch DB; read known job |
-| 14 | Submission freeze | Buffer POST 503 `submissions_disabled`; GET still works |
-| 15 | Domain/HTTPS | Redirect HTTP→HTTPS; canonical host; valid cert |
-
-**Cost control:** reuse fingerprints; avoid launching many distinct 5-year P1 batches during drills. Phase 3B worst batch ≈ **466.6 s** and ≈ **1.14–1.19 GiB** RSS.
-
----
-
-## 5. Monitoring
-
-### 5.1 What to watch
-
-- API 5xx rate, 429 rate, 503 `queue_unavailable`
-- Queue depths: `celery`, `buffer_sensitivity`
-- Task success/fail counts and runtime histograms
-- Worker RSS vs ~1.2 GiB measured peaks
-- PostgreSQL connections, disk, backup age
-- Redis memory and AOF disk
-- Certificate expiry
-
-### 5.2 Alert thresholds
-
-Numeric alert thresholds **must be set after deployment measurements**. Do not copy Phase 3B laptop timings as production SLOs without re-benchmark.
-
-Suggested **qualitative** triggers:
-
-- Worker RSS approaching host limit / OOM killer events
-- Job `running` longer than lease
-- Backup failed or older than policy
-- TLS cert < 14 days (operator choice)
-
----
-
-## 6. Backups
-
-| Asset | Method | Frequency | Store |
-|---|---|---|---|
-| PostgreSQL | `pg_dump` | Daily (+ pre-migrate) | Off-host encrypted |
-| Redis | Optional RDB/AOF snapshot | Optional | Not a substitute for DB |
-| Frontend/API artifacts | Immutable image/tag or tarball | Each release | Artifact registry |
-| Secrets | Secret manager backup policy | Per org | Never in DB dumps shared widely |
-
-**Restore drill:** at least once before public pilot and periodically during pilot.
-
----
-
-## 7. Incident response
-
-### 7.1 Severity examples
-
-| Severity | Example |
-|---|---|
-| SEV1 | Data leak of job payloads; admin compromise; DEBUG left on publicly |
-| SEV2 | Workers down; queue backup; OOM loop; Postgres down |
-| SEV3 | Elevated 429s; single job class failing soft time limit on new hardware |
-
-### 7.2 Immediate containment
-
-1. Freeze buffer submissions (`BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False`).
-2. Freeze optimization submissions when switch exists; otherwise remove/scale proxy route or stop API write path.
-3. Preserve logs (without exporting secrets).
-4. Snapshot DB if integrity uncertain.
-5. Communicate research-pilot status page/banner if public.
-
-### 7.3 Submission freeze details
-
-| Switch | Effect |
-|---|---|
-| `BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED=False` | POST batch → 503 `submissions_disabled`; GET remains |
-| Proposed `OPTIMIZATION_SUBMISSIONS_ENABLED=False` | Same pattern for ordinary jobs |
-
-### 7.4 Safe recovery after worker loss
-
-1. Confirm lease expiry path reclaiming `running` jobs.
-2. Restart worker with concurrency 1.
-3. Watch redelivery / `attempt_count` vs `OPTIMIZATION_MAX_ATTEMPTS`.
-4. Do not manually edit `result_payload` in production.
-
----
-
-## 8. Rollback
-
-### 8.1 Application rollback
-
-1. Freeze submissions.
-2. Redeploy previous immutable API/worker artifact tags.
-3. Redeploy previous frontend bundle.
-4. Smoke test metadata + one cached job GET.
-5. Re-enable submissions.
-
-### 8.2 Migration rollback
-
-- Prefer forward fix.
-- If incompatible migration shipped: restore pre-migrate PostgreSQL backup to a rollback environment; only promote after verification.
-- Never “hand fix” rows to match new code without a reviewed script.
-
-### 8.3 Domain / TLS rollback
-
-- Keep prior cert automation config.
-- Lower DNS TTL before cutover; revert DNS if needed.
-- Avoid simultaneous DNS + schema + worker changes in one window.
-
----
-
-## 9. Security operations checklist (runtime)
-
-- [ ] `DEBUG=False`
-- [ ] Non-development `DJANGO_SECRET_KEY`
-- [ ] Exact `ALLOWED_HOSTS`
-- [ ] Admin disabled or IP/VPN restricted
-- [ ] Redis/Postgres not public
-- [ ] HTTPS only
-- [ ] Shared Redis throttle cache active
-- [ ] Log redaction verified on sample worker failure
-- [ ] `robots`/noindex for capability URLs
-
-Official guidance: Django deployment checklist (DEBUG, ALLOWED_HOSTS, HTTPS-related settings) — https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/ (accessed 2026-09-14).
-
----
-
-## 10. Privacy operations
-
-| Event | Action |
-|---|---|
-| Retention elapsed | Scheduled deletion job (**to be implemented**) removes old jobs |
-| User requests deletion | If contact channel exists, delete by job UUID after verification policy |
-| Breach suspicion | Freeze submissions; rotate secrets; assess UUID URL exposure window |
-| Analytics | Keep disabled unless approved |
-
-Owner must approve retention period before public pilot (candidate: 30 days — **decision required**).
-
----
-
-## 11. Capacity operations reminder
-
-From Phase 3B artifact (not estimates):
-
-- Batch totals measured ≈ **79 s – 467 s**
-- Peak RSS measured ≈ **1138 – 1193 MiB**
-- Single call can exceed **120 s** (P2 5y B=1 ≈ **125.2 s**) — task-specific limits exist; re-measure on the pilot host
-
-When both workers are busy, expect queue wait; do not add concurrency without new evidence.
-
----
-
-## 12. What this runbook does not cover
-
-- Personalized assessment product operations
-- Purchasing domains or configuring live DNS (Phase 4A forbidden)
-- Changing scientific model parameters, seeds, or path counts
+Job URLs provide access to stored results without an account. Noindex headers
+are not access control. Keep production admin disabled unless it is explicitly
+needed and protected. Do not expose PostgreSQL or Redis ports to the internet.

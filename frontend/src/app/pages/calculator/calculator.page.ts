@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -15,6 +22,7 @@ import type {
   ModelOptions,
   OptimizationRequest,
 } from '../../core/api/models';
+import { AnalyticsService } from '../../core/analytics/analytics.service';
 import { OptimizationApiService } from '../../core/api/optimization-api.service';
 import { EN_STRINGS } from '../../core/i18n/en';
 import { DEFAULT_SCENARIO, ScenarioFormStore } from '../../core/state/scenario-form.store';
@@ -173,6 +181,7 @@ export class CalculatorPage {
   protected readonly canLeaveProfileStep = computed(() => this.form.controls.profile.valid);
 
   constructor() {
+    inject(AnalyticsService).track('research_calculator_opened');
     this.loadOptions();
 
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {

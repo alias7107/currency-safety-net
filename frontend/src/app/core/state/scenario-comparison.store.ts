@@ -2,7 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import type { OptimizationResult, RebalanceFrequency } from '../api/models';
 
-/** Versioned sessionStorage key for Phase 2A comparison v1. */
+/** Session storage key for saved research comparisons. */
 export const COMPARISON_STORAGE_KEY = 'currency-safety-net:comparison:v1';
 
 export const COMPARISON_SCHEMA_VERSION = 1;

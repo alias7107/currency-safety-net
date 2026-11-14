@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { AnalyticsService } from '../../../core/analytics/analytics.service';
+import { ANALYTICS_CONFIG } from '../../../core/config/analytics.config';
 import { EN_STRINGS } from '../../../core/i18n/en';
 import { PageContainer } from '../page-container/page-container';
 
@@ -39,6 +41,16 @@ import { PageContainer } from '../page-container/page-container';
           </div>
         </div>
 
+        @if (analytics.enabled) {
+          <div class="app-footer__analytics stack stack--2" data-testid="analytics-notice">
+            <h2 class="app-footer__heading">{{ copy.footerHeading }}</h2>
+            <p>{{ copy.footerNotice }}</p>
+            <a [href]="privacyUrl" target="_blank" rel="noopener noreferrer">{{
+              copy.privacyLinkLabel
+            }}</a>
+          </div>
+        }
+
         <div class="app-footer__meta">
           <p>{{ strings.footer.rights }}</p>
           <p class="app-footer__credit">
@@ -54,4 +66,7 @@ import { PageContainer } from '../page-container/page-container';
 })
 export class AppFooter {
   protected readonly strings = EN_STRINGS;
+  protected readonly copy = EN_STRINGS.analytics;
+  protected readonly analytics = inject(AnalyticsService);
+  protected readonly privacyUrl = inject(ANALYTICS_CONFIG).microsoftPrivacyUrl;
 }

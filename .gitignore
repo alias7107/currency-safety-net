@@ -20,6 +20,10 @@ htmlcov/
 .env.*
 !.env.example
 
+# Generated measurements and verification snapshots
+/artifacts/
+/.verification/
+
 # Generated engine artifacts
 *.npy
 backend/research_engine/cache/

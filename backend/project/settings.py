@@ -194,7 +194,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "retry_on_timeout": False,
 }
 
-# Single optimization task limits (Phase 3C defaults from Phase 3B measurements).
+# Single optimization task limits.
 OPTIMIZATION_TASK_SOFT_TIME_LIMIT = int(
     env("OPTIMIZATION_TASK_SOFT_TIME_LIMIT", default=180)
 )
@@ -218,8 +218,7 @@ BUFFER_SENSITIVITY_LEASE_SAFETY_MARGIN_SECONDS = 120
 BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED = env("BUFFER_SENSITIVITY_SUBMISSIONS_ENABLED")
 BUFFER_SENSITIVITY_QUEUE = "buffer_sensitivity"
 
-# Household analysis (Phase 5B.2). Disabled by default in every environment;
-# enable only explicitly (local .env / tests) until the VPS runtime gate passes.
+# Personal submissions require explicit enablement after host capacity checks.
 HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED = env.bool(
     "HOUSEHOLD_ANALYSIS_SUBMISSIONS_ENABLED", default=False
 )

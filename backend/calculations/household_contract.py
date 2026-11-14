@@ -149,9 +149,7 @@ class HouseholdResultValidationError(ValueError):
     """Engine result failed the exact-key household contract."""
 
 
-# ---------------------------------------------------------------------------
 # Request parsing
-# ---------------------------------------------------------------------------
 
 
 def _number_or_error(data, key, errors) -> float | None:
@@ -285,9 +283,7 @@ def parse_household_request(data: Any) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
 # Provenance and fingerprint
-# ---------------------------------------------------------------------------
 
 
 _PROVENANCE_TEXT_FIELDS = (
@@ -393,9 +389,7 @@ def assert_household_job_current(job: Any) -> dict[str, Any]:
     return live
 
 
-# ---------------------------------------------------------------------------
 # Result validation (exact keys, atomic success)
-# ---------------------------------------------------------------------------
 
 
 def _fail(message: str) -> None:

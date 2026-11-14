@@ -1,4 +1,4 @@
-# Production-oriented single-VPS Compose stack (Phase 4B).
+# Single-VPS deployment.
 # Modes (mutually exclusive worker profiles — never enable both full and pilot):
 #   --profile full   → worker_opt + worker_buffer (≈8 GiB candidate)
 #   --profile pilot  → worker_pilot combined queues (≈4 GiB low-resource candidate)
